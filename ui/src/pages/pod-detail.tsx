@@ -1,0 +1,454 @@
+import { useEffect, useState } from 'react'
+import {
+  IconCircleCheckFilled,
+  IconExclamationCircle,
+  IconLoader,
+  IconRefresh,
+  IconTrash,
+} from '@tabler/icons-react'
+import * as yaml from 'js-yaml'
+import { Pod } from 'kubernetes-types/core/v1'
+import { Link, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+
+import { deleteResource, updateResource, useResource } from '@/lib/api'
+import { formatDate } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
+import { ContainerTable } from '@/components/container-table'
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
+import { EventTable } from '@/components/event-table'
+import { LabelsAnno } from '@/components/lables-anno'
+import { LogViewer } from '@/components/log-viewer'
+import { PodMonitoring } from '@/components/pod-monitoring'
+import { Terminal } from '@/components/terminal'
+import { VolumeTable } from '@/components/volume-table'
+import { YamlEditor } from '@/components/yaml-editor'
+
+export function PodDetail(props: { namespace: string; name: string }) {
+  const { namespace, name } = props
+  const [yamlContent, setYamlContent] = useState('')
+  const [isSavingYaml, setIsSavingYaml] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const navigate = useNavigate()
+
+  const {
+    data: pod,
+    isLoading,
+    isError,
+    error: podError,
+    refetch: handleRefresh,
+  } = useResource('pods', name, namespace)
+
+  useEffect(() => {
+    if (pod) {
+      setYamlContent(yaml.dump(pod, { indent: 2 }))
+    }
+  }, [pod])
+
+  const handleSaveYaml = async (content: Pod) => {
+    setIsSavingYaml(true)
+    try {
+      await updateResource('pods', name, namespace, content)
+      toast.success('YAML saved successfully')
+      // Refresh data after successful save
+      await handleRefresh()
+    } catch (error) {
+      toast.error(
+        `Failed to save YAML: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      )
+    } finally {
+      setIsSavingYaml(false)
+    }
+  }
+
+  const handleYamlChange = (content: string) => {
+    setYamlContent(content)
+  }
+
+  const handleManualRefresh = async () => {
+    // Increment refresh key to force YamlEditor re-render
+    setRefreshKey((prev) => prev + 1)
+    await handleRefresh()
+  }
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      await deleteResource('pods', name, namespace)
+      toast.success('Pod deleted successfully')
+
+      // Navigate back to the pods list page
+      navigate(`/pods?namespace=${namespace}`)
+    } catch (error) {
+      toast.error(
+        `Failed to delete pod: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      )
+    } finally {
+      setIsDeleting(false)
+      setIsDeleteDialogOpen(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center gap-2">
+              <IconLoader className="animate-spin" />
+              <span>Loading pod details...</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (isError || !pod) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center text-destructive">
+              Error loading pod: {podError?.message || 'Pod not found'}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">{name}</h1>
+          <p className="text-muted-foreground">
+            Namespace: <span className="font-medium">{namespace}</span>
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleManualRefresh}>
+            <IconRefresh className="w-4 h-4" />
+            Refresh
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setIsDeleteDialogOpen(true)}
+            disabled={isDeleting}
+          >
+            <IconTrash className="w-4 h-4" />
+            Delete
+          </Button>
+        </div>
+      </div>
+
+      <ResponsiveTabs
+        tabs={[
+          {
+            value: 'overview',
+            label: 'Overview',
+            content: (
+              <div className="space-y-4">
+                {/* Status Overview */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Status Overview</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          {pod.status?.phase === 'Running' ? (
+                            <IconCircleCheckFilled className="w-4 h-4 fill-green-500" />
+                          ) : pod.status?.phase === 'Pending' ? (
+                            <IconLoader className="w-4 h-4 animate-spin fill-amber-500" />
+                          ) : pod.status?.phase === 'Succeeded' ? (
+                            <IconCircleCheckFilled className="w-4 h-4 fill-blue-500" />
+                          ) : pod.status?.phase === 'Failed' ? (
+                            <IconExclamationCircle className="w-4 h-4 fill-red-500" />
+                          ) : (
+                            <IconExclamationCircle className="w-4 h-4 fill-gray-500" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Phase</p>
+                          <p className="text-sm font-medium">
+                            {pod.status?.phase || 'Unknown'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Ready Containers
+                        </p>
+                        <p className="text-sm font-medium">
+                          {pod.status?.containerStatuses?.filter((c) => c.ready)
+                            .length || 0}{' '}
+                          / {pod.spec?.containers?.length || 0}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Restart Count
+                        </p>
+                        <p className="text-sm font-medium">
+                          {pod.status?.containerStatuses?.reduce(
+                            (sum, c) => sum + (c.restartCount || 0),
+                            0
+                          ) || 0}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-muted-foreground">Node</p>
+                        <p className="text-sm font-medium truncate">
+                          {pod.spec?.nodeName ? (
+                            <Link
+                              to={`/nodes/${pod.spec.nodeName}`}
+                              className="text-blue-600 hover:text-blue-800 hover:underline"
+                            >
+                              {pod.spec.nodeName}
+                            </Link>
+                          ) : (
+                            'Not assigned'
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                {/* Pod Info */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Pod Information</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">
+                          Created
+                        </Label>
+                        <p className="text-sm">
+                          {formatDate(
+                            pod.metadata?.creationTimestamp || '',
+                            true
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">
+                          Started
+                        </Label>
+                        <p className="text-sm">
+                          {pod.status?.startTime
+                            ? formatDate(pod.status.startTime)
+                            : 'Not started'}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">
+                          Pod IP
+                        </Label>
+                        <p className="text-sm">
+                          {pod.status?.podIP || 'Not assigned'}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">
+                          Host IP
+                        </Label>
+                        <p className="text-sm">
+                          {pod.status?.hostIP || 'Not assigned'}
+                        </p>
+                      </div>
+                    </div>
+                    <LabelsAnno
+                      labels={pod.metadata?.labels || {}}
+                      annotations={pod.metadata?.annotations || {}}
+                    />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      Containers ({pod?.spec?.containers?.length || 0})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      <div className="space-y-4">
+                        {pod?.spec?.containers?.map((container) => (
+                          <ContainerTable
+                            key={container.name}
+                            container={container}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Pod Conditions */}
+                {pod.status?.conditions && pod.status.conditions.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Conditions</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {pod.status.conditions.map((condition, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-3 p-2 border rounded"
+                          >
+                            <Badge
+                              variant={
+                                condition.status === 'True'
+                                  ? 'default'
+                                  : 'secondary'
+                              }
+                            >
+                              {condition.type}
+                            </Badge>
+                            <span className="text-sm">{condition.message}</span>
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              {formatDate(condition.lastTransitionTime || '')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            ),
+          },
+          {
+            value: 'yaml',
+            label: 'YAML',
+            content: (
+              <div className="space-y-4">
+                <YamlEditor<'pods'>
+                  key={refreshKey}
+                  value={yamlContent}
+                  title="YAML Configuration"
+                  onSave={handleSaveYaml}
+                  onChange={handleYamlChange}
+                  isSaving={isSavingYaml}
+                />
+              </div>
+            ),
+          },
+          {
+            value: 'logs',
+            label: 'Logs',
+            content: (
+              <div className="space-y-6">
+                <LogViewer
+                  namespace={namespace}
+                  podName={name}
+                  containers={
+                    pod.spec?.containers?.map((container) => ({
+                      name: container.name,
+                      image: container.image || '',
+                    })) || []
+                  }
+                />
+              </div>
+            ),
+          },
+          {
+            value: 'terminal',
+            label: 'Terminal',
+            content: (
+              <div className="space-y-6">
+                <Terminal
+                  namespace={namespace}
+                  podName={name}
+                  containers={
+                    pod.spec?.containers?.map((container) => ({
+                      name: container.name,
+                      image: container.image || '',
+                    })) || []
+                  }
+                />
+              </div>
+            ),
+          },
+          {
+            value: 'volumes',
+            label: (
+              <>
+                Volumes
+                {pod.spec?.volumes && (
+                  <Badge variant="secondary">{pod.spec.volumes.length}</Badge>
+                )}
+              </>
+            ),
+            content: (
+              <div className="space-y-6">
+                <VolumeTable
+                  namespace={namespace}
+                  volumes={pod.spec?.volumes}
+                  containers={pod.spec?.containers}
+                  isLoading={isLoading}
+                />
+              </div>
+            ),
+          },
+          {
+            value: 'events',
+            label: 'Events',
+            content: (
+              <EventTable resource="pods" name={name} namespace={namespace} />
+            ),
+          },
+          {
+            value: 'monitor',
+            label: 'Monitor',
+            content: (
+              <div className="space-y-6">
+                <PodMonitoring
+                  namespace={namespace}
+                  podName={name}
+                  containers={
+                    pod.spec?.containers?.map((container) => ({
+                      name: container.name,
+                      image: container.image || '',
+                    })) || []
+                  }
+                />
+              </div>
+            ),
+          },
+        ]}
+      />
+
+      <DeleteConfirmationDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={handleDelete}
+        resourceName={name}
+        resourceType="pod"
+        namespace={namespace}
+        isDeleting={isDeleting}
+      />
+    </div>
+  )
+}

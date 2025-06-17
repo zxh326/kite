@@ -1,0 +1,47 @@
+version: "2"
+run:
+  go: "1.24"
+  timeout: 10m
+  allow-parallel-runners: true
+
+linters:
+  default: none
+  exclusions:
+    paths:
+      - "ui/"
+      - ".vscode/"
+  settings:
+    staticcheck:
+      checks:
+        - "all"
+        - "-SA1019" # Deprecated API usage
+        - "-ST1000" # Use of unsafe package
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - copyloopvar
+    - dogsled
+    - errcheck
+    - errchkjson
+    - errorlint
+    - ginkgolinter
+    - gocritic
+    - gocyclo
+    - goprintffuncname
+    - govet
+    - importas
+    - ineffassign
+    - makezero
+    - misspell
+    - nakedret
+    - nilerr
+    - nolintlint
+    - staticcheck
+    - gocyclo
+    - dupl
+    - unconvert
+    - unparam
+    - unused
+    - whitespace

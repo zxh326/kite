@@ -1,0 +1,181 @@
+import React, { useMemo, useState } from 'react'
+
+import { Button } from './ui/button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from './ui/table'
+
+interface Column<T> {
+  header: string
+  accessor: (item: T) => unknown
+  cell: (value: unknown) => React.ReactNode
+}
+
+interface SimpleTableProps<T> {
+  data: T[]
+  columns: Column<T>[]
+  emptyMessage?: string
+  pagination?: {
+    enabled: boolean
+    pageSize?: number
+    showPageInfo?: boolean
+  }
+}
+
+export function SimpleTable<T>({
+  data,
+  columns,
+  emptyMessage = 'No data available',
+  pagination,
+}: SimpleTableProps<T>) {
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const paginationConfig = useMemo(
+    () => ({
+      enabled: pagination?.enabled ?? false,
+      pageSize: pagination?.pageSize ?? 10,
+      showPageInfo: pagination?.showPageInfo ?? true,
+    }),
+    [pagination]
+  )
+
+  const { paginatedData, totalPages, startIndex, endIndex } = useMemo(() => {
+    if (!paginationConfig.enabled) {
+      return {
+        paginatedData: data,
+        totalPages: 1,
+        startIndex: 1,
+        endIndex: data.length,
+      }
+    }
+
+    const { pageSize } = paginationConfig
+    const totalPages = Math.ceil(data.length / pageSize)
+    const startIndex = (currentPage - 1) * pageSize
+    const endIndex = Math.min(startIndex + pageSize, data.length)
+    const paginatedData = data.slice(startIndex, endIndex)
+
+    return {
+      paginatedData,
+      totalPages,
+      startIndex: startIndex + 1,
+      endIndex,
+    }
+  }, [data, currentPage, paginationConfig])
+
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1))
+  }
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+  }
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+  return (
+    <div className="space-y-4">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {columns.map((column, index) => (
+              <TableHead key={index}>{column.header}</TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {paginatedData.length === 0 ? (
+            <TableRow>
+              <TableCell
+                colSpan={columns.length}
+                className="text-center text-muted-foreground"
+              >
+                {emptyMessage}
+              </TableCell>
+            </TableRow>
+          ) : (
+            paginatedData.map((item, rowIndex) => (
+              <TableRow key={rowIndex}>
+                {columns.map((column, colIndex) => (
+                  <TableCell key={colIndex}>
+                    {column.cell(column.accessor(item))}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+
+      {paginationConfig.enabled && data.length > 0 && (
+        <div className="flex items-center justify-between">
+          {paginationConfig.showPageInfo && (
+            <div className="text-sm text-muted-foreground">
+              Showing {startIndex} - {endIndex} of {data.length} entries
+            </div>
+          )}
+
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((page) => {
+                  // Show current page ±2 pages, plus first and last page
+                  return (
+                    page === 1 ||
+                    page === totalPages ||
+                    (page >= currentPage - 2 && page <= currentPage + 2)
+                  )
+                })
+                .map((page, index, array) => {
+                  const prevPage = array[index - 1]
+                  const showEllipsis = prevPage && page - prevPage > 1
+
+                  return (
+                    <React.Fragment key={page}>
+                      {showEllipsis && (
+                        <span className="px-2 text-muted-foreground">...</span>
+                      )}
+                      <Button
+                        variant={currentPage === page ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                        className="min-w-[32px]"
+                      >
+                        {page}
+                      </Button>
+                    </React.Fragment>
+                  )
+                })}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export type { Column }

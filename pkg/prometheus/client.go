@@ -1,0 +1,280 @@
+package prometheus
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/prometheus/client_golang/api"
+	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/model"
+)
+
+type Client struct {
+	client v1.API
+}
+
+type ResourceMetrics struct {
+	CPURequest    float64
+	CPUTotal      float64
+	MemoryRequest float64
+	MemoryTotal   float64
+}
+
+// UsageDataPoint represents a single time point in usage metrics
+type UsageDataPoint struct {
+	Timestamp time.Time `json:"timestamp"`
+	Value     float64   `json:"value"`
+}
+
+// ResourceUsageHistory contains historical usage data for a resource
+type ResourceUsageHistory struct {
+	CPU        []UsageDataPoint `json:"cpu"`
+	Memory     []UsageDataPoint `json:"memory"`
+	NetworkIn  []UsageDataPoint `json:"networkIn"`
+	NetworkOut []UsageDataPoint `json:"networkOut"`
+}
+
+// PodMetrics contains metrics for a specific pod
+type PodMetrics struct {
+	CPU        []UsageDataPoint `json:"cpu"`
+	Memory     []UsageDataPoint `json:"memory"`
+	NetworkIn  []UsageDataPoint `json:"networkIn"`
+	NetworkOut []UsageDataPoint `json:"networkOut"`
+}
+
+type PodCurrentMetrics struct {
+	PodName   string  `json:"podName"`
+	Namespace string  `json:"namespace"`
+	CPU       float64 `json:"cpu"`    // CPU cores
+	Memory    float64 `json:"memory"` // Memory in MB
+}
+
+func NewClient(prometheusURL string) (*Client, error) {
+	client, err := api.NewClient(api.Config{
+		Address: prometheusURL,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error creating prometheus client: %w", err)
+	}
+
+	v1api := v1.NewAPI(client)
+	return &Client{
+		client: v1api,
+	}, nil
+}
+
+// GetResourceUsageHistory fetches historical usage data for CPU and Memory
+func (c *Client) GetResourceUsageHistory(ctx context.Context, instance string, duration string) (*ResourceUsageHistory, error) {
+	var step time.Duration
+	var timeRange time.Duration
+
+	switch duration {
+	case "30m":
+		timeRange = 30 * time.Minute
+		step = 1 * time.Minute
+	case "1h":
+		timeRange = 1 * time.Hour
+		step = 2 * time.Minute
+	case "24h":
+		timeRange = 24 * time.Hour
+		step = 30 * time.Minute
+	default:
+		return nil, fmt.Errorf("unsupported duration: %s", duration)
+	}
+
+	now := time.Now()
+	start := now.Add(-timeRange)
+
+	conditions := []string{
+		`container!="POD"`, // Exclude the "POD" container
+		`container!=""`,    // Exclude empty containers
+	}
+	if instance != "" {
+		conditions = append(conditions, fmt.Sprintf(`instance="%s"`, instance))
+	}
+
+	// Query CPU usage percentage - using container CPU usage
+	cpuQuery := fmt.Sprintf(`sum(rate(container_cpu_usage_seconds_total{%s}[1m])) / sum(kube_node_status_allocatable{resource="cpu"}) * 100`, strings.Join(conditions, ","))
+	cpuData, err := c.queryRange(ctx, cpuQuery, start, now, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying CPU usage: %w", err)
+	}
+
+	// Query Memory usage percentage - using container memory usage
+	memoryQuery := fmt.Sprintf(`sum(container_memory_usage_bytes{%s}) / sum(kube_node_status_allocatable{resource="memory"}) * 100`, strings.Join(conditions, ","))
+	memoryData, err := c.queryRange(ctx, memoryQuery, start, now, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying Memory usage: %w", err)
+	}
+
+	conditions = []string{}
+	if instance != "" {
+		conditions = append(conditions, fmt.Sprintf(`instance="%s"`, instance))
+	}
+
+	// Query Network incoming bytes rate (bytes per second)
+	networkInQuery := fmt.Sprintf(`sum(rate(container_network_receive_bytes_total{%s}[5m]))`, strings.Join(conditions, ","))
+	networkInData, err := c.queryRange(ctx, networkInQuery, start, now, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying Network incoming bytes: %w", err)
+	}
+
+	// Query Network outgoing bytes rate (bytes per second)
+	networkOutQuery := fmt.Sprintf(`sum(rate(container_network_transmit_bytes_total{%s}[5m]))`, strings.Join(conditions, ","))
+	networkOutData, err := c.queryRange(ctx, networkOutQuery, start, now, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying Network outgoing bytes: %w", err)
+	}
+
+	if len(cpuData) == 0 || len(memoryData) == 0 || len(networkInData) == 0 || len(networkOutData) == 0 {
+		return nil, fmt.Errorf("metrics-server or kube-state-metrics may not be available or configured correctly")
+	}
+
+	return &ResourceUsageHistory{
+		CPU:        cpuData,
+		Memory:     memoryData,
+		NetworkIn:  networkInData,
+		NetworkOut: networkOutData,
+	}, nil
+}
+
+func (c *Client) queryRange(ctx context.Context, query string, start, end time.Time, step time.Duration) ([]UsageDataPoint, error) {
+	r := v1.Range{
+		Start: start,
+		End:   end,
+		Step:  step,
+	}
+
+	result, warnings, err := c.client.QueryRange(ctx, query, r)
+	if err != nil {
+		return nil, err
+	}
+	if len(warnings) > 0 {
+		fmt.Printf("Warnings: %v\n", warnings)
+	}
+
+	var dataPoints []UsageDataPoint
+
+	switch result.Type() {
+	case model.ValMatrix:
+		matrix := result.(model.Matrix)
+		if len(matrix) > 0 {
+			for _, sample := range matrix[0].Values {
+				dataPoints = append(dataPoints, UsageDataPoint{
+					Timestamp: sample.Timestamp.Time(),
+					Value:     float64(sample.Value),
+				})
+			}
+		}
+	default:
+		return nil, fmt.Errorf("unexpected result type: %s", result.Type())
+	}
+
+	return dataPoints, nil
+}
+
+// HealthCheck verifies if Prometheus is accessible
+func (c *Client) HealthCheck(ctx context.Context) error {
+	_, err := c.client.Config(ctx)
+	return err
+}
+
+func (c *Client) GetCPUUsage(ctx context.Context, namespace, podNamePrefix, container string, timeRange, step time.Duration) ([]UsageDataPoint, error) {
+	now := time.Now()
+	start := now.Add(-timeRange)
+
+	// Build query conditionally based on whether pod name prefix and container are provided
+	conditions := []string{
+		`container!="POD"`, // Exclude the "POD" container
+		`container!=""`,    // Exclude empty containers
+	}
+	if podNamePrefix != "" {
+		conditions = append(conditions, fmt.Sprintf(`pod=~"%s.*"`, podNamePrefix))
+	}
+	if container != "" {
+		conditions = append(conditions, fmt.Sprintf(`container="%s"`, container))
+	}
+	if namespace != "" {
+		conditions = append(conditions, fmt.Sprintf(`namespace="%s"`, namespace))
+	}
+	query := fmt.Sprintf(`sum(rate(container_cpu_usage_seconds_total{%s}[1m]))`, strings.Join(conditions, ","))
+	return c.queryRange(ctx, query, start, now, step)
+}
+
+func (c *Client) GetMemoryUsage(ctx context.Context, namespace, podNamePrefix, container string, timeRange, step time.Duration) ([]UsageDataPoint, error) {
+	now := time.Now()
+	start := now.Add(-timeRange)
+
+	// Build query conditionally based on whether pod name prefix and container are provided
+	conditions := []string{
+		`container!="POD"`, // Exclude the "POD" container
+		`container!=""`,    // Exclude empty containers
+	}
+	if podNamePrefix != "" {
+		conditions = append(conditions, fmt.Sprintf(`pod=~"%s.*"`, podNamePrefix))
+	}
+	if container != "" {
+		conditions = append(conditions, fmt.Sprintf(`container="%s"`, container))
+	}
+	if namespace != "" {
+		conditions = append(conditions, fmt.Sprintf(`namespace="%s"`, namespace))
+	}
+	query := fmt.Sprintf(`sum(container_memory_usage_bytes{%s}) / 1024 / 1024`, strings.Join(conditions, ","))
+	return c.queryRange(ctx, query, start, now, step)
+}
+
+// GetPodMetrics fetches metrics for a specific pod
+func (c *Client) GetPodMetrics(ctx context.Context, namespace, podName, container string, duration string) (*PodMetrics, error) {
+	var step time.Duration
+	var timeRange time.Duration
+
+	switch duration {
+	case "30m":
+		timeRange = 30 * time.Minute
+		step = 1 * time.Minute
+	case "1h":
+		timeRange = 1 * time.Hour
+		step = 2 * time.Minute
+	case "24h":
+		timeRange = 24 * time.Hour
+		step = 30 * time.Minute
+	default:
+		return nil, fmt.Errorf("unsupported duration: %s", duration)
+	}
+
+	now := time.Now()
+	start := now.Add(-timeRange)
+
+	cpuData, err := c.GetCPUUsage(ctx, namespace, podName, container, timeRange, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying pod CPU usage: %w", err)
+	}
+	// Memory usage query for specific pod
+	memoryData, err := c.GetMemoryUsage(ctx, namespace, podName, container, timeRange, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying pod Memory usage: %w", err)
+	}
+
+	// Network incoming bytes for specific pod
+	networkInQuery := fmt.Sprintf(`sum(rate(container_network_receive_bytes_total{namespace="%s",pod="%s"}[1m]))`, namespace, podName)
+	networkInData, err := c.queryRange(ctx, networkInQuery, start, now, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying pod Network incoming bytes: %w", err)
+	}
+
+	// Network outgoing bytes for specific pod
+	networkOutQuery := fmt.Sprintf(`sum(rate(container_network_transmit_bytes_total{namespace="%s",pod="%s"}[1m]))`, namespace, podName)
+	networkOutData, err := c.queryRange(ctx, networkOutQuery, start, now, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying pod Network outgoing bytes: %w", err)
+	}
+
+	return &PodMetrics{
+		CPU:        cpuData,
+		Memory:     memoryData,
+		NetworkIn:  networkInData,
+		NetworkOut: networkOutData,
+	}, nil
+}
