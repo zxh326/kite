@@ -3,7 +3,6 @@
 
 # Variables
 BINARY_NAME=kite
-STATIC_DIR=static
 UI_DIR=ui
 DOCKER_IMAGE=kite
 DOCKER_TAG=latest
@@ -35,7 +34,6 @@ deps: ## Install frontend and backend dependencies
 # Build targets
 build: frontend backend ## Build both frontend and backend
 	@echo "✅ Build completed successfully!"
-	@echo "📁 Static files are in ./$(STATIC_DIR)/"
 	@echo "🚀 Run './$(BINARY_NAME)' to start the server"
 
 frontend: ## Build frontend only
@@ -65,7 +63,7 @@ dev: ## Run in development mode
 	echo "🛑 Stopping backend server..."; \
 	kill $$BACKEND_PID 2>/dev/null
 
-lint: ## Run linters
+lint: golangci-lint ## Run linters
 	@echo "🔍 Running linters..."
 	@echo "Backend linting..."
 	go vet ./...
