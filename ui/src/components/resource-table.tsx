@@ -38,7 +38,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-import { NamespaceSelector } from './namespace-selector'
+import { NamespaceSelector } from './selector/namespace-selector'
 
 export interface ResourceTableProps<T> {
   resourceName: string

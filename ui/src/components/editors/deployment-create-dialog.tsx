@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-import { NamespaceSelector } from '../namespace-selector'
+import { NamespaceSelector } from '../selector/namespace-selector'
 
 interface DeploymentCreateDialogProps {
   open: boolean

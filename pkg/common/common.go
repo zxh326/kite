@@ -3,6 +3,7 @@ package common
 import (
 	"os"
 
+	"github.com/zxh326/kite/pkg/utils"
 	"k8s.io/klog/v2"
 )
 
@@ -15,7 +16,7 @@ const (
 var (
 	Port            = "8080"
 	PrometheusURL   = ""
-	JwtSecret       = "default_secret_key"
+	JwtSecret       = ""
 	OAuthEnabled    = false
 	OAuthProviders  = ""
 	OAuthAllowUsers = ""
@@ -35,6 +36,9 @@ func LoadEnvs() {
 	}
 	if secret := os.Getenv("JWT_SECRET"); secret != "" {
 		JwtSecret = secret
+	} else {
+		klog.Warning("JWT_SECRET is not set, using random secret key, restart server will lose all sessions")
+		JwtSecret = utils.RandomString(32)
 	}
 
 	if enabled := os.Getenv("OAUTH_ENABLED"); enabled == "true" {

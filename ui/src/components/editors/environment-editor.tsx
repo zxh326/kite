@@ -8,8 +8,8 @@ import {
 import { Plus, Trash2 } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 
-import { ConfigMapSelector } from '../configmap-selector'
-import { SecretSelector } from '../secret-selector'
+import { ConfigMapSelector } from '../selector/configmap-selector'
+import { SecretSelector } from '../selector/secret-selector'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'

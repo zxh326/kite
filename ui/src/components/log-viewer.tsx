@@ -36,9 +36,9 @@ import {
 import { Switch } from '@/components/ui/switch'
 
 import { ConnectionIndicator } from './connection-indicator'
-import { ContainerSelector } from './container-selector'
 import { NetworkSpeedIndicator } from './network-speed-indicator'
-import { PodSelector } from './pod-selector'
+import { ContainerSelector } from './selector/container-selector'
+import { PodSelector } from './selector/pod-selector'
 
 interface LogViewerProps {
   namespace: string
