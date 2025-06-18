@@ -85,7 +85,7 @@ func (session *TerminalSession) Start(ctx context.Context, subResource string) e
 	})
 
 	if err != nil {
-		klog.Errorf("Exec session error: %v", err)
+		session.SendErrorMessage(err.Error())
 		return err
 	}
 

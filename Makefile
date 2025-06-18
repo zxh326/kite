@@ -65,7 +65,7 @@ dev: ## Run in development mode
 	echo "🛑 Stopping backend server..."; \
 	kill $$BACKEND_PID 2>/dev/null
 
-lint: ## Run linters
+lint: golangci-lint ## Run linters
 	@echo "🔍 Running linters..."
 	@echo "Backend linting..."
 	go vet ./...
