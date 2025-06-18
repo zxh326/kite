@@ -95,6 +95,7 @@ _Secure authentication with GitHub and custom OAuth providers_
 | `KUBECONFIG`        | Kubernetes config path                                                                            | `inCluster or ~/.kube/config` | No       |
 | `ENABLE_ANALYTICS`  | Enable anonymous usage analytics                                                                  | `false`                       | No       |
 | `PROMETHEUS_URL`    | Prometheus server URL [Prometheus Setup Guide](docs/PROMETHEUS_SETUP.md)                          | `-`                           | No       |
+| `JWT_SECRET`        | JWT secret for signing tokens. default is random string                                           | `random string`               | Yes\*    |
 | `OAUTH_ENABLED`     | Enable OAuth authentication. [OAuth Setup Guide](docs/OAUTH_SETUP.md).                            | `false`                       | No       |
 | `OAUTH_ALLOW_USERS` | Comma-separated list of users allowed to access the dashboard,support wildcard (\*) for all users | `-`                           | OAuth\*  |
 

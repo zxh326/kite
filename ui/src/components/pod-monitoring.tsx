@@ -8,10 +8,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ContainerSelector } from '@/components/container-selector'
+import { ContainerSelector } from '@/components/selector/container-selector'
 
 import { PodResourceUsageChart } from './pod-resource-usage-chart'
-import { PodSelector } from './pod-selector'
+import { PodSelector } from './selector/pod-selector'
 
 interface PodMonitoringProps {
   namespace: string
