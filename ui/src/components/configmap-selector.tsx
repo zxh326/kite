@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { ConfigMap } from 'kubernetes-types/core/v1'
 
 import { useResources } from '@/lib/api'
@@ -24,11 +25,13 @@ export function ConfigMapSelector({
 }) {
   const { data, isLoading } = useResources('configmaps', namespace)
 
-  const sortedConfigMaps = data?.sort((a, b) => {
-    const nameA = a.metadata?.name?.toLowerCase() || ''
-    const nameB = b.metadata?.name?.toLowerCase() || ''
-    return nameA.localeCompare(nameB)
-  })
+  const sortedConfigMaps = useMemo(() => {
+    return data?.slice().sort((a, b) => {
+      const nameA = a.metadata?.name?.toLowerCase() || ''
+      const nameB = b.metadata?.name?.toLowerCase() || ''
+      return nameA.localeCompare(nameB)
+    })
+  }, [data])
 
   return (
     <Select value={selectedConfigMap} onValueChange={onConfigMapChange}>

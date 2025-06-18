@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Secret } from 'kubernetes-types/core/v1'
 
 import { useResources } from '@/lib/api'
@@ -24,11 +25,13 @@ export function SecretSelector({
 }) {
   const { data, isLoading } = useResources('secrets', namespace)
 
-  const sortedSecrets = data?.sort((a, b) => {
-    const nameA = a.metadata?.name?.toLowerCase() || ''
-    const nameB = b.metadata?.name?.toLowerCase() || ''
-    return nameA.localeCompare(nameB)
-  })
+  const sortedSecrets = useMemo(() => {
+    return data?.slice().sort((a, b) => {
+      const nameA = a.metadata?.name?.toLowerCase() || ''
+      const nameB = b.metadata?.name?.toLowerCase() || ''
+      return nameA.localeCompare(nameB)
+    })
+  }, [data])
 
   return (
     <Select value={selectedSecret} onValueChange={onSecretChange}>
