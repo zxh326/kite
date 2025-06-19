@@ -170,7 +170,7 @@ export function DaemonSetDetail(props: { namespace: string; name: string }) {
     try {
       await deleteResource('daemonsets', name, namespace)
       toast.success('DaemonSet deleted successfully')
-      navigate(`/resources/daemonsets?namespace=${namespace}`)
+      navigate(`/daemonsets`)
     } catch (error) {
       toast.error(
         `Failed to delete DaemonSet: ${

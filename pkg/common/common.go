@@ -26,6 +26,8 @@ var (
 
 	WebhookUsername = "kite-webhook"
 	WebhookPassword = "kite-webhook-password"
+
+	Readonly = false
 )
 
 func LoadEnvs() {
@@ -76,5 +78,8 @@ func LoadEnvs() {
 		WebhookPassword = webhookPassword
 	} else {
 		klog.Warning("WEBHOOK_PASSWORD is not set, using default password")
+	}
+	if readonly := os.Getenv("READONLY"); readonly == "true" {
+		Readonly = true
 	}
 }

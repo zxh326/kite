@@ -260,6 +260,26 @@ export const deleteResource = async <T extends ResourceType>(
   await apiClient.delete(`${endpoint}`)
 }
 
+// Apply resource from YAML
+export interface ApplyResourceRequest {
+  yaml: string
+}
+
+export interface ApplyResourceResponse {
+  message: string
+  kind: string
+  name: string
+  namespace?: string
+}
+
+export const applyResource = async (
+  yaml: string
+): Promise<ApplyResourceResponse> => {
+  return await apiClient.post<ApplyResourceResponse>('/resources/apply', {
+    yaml,
+  })
+}
+
 export const useResourcesEvents = <T extends ResourceType>(
   resource: T,
   name: string,

@@ -46,14 +46,12 @@ func (h *SearchHandler) Search(ctx context.Context, query string, limit int) ([]
 		if guessSearchResources == "all" || name == guessSearchResources {
 			results, err := searchFunc(ctx, q, int64(limit))
 			if err != nil {
-				// Log error but continue with other searches
 				continue
 			}
 			allResults = append(allResults, results...)
 		}
 	}
 
-	// Sort results by relevance (exact matches first)
 	queryLower := strings.ToLower(q)
 	sortResults(allResults, queryLower)
 
@@ -129,9 +127,8 @@ func getResourceOrder(resourceType string) int {
 	return len(resourceOrder) // Default to the end if not found
 }
 
+// sortResults sorts the search results with exact matches first, then by resource type
 func sortResults(results []common.SearchResult, query string) {
-	// Sort by relevance: exact name matches first, then partial matches
-	// Within each category, sort alphabetically
 	var exactMatches, partialMatches []common.SearchResult
 
 	for _, result := range results {

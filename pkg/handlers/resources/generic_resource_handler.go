@@ -169,7 +169,14 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 		if o1 == nil || o2 == nil {
 			return false // Handle nil cases gracefully
 		}
-		return o1.GetCreationTimestamp().After(o2.GetCreationTimestamp().Time)
+
+		t1 := o1.GetCreationTimestamp()
+		t2 := o2.GetCreationTimestamp()
+		if t1.Equal(&t2) {
+			return o1.GetName() < o2.GetName()
+		}
+
+		return t1.After(t2.Time)
 	})
 	_ = meta.SetList(objectList, items)
 

@@ -2,14 +2,12 @@ FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app/ui
 
-COPY ui/package*.json ./
-COPY ui/pnpm-lock.yaml ./
+COPY ui/package.json ui/pnpm-lock.yaml ./
 
-RUN npm install -g pnpm
-RUN pnpm install
+RUN npm install -g pnpm && \
+    pnpm install --frozen-lockfile
 
 COPY ui/ ./
-
 RUN pnpm run build
 
 FROM golang:1.24-alpine AS backend-builder

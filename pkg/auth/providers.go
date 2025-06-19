@@ -71,7 +71,7 @@ func NewGitHubProvider() *GitHubProvider {
 			ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
 			ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
 			RedirectURL:  os.Getenv("GITHUB_REDIRECT_URL"),
-			Scopes:       []string{"user"},
+			Scopes:       []string{"openid", "profile", "email"},
 		},
 	}
 }

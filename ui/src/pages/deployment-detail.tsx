@@ -197,7 +197,7 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
       toast.success('Deployment deleted successfully')
 
       // Navigate back to the deployments list page
-      navigate(`/deployments?namespace=${namespace}`)
+      navigate(`/deployments`)
     } catch (error) {
       toast.error(
         `Failed to delete deployment: ${

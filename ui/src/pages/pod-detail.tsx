@@ -86,7 +86,7 @@ export function PodDetail(props: { namespace: string; name: string }) {
       toast.success('Pod deleted successfully')
 
       // Navigate back to the pods list page
-      navigate(`/pods?namespace=${namespace}`)
+      navigate(`/pods`)
     } catch (error) {
       toast.error(
         `Failed to delete pod: ${

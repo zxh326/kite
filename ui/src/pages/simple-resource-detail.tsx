@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { IconLoader, IconRefresh, IconTrash } from '@tabler/icons-react'
 import * as yaml from 'js-yaml'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { ResourceType, ResourceTypeMap } from '@/types/api'
-import { updateResource, useResource } from '@/lib/api'
+import { deleteResource, updateResource, useResource } from '@/lib/api'
 import { formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 import { EventTable } from '@/components/event-table'
 import { LabelsAnno } from '@/components/lables-anno'
 import { YamlEditor } from '@/components/yaml-editor'
@@ -23,6 +25,9 @@ export function SimpleResourceDetail<T extends ResourceType>(props: {
   const [yamlContent, setYamlContent] = useState('')
   const [isSavingYaml, setIsSavingYaml] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const navigate = useNavigate()
 
   const {
     data,
@@ -37,6 +42,26 @@ export function SimpleResourceDetail<T extends ResourceType>(props: {
       setYamlContent(yaml.dump(data, { indent: 2 }))
     }
   }, [data])
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      await deleteResource(resourceType, name, namespace)
+      toast.success(`${resourceType.slice(0, -1)} deleted successfully`)
+
+      // Navigate back to the deployments list page
+      navigate(`/${resourceType}`)
+    } catch (error) {
+      toast.error(
+        `Failed to delete ${resourceType.slice(0, -1)}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      )
+    } finally {
+      setIsDeleting(false)
+      setIsDeleteDialogOpen(false)
+    }
+  }
 
   const handleSaveYaml = async (content: ResourceTypeMap[T]) => {
     setIsSavingYaml(true)
@@ -118,7 +143,12 @@ export function SimpleResourceDetail<T extends ResourceType>(props: {
             <IconRefresh className="w-4 h-4" />
             Refresh
           </Button>
-          <Button variant="destructive" size="sm">
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setIsDeleteDialogOpen(true)}
+            disabled={isDeleting}
+          >
             <IconTrash className="w-4 h-4" />
             Delete
           </Button>
@@ -194,6 +224,16 @@ export function SimpleResourceDetail<T extends ResourceType>(props: {
             ),
           },
         ]}
+      />
+
+      <DeleteConfirmationDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={handleDelete}
+        resourceName={name}
+        resourceType={resourceType}
+        namespace={namespace}
+        isDeleting={isDeleting}
       />
     </div>
   )

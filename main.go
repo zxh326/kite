@@ -4,13 +4,11 @@ import (
 	"context"
 	"embed"
 	"flag"
-	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -22,6 +20,7 @@ import (
 	"github.com/zxh326/kite/pkg/handlers"
 	"github.com/zxh326/kite/pkg/handlers/resources"
 	"github.com/zxh326/kite/pkg/kube"
+	"github.com/zxh326/kite/pkg/middleware"
 	"github.com/zxh326/kite/pkg/prometheus"
 	"github.com/zxh326/kite/pkg/utils"
 	"k8s.io/klog/v2"
@@ -62,7 +61,6 @@ func setupStatic(r *gin.Engine) {
 }
 
 func setupAPIRouter(r *gin.Engine, k8sClient *kube.K8sClient, promClient *prometheus.Client) {
-	// Health check
 	r.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
@@ -83,42 +81,36 @@ func setupAPIRouter(r *gin.Engine, k8sClient *kube.K8sClient, promClient *promet
 
 	// API routes group (protected)
 	api := r.Group("/api/v1")
-	api.Use(authHandler.RequireAuth())
+	api.Use(authHandler.RequireAuth(), middleware.ReadonlyMiddleware())
 	{
 		overviewHandler := handlers.NewOverviewHandler(k8sClient, promClient)
-		// Register overview routes
 		api.GET("/overview", overviewHandler.GetOverview)
 
 		promHandler := handlers.NewPromHandler(promClient)
-		// Register Prometheus routes
 		api.GET("/prometheus/resource-usage-history", promHandler.GetResourceUsageHistory)
 
-		// Register Pod monitoring routes
 		api.GET("/prometheus/pods/:namespace/:podName/metrics", promHandler.GetPodMetrics)
 
-		// Register logs handler
 		logsHandler := handlers.NewLogsHandler(k8sClient)
 		api.GET("/logs/:namespace/:podName", logsHandler.GetPodLogs)
 
-		// Register terminal handler
 		terminalHandler := handlers.NewTerminalHandler(k8sClient)
 		api.GET("/terminal/:namespace/:podName/ws", terminalHandler.HandleTerminalWebSocket)
 
-		// Register node terminal handler
 		nodeTerminalHandler := handlers.NewNodeTerminalHandler(k8sClient)
 		api.GET("/node-terminal/:nodeName/ws", nodeTerminalHandler.HandleNodeTerminalWebSocket)
 
-		// Register search handler
 		searchHandler := handlers.NewSearchHandler(k8sClient)
 		api.GET("/search", searchHandler.GlobalSearch)
 
-		// Register generic resource handlers
+		resourceApplyHandler := handlers.NewResourceApplyHandler(k8sClient)
+		api.POST("/resources/apply", resourceApplyHandler.ApplyResource)
+
 		resources.RegisterRoutes(api, k8sClient)
 	}
 }
 
 func setupWebhookRouter(r *gin.Engine, k8sClient *kube.K8sClient) {
-	// Webhook routes
 	webhookGroup := r.Group("/api/v1/webhooks", gin.BasicAuth(gin.Accounts{
 		common.WebhookUsername: common.WebhookPassword,
 	}))
@@ -139,46 +131,8 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(gin.Recovery())
-	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{
-		Formatter: func(param gin.LogFormatterParams) string {
-			if param.Path == "/healthz" || strings.HasPrefix(param.Path, "/assets/") || strings.HasPrefix(param.Path, "/favicon.ico") {
-				return ""
-			}
-			// Custom log format
-			user, ok := param.Keys["user"].(gin.H)
-			name := "-"
-			if ok {
-				name = user["username"].(string)
-				if user["username"] == "" {
-					name = user["name"].(string)
-				}
-			}
-
-			return fmt.Sprintf("%s - %s \"%s %s\" %d %s %s\n",
-				param.ClientIP,
-				param.TimeStamp.Format("2006-01-02 15:04:05"),
-				param.Method,
-				param.Path,
-				param.StatusCode,
-				param.Latency,
-				name,
-			)
-		},
-	}))
-
-	// Middleware for CORS
-	r.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", c.Request.Header.Get("Origin"))
-
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-		c.Next()
-	})
+	r.Use(middleware.Logger())
+	r.Use(middleware.CORS())
 
 	k8sClient, err := kube.NewK8sClient()
 	if err != nil {

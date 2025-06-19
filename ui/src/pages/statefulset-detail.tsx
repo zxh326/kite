@@ -216,7 +216,7 @@ export function StatefulSetDetail(props: { namespace: string; name: string }) {
     try {
       await deleteResource('statefulsets', name, namespace)
       toast.success('StatefulSet deleted successfully')
-      navigate(`/resources/statefulsets?namespace=${namespace}`)
+      navigate(`/statefulsets`)
     } catch (error) {
       toast.error(
         `Failed to delete StatefulSet: ${
