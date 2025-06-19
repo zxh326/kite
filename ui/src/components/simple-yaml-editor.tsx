@@ -1,5 +1,6 @@
 import { Editor } from '@monaco-editor/react'
-import { useTheme } from 'next-themes'
+
+import { useTheme } from './theme-provider'
 
 interface SimpleYamlEditorProps {
   value: string
@@ -23,7 +24,25 @@ export function SimpleYamlEditor({
         defaultLanguage="yaml"
         value={value}
         onChange={onChange}
-        theme={theme === 'dark' ? 'vs-dark' : 'vs'}
+        beforeMount={(monaco) => {
+          monaco.editor.defineTheme('custom-dark', {
+            base: 'vs-dark',
+            inherit: true,
+            rules: [],
+            colors: {
+              'editor.background': '#18181b',
+            },
+          })
+          monaco.editor.defineTheme('custom-vs', {
+            base: 'vs',
+            inherit: true,
+            rules: [],
+            colors: {
+              'editor.background': '#ffffff',
+            },
+          })
+        }}
+        theme={theme === 'dark' ? 'custom-dark' : 'custom-vs'}
         options={{
           minimap: { enabled: false },
           scrollBeyondLastLine: false,

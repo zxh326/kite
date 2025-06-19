@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { applyResource } from '@/lib/api'
+import { getTemplateByName, resourceTemplates } from '@/lib/templates'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -13,6 +14,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { SimpleYamlEditor } from '@/components/simple-yaml-editor'
 
 interface CreateResourceDialogProps {
@@ -26,6 +34,21 @@ export function CreateResourceDialog({
 }: CreateResourceDialogProps) {
   const [yaml, setYaml] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('')
+
+  const handleTemplateSelect = (templateName: string) => {
+    if (templateName === 'empty') {
+      setYaml('')
+      setSelectedTemplate('')
+      return
+    }
+
+    const template = getTemplateByName(templateName)
+    if (template) {
+      setYaml(template.yaml)
+      setSelectedTemplate(templateName)
+    }
+  }
 
   const handleSubmit = async () => {
     if (!yaml.trim()) {
@@ -53,6 +76,7 @@ export function CreateResourceDialog({
 
   const handleCancel = () => {
     setYaml('')
+    setSelectedTemplate('')
     onOpenChange(false)
   }
 
@@ -68,6 +92,27 @@ export function CreateResourceDialog({
         </DialogHeader>
 
         <div className="flex-1 space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="template">Template</Label>
+            <Select
+              value={selectedTemplate}
+              onValueChange={handleTemplateSelect}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a template or start from scratch" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="empty">
+                  Empty (Start from scratch)
+                </SelectItem>
+                {resourceTemplates.map((template) => (
+                  <SelectItem key={template.name} value={template.name}>
+                    {template.name} - {template.description}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="yaml">YAML Configuration</Label>
             <SimpleYamlEditor
