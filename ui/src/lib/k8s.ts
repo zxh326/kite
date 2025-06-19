@@ -1,4 +1,7 @@
+import { Deployment } from 'kubernetes-types/apps/v1'
 import { Pod } from 'kubernetes-types/core/v1'
+
+import { DeploymentStatusType } from '@/types/k8s'
 
 // This function retrieves the status of a Pod in Kubernetes.
 // @see https://github.com/kubernetes/kubernetes/blob/master/pkg/printers/internalversion/printers.go#L881
@@ -204,4 +207,56 @@ export function getPodErrorMessage(pod: Pod): string | undefined {
   }
 
   return undefined
+}
+
+export function getDeploymentStatus(
+  deployment: Deployment
+): DeploymentStatusType {
+  if (!deployment.status) {
+    return 'Unknown'
+  }
+
+  const status = deployment.status
+  const spec = deployment.spec
+
+  // Check if deployment is being deleted
+  if (deployment.metadata?.deletionTimestamp) {
+    return 'Terminating'
+  }
+
+  // Check if deployment is paused
+  if (spec?.paused) {
+    return 'Paused'
+  }
+
+  // Get replica counts
+  const replicas = status.replicas || 0
+  if (replicas === 0) {
+    return 'Scaled Down'
+  }
+  const desiredReplicas = spec?.replicas || 0
+  const actualReplicas = status.replicas || 0
+  const availableReplicas = status.availableReplicas || 0
+  const readyReplicas = status.readyReplicas || 0
+
+  if (availableReplicas === 0) {
+    return 'Not Available'
+  }
+
+  if (desiredReplicas !== actualReplicas) {
+    return 'Progressing'
+  }
+  if (availableReplicas != actualReplicas || readyReplicas != actualReplicas) {
+    return 'Progressing'
+  }
+
+  // All replicas are ready and available
+  if (
+    readyReplicas === desiredReplicas &&
+    availableReplicas === desiredReplicas
+  ) {
+    return 'Available'
+  }
+
+  return 'Unknown'
 }

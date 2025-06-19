@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react'
 import {
-  IconCircleCheckFilled,
-  IconExclamationCircle,
   IconLoader,
   IconRefresh,
   IconReload,
@@ -23,6 +21,7 @@ import {
   useResource,
   useResources,
 } from '@/lib/api'
+import { getDeploymentStatus } from '@/lib/k8s'
 import { formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -37,6 +36,7 @@ import {
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { ContainerTable } from '@/components/container-table'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
+import { DeploymentStatusIcon } from '@/components/deployment-status-icon'
 import { EventTable } from '@/components/event-table'
 import { LabelsAnno } from '@/components/lables-anno'
 import { LogViewer } from '@/components/log-viewer'
@@ -284,8 +284,6 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
   const { status } = deployment
   const readyReplicas = status?.readyReplicas || 0
   const totalReplicas = status?.replicas || 0
-  const isAvailable = readyReplicas === totalReplicas && totalReplicas > 0
-  const isScaledToZero = totalReplicas === 0
 
   return (
     <div className="space-y-6">
@@ -431,24 +429,16 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
-                          {isScaledToZero ? (
-                            <IconExclamationCircle className="w-4 h-4 fill-gray-500" />
-                          ) : isAvailable ? (
-                            <IconCircleCheckFilled className="w-4 h-4 fill-green-500" />
-                          ) : (
-                            <IconLoader className="w-4 h-4 animate-spin fill-amber-500" />
-                          )}
+                          <DeploymentStatusIcon
+                            status={getDeploymentStatus(deployment)}
+                          />
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">
                             Status
                           </p>
                           <p className="text-sm font-medium">
-                            {isScaledToZero
-                              ? 'Scaled to Zero'
-                              : isAvailable
-                                ? 'Available'
-                                : 'In Progress'}
+                            {getDeploymentStatus(deployment)}
                           </p>
                         </div>
                       </div>

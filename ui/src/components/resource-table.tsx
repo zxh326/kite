@@ -18,7 +18,6 @@ import { Box, Database, Plus, RotateCcw, Search, XCircle } from 'lucide-react'
 import { ResourceType } from '@/types/api'
 import { useResources } from '@/lib/api'
 import { debounce } from '@/lib/utils'
-import { useInterval } from '@/hooks/use-interval'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -74,7 +73,10 @@ export function ResourceTable<T>({
   >()
   const { isLoading, data, isError, error, refetch } = useResources(
     resourceType ?? (resourceName.toLowerCase() as ResourceType),
-    selectedNamespace
+    selectedNamespace,
+    {
+      refreshInterval: 5000, // Refresh every 5 seconds
+    }
   )
 
   // Set initial namespace when namespaces are loaded
@@ -97,12 +99,6 @@ export function ResourceTable<T>({
       }, 300),
     []
   )
-
-  useInterval(() => {
-    if (refetch && !isLoading && !isError) {
-      refetch()
-    }
-  }, 5 * 50)
 
   // Update debounced search query when input changes
   useEffect(() => {

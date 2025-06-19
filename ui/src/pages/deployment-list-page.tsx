@@ -1,11 +1,12 @@
 import { useCallback, useMemo, useState } from 'react'
-import { IconCircleCheckFilled, IconLoader } from '@tabler/icons-react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Deployment } from 'kubernetes-types/apps/v1'
 import { Link, useNavigate } from 'react-router-dom'
 
+import { getDeploymentStatus } from '@/lib/k8s'
 import { formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { DeploymentStatusIcon } from '@/components/deployment-status-icon'
 import { DeploymentCreateDialog } from '@/components/editors/deployment-create-dialog'
 import { ResourceTable } from '@/components/resource-table'
 
@@ -50,28 +51,10 @@ export function DeploymentListPage() {
       columnHelper.accessor('status.conditions', {
         header: 'Status',
         cell: ({ row }) => {
-          const readyReplicas = row.original.status?.readyReplicas || 0
-          const replicas = row.original.status?.replicas || 0
-          const isAvailable = readyReplicas === replicas
-          const status = isAvailable ? 'Available' : 'In Progress'
-          if (replicas === 0) {
-            return (
-              <Badge
-                variant="secondary"
-                className="text-muted-foreground px-1.5"
-              >
-                -
-              </Badge>
-            )
-          }
-
+          const status = getDeploymentStatus(row.original)
           return (
             <Badge variant="outline" className="text-muted-foreground px-1.5">
-              {isAvailable ? (
-                <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
-              ) : (
-                <IconLoader className="animate-spin" />
-              )}
+              <DeploymentStatusIcon status={status} />
               {status}
             </Badge>
           )
