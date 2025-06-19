@@ -102,7 +102,7 @@ export function ResourceTable<T>({
     if (refetch && !isLoading && !isError) {
       refetch()
     }
-  }, 5 * 1000)
+  }, 5 * 50)
 
   // Update debounced search query when input changes
   useEffect(() => {

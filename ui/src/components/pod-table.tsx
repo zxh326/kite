@@ -4,7 +4,9 @@ import { Pod } from 'kubernetes-types/core/v1'
 import { Link } from 'react-router-dom'
 
 import { useResources } from '@/lib/api'
+import { getPodStatus } from '@/lib/k8s'
 
+import { PodStatusIcon } from './pod-status-icon'
 import { Column, SimpleTable } from './simple-table'
 import { Badge } from './ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
@@ -72,16 +74,15 @@ export function PodTable(props: {
       },
       {
         header: 'Status',
-        accessor: (pod: Pod) => pod.status?.phase || '',
+        accessor: (pod: Pod) => pod,
         cell: (value: unknown) => {
-          const phase = value as string
-          const variant =
-            phase === 'Running'
-              ? 'default'
-              : phase === 'Pending'
-                ? 'secondary'
-                : 'destructive'
-          return <Badge variant={variant}>{phase}</Badge>
+          const status = getPodStatus(value as Pod)
+          return (
+            <Badge variant="outline" className="text-muted-foreground px-1.5">
+              <PodStatusIcon status={status} />
+              {status}
+            </Badge>
+          )
         },
       },
       {

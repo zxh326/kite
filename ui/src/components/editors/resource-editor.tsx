@@ -1,6 +1,5 @@
 import { Container } from 'kubernetes-types/core/v1'
 
-import { Badge } from '../ui/badge'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 
@@ -29,12 +28,9 @@ export function ResourceEditor({ container, onUpdate }: ResourceEditorProps) {
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
       {/* Requests */}
-      <div className="space-y-4 p-4 border rounded-lg bg-green-50/50 dark:bg-green-950/20">
+      <div className="space-y-4 p-4 border rounded-lg">
         <div className="flex items-center gap-2">
           <Label className="text-sm font-medium">Resource Requests</Label>
-          <Badge variant="outline" className="text-xs text-green-600">
-            Minimum
-          </Badge>
         </div>
         <div className="space-y-3">
           <div>
@@ -75,12 +71,9 @@ export function ResourceEditor({ container, onUpdate }: ResourceEditorProps) {
       </div>
 
       {/* Limits */}
-      <div className="space-y-4 p-4 border rounded-lg bg-red-50/50 dark:bg-red-950/20">
+      <div className="space-y-4 p-4 border rounded-lg">
         <div className="flex items-center gap-2">
           <Label className="text-sm font-medium">Resource Limits</Label>
-          <Badge variant="outline" className="text-xs text-red-600">
-            Maximum
-          </Badge>
         </div>
         <div className="space-y-3">
           <div>

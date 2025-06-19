@@ -3,7 +3,9 @@ import { createColumnHelper } from '@tanstack/react-table'
 import { Pod } from 'kubernetes-types/core/v1'
 import { Link } from 'react-router-dom'
 
+import { getPodStatus } from '@/lib/k8s'
 import { formatDate } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 import { PodStatusIcon } from '@/components/pod-status-icon'
 import { ResourceTable } from '@/components/resource-table'
 
@@ -44,7 +46,15 @@ export function PodListPage() {
       columnHelper.accessor('status.phase', {
         header: 'Status',
         enableColumnFilter: true,
-        cell: ({ row }) => <PodStatusIcon pod={row.original} />,
+        cell: ({ row }) => {
+          const status = getPodStatus(row.original)
+          return (
+            <Badge variant="outline" className="text-muted-foreground px-1.5">
+              <PodStatusIcon status={status} />
+              {status}
+            </Badge>
+          )
+        },
       }),
       columnHelper.accessor('status.podIP', {
         header: 'IP',

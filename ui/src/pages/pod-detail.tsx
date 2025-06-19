@@ -1,17 +1,12 @@
 import { useEffect, useState } from 'react'
-import {
-  IconCircleCheckFilled,
-  IconExclamationCircle,
-  IconLoader,
-  IconRefresh,
-  IconTrash,
-} from '@tabler/icons-react'
+import { IconLoader, IconRefresh, IconTrash } from '@tabler/icons-react'
 import * as yaml from 'js-yaml'
 import { Pod } from 'kubernetes-types/core/v1'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { deleteResource, updateResource, useResource } from '@/lib/api'
+import { getPodErrorMessage, getPodStatus } from '@/lib/k8s'
 import { formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,6 +19,7 @@ import { EventTable } from '@/components/event-table'
 import { LabelsAnno } from '@/components/lables-anno'
 import { LogViewer } from '@/components/log-viewer'
 import { PodMonitoring } from '@/components/pod-monitoring'
+import { PodStatusIcon } from '@/components/pod-status-icon'
 import { Terminal } from '@/components/terminal'
 import { VolumeTable } from '@/components/volume-table'
 import { YamlEditor } from '@/components/yaml-editor'
@@ -171,22 +167,18 @@ export function PodDetail(props: { namespace: string; name: string }) {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
-                          {pod.status?.phase === 'Running' ? (
-                            <IconCircleCheckFilled className="w-4 h-4 fill-green-500" />
-                          ) : pod.status?.phase === 'Pending' ? (
-                            <IconLoader className="w-4 h-4 animate-spin fill-amber-500" />
-                          ) : pod.status?.phase === 'Succeeded' ? (
-                            <IconCircleCheckFilled className="w-4 h-4 fill-blue-500" />
-                          ) : pod.status?.phase === 'Failed' ? (
-                            <IconExclamationCircle className="w-4 h-4 fill-red-500" />
-                          ) : (
-                            <IconExclamationCircle className="w-4 h-4 fill-gray-500" />
-                          )}
+                          <PodStatusIcon
+                            status={getPodStatus(pod)}
+                            className="w-4 h-4"
+                          />
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Phase</p>
                           <p className="text-sm font-medium">
-                            {pod.status?.phase || 'Unknown'}
+                            {getPodStatus(pod)}
+                          </p>
+                          <p className="text-xs text-red-500">
+                            {getPodErrorMessage(pod)}
                           </p>
                         </div>
                       </div>

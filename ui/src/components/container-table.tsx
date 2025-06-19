@@ -187,49 +187,122 @@ export function ContainerTable(props: {
             </div>
 
             {/* Environment Variables - Full width when present */}
-            {container.env && container.env.length > 0 && (
+            {((container.env && container.env.length > 0) ||
+              (container.envFrom && container.envFrom.length > 0)) && (
               <div className="border-t pt-3">
                 <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Environment Variables ({container.env.length})
+                  Environment Variables
+                  {container.env &&
+                    container.env.length > 0 &&
+                    ` (${container.env.length})`}
                 </Label>
-                <div className="mt-2">
-                  <div className="max-h-32 overflow-y-auto space-y-1">
-                    {container.env.slice(0, 5).map((envVar, envIndex) => (
-                      <div key={envIndex} className="text-sm">
-                        <div className="font-mono text-xs">
-                          <span className="text-blue-600 dark:text-blue-400">
-                            {envVar.name}
-                          </span>
-                          {envVar.value && (
-                            <>
-                              <span className="text-muted-foreground">=</span>
-                              <span className="text-muted-foreground truncate">
-                                {envVar.value}
-                              </span>
-                            </>
-                          )}
-                          {envVar.valueFrom && (
-                            <span className="text-orange-600 dark:text-orange-400 ml-1">
-                              (from{' '}
-                              {envVar.valueFrom.secretKeyRef
-                                ? 'secret'
-                                : envVar.valueFrom.configMapKeyRef
-                                  ? 'configmap'
-                                  : envVar.valueFrom.fieldRef
-                                    ? 'field'
-                                    : 'ref'}
-                              )
+                <div className="mt-2 space-y-3">
+                  {/* Direct environment variables */}
+                  {container.env && container.env.length > 0 && (
+                    <div className="max-h-32 overflow-y-auto space-y-1">
+                      {container.env.slice(0, 5).map((envVar, envIndex) => (
+                        <div key={envIndex} className="text-sm">
+                          <div className="font-mono text-xs">
+                            <span className="text-blue-600 dark:text-blue-400">
+                              {envVar.name}
                             </span>
-                          )}
+                            {envVar.value && (
+                              <>
+                                <span className="text-muted-foreground">=</span>
+                                <span className="text-muted-foreground truncate">
+                                  {envVar.value}
+                                </span>
+                              </>
+                            )}
+                            {envVar.valueFrom && (
+                              <span className="text-orange-600 dark:text-orange-400 ml-1">
+                                (from{' '}
+                                {envVar.valueFrom.secretKeyRef
+                                  ? 'secret'
+                                  : envVar.valueFrom.configMapKeyRef
+                                    ? 'configmap'
+                                    : envVar.valueFrom.fieldRef
+                                      ? 'field'
+                                      : 'ref'}
+                                )
+                              </span>
+                            )}
+                          </div>
                         </div>
+                      ))}
+                      {container.env.length > 5 && (
+                        <div className="text-xs text-muted-foreground">
+                          ... and {container.env.length - 5} more
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Environment variables from sources */}
+                  {container.envFrom && container.envFrom.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-purple-600 dark:text-purple-400 mb-2">
+                        Environment From Sources ({container.envFrom.length})
                       </div>
-                    ))}
-                    {container.env.length > 5 && (
-                      <div className="text-xs text-muted-foreground">
-                        ... and {container.env.length - 5} more
+                      <div className="space-y-1">
+                        {container.envFrom.map(
+                          (envFromSource, envFromIndex) => (
+                            <div key={envFromIndex} className="text-sm">
+                              <div className="flex items-center gap-2">
+                                {envFromSource.configMapRef && (
+                                  <>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs bg-blue-50 dark:bg-blue-950"
+                                    >
+                                      ConfigMap
+                                    </Badge>
+                                    <span className="font-mono text-xs text-blue-600 dark:text-blue-400">
+                                      {envFromSource.configMapRef.name}
+                                    </span>
+                                    {envFromSource.configMapRef.optional && (
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-xs"
+                                      >
+                                        Optional
+                                      </Badge>
+                                    )}
+                                  </>
+                                )}
+                                {envFromSource.secretRef && (
+                                  <>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs bg-green-50 dark:bg-green-950"
+                                    >
+                                      Secret
+                                    </Badge>
+                                    <span className="font-mono text-xs text-green-600 dark:text-green-400">
+                                      {envFromSource.secretRef.name}
+                                    </span>
+                                    {envFromSource.secretRef.optional && (
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-xs"
+                                      >
+                                        Optional
+                                      </Badge>
+                                    )}
+                                  </>
+                                )}
+                                {envFromSource.prefix && (
+                                  <span className="text-xs text-muted-foreground">
+                                    (prefix: {envFromSource.prefix})
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
