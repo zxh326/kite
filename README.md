@@ -88,6 +88,7 @@ _Secure authentication with GitHub and custom OAuth providers_
 ### 🔐 **Authentication**
 
 - 🛡️ **OAuth Integration** - Support for GitHub and custom OAuth providers
+- 🔑 **Username/Password** - Simple authentication using environment variables
 
 ---
 
@@ -104,6 +105,8 @@ _Secure authentication with GitHub and custom OAuth providers_
 | `JWT_SECRET`        | JWT secret for signing tokens. default is random string                                           | `random string`               | Yes\*    |
 | `OAUTH_ENABLED`     | Enable OAuth authentication. [OAuth Setup Guide](docs/OAUTH_SETUP.md).                            | `false`                       | No       |
 | `OAUTH_ALLOW_USERS` | Comma-separated list of users allowed to access the dashboard,support wildcard (\*) for all users | `-`                           | OAuth\*  |
+| `KITE_USERNAME`     | Username for basic authentication. If set, enables password auth.                                 | `-`                           | No       |
+| `KITE_PASSWORD`     | Password for basic authentication. If set, enables password auth.                                 | `-`                           | No       |
 
 \*Required only when OAuth is enabled
 

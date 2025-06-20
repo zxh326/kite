@@ -36,3 +36,8 @@ type ResourceMetric struct {
 	CPU Resource `json:"cpu,omitempty"`
 	Mem Resource `json:"memory,omitempty"`
 }
+
+type PasswordLoginRequest struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}

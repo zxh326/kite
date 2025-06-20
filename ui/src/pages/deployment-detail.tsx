@@ -97,35 +97,20 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
 
   // Auto-reset refresh interval when deployment reaches stable state
   useEffect(() => {
-    if (deployment && refreshInterval > 0) {
-      const { status } = deployment
-      const readyReplicas = status?.readyReplicas || 0
-      const totalReplicas = status?.replicas || 0
-      const updatedReplicas = status?.updatedReplicas || 0
-      const availableReplicas = status?.availableReplicas || 0
-
-      // Check if deployment is in a stable state
+    if (deployment) {
+      const status = getDeploymentStatus(deployment)
       const isStable =
-        readyReplicas === totalReplicas &&
-        updatedReplicas === totalReplicas &&
-        availableReplicas === totalReplicas &&
-        totalReplicas === (deployment.spec?.replicas || 0)
-
-      console.log('Deployment stability check:', {
-        readyReplicas,
-        totalReplicas,
-        updatedReplicas,
-        availableReplicas,
-        isStable,
-      })
+        status === 'Available' ||
+        status === 'Scaled Down' ||
+        status === 'Paused'
 
       if (isStable) {
-        // Reset refresh interval after deployment reaches stable state
         const timer = setTimeout(() => {
           setRefreshInterval(0)
-        }, 2000) // Wait 2 seconds after stable state to ensure it's really stable
-
+        }, 2000)
         return () => clearTimeout(timer)
+      } else {
+        setRefreshInterval(1000)
       }
     }
   }, [deployment, refreshInterval])
@@ -140,7 +125,7 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
     try {
       await updateResource('deployments', name, namespace, content)
       toast.success('YAML saved successfully')
-      setRefreshInterval(1000) // Set a short refresh interval to see changes
+      setRefreshInterval(1000)
     } catch (error) {
       console.error('Failed to save YAML:', error)
       toast.error(

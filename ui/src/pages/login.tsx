@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { FormEvent, useState } from 'react'
 import Logo from '@/assets/icon.svg'
 import { useAuth } from '@/contexts/auth-context'
 import { Navigate, useSearchParams } from 'react-router-dom'
@@ -12,11 +12,17 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 export function LoginPage() {
-  const { user, login, providers, isLoading } = useAuth()
+  const { user, login, loginWithPassword, providers, isLoading } = useAuth()
   const [searchParams] = useSearchParams()
   const [loginLoading, setLoginLoading] = useState<string | null>(null)
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+
   const error = searchParams.get('error')
 
   // If user is already logged in, redirect to dashboard
@@ -30,6 +36,23 @@ export function LoginPage() {
       await login(provider)
     } catch (error) {
       console.error('Login failed:', error)
+      setLoginLoading(null)
+    }
+  }
+
+  const handlePasswordLogin = async (e: FormEvent) => {
+    e.preventDefault()
+    setLoginLoading('password')
+    setPasswordError(null)
+    try {
+      await loginWithPassword(username, password)
+    } catch (err) {
+      if (err instanceof Error) {
+        setPasswordError(err.message || 'Invalid username or password')
+      } else {
+        setPasswordError('An unknown error occurred')
+      }
+    } finally {
       setLoginLoading(null)
     }
   }
@@ -167,33 +190,100 @@ export function LoginPage() {
 
               {providers.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-600">No OAuth providers configured</p>
+                  <p className="text-gray-600">No login methods configured</p>
                   <p className="text-sm text-gray-500 mt-2">
-                    Please configure OAuth providers in your environment
+                    Please configure authentication providers in your
+                    environment
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {providers.map((provider) => (
-                    <Button
-                      key={provider.name}
-                      onClick={() => handleLogin(provider.name)}
-                      disabled={loginLoading !== null}
-                      className="w-full bg-gray-900 hover:bg-gray-800 text-white h-11"
-                      variant="default"
-                    >
-                      {loginLoading === provider.name ? (
-                        <div className="flex items-center space-x-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          <span>Signing in...</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center space-x-2">
-                          <span>Sign in with {provider.displayName}</span>
-                        </div>
+                <div className="space-y-4">
+                  {providers.includes('password') && (
+                    <form onSubmit={handlePasswordLogin} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="username">Username</Label>
+                        <Input
+                          id="username"
+                          type="text"
+                          placeholder="Enter your username"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          placeholder="Enter your password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                        />
+                      </div>
+                      {passwordError && (
+                        <Alert variant="destructive">
+                          <AlertDescription>{passwordError}</AlertDescription>
+                        </Alert>
                       )}
-                    </Button>
-                  ))}
+                      <Button
+                        type="submit"
+                        disabled={loginLoading !== null}
+                        className="w-full"
+                      >
+                        {loginLoading === 'password' ? (
+                          <div className="flex items-center space-x-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Signing in...</span>
+                          </div>
+                        ) : (
+                          'Sign In with Password'
+                        )}
+                      </Button>
+                    </form>
+                  )}
+
+                  {providers.filter((p) => p !== 'password').length > 0 &&
+                    providers.includes('password') && (
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-white px-2 text-muted-foreground">
+                            Or continue with
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                  {providers
+                    .filter((p) => p !== 'password')
+                    .map((provider) => (
+                      <Button
+                        key={provider}
+                        onClick={() => handleLogin(provider)}
+                        disabled={loginLoading !== null}
+                        className="w-full bg-gray-900 hover:bg-gray-800 text-white h-11"
+                        variant="default"
+                      >
+                        {loginLoading === provider ? (
+                          <div className="flex items-center space-x-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Signing in...</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-2">
+                            <span>
+                              Sign in with{' '}
+                              {provider.charAt(0).toUpperCase() +
+                                provider.slice(1)}
+                            </span>
+                          </div>
+                        )}
+                      </Button>
+                    ))}
                 </div>
               )}
             </CardContent>

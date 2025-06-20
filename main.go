@@ -72,6 +72,7 @@ func setupAPIRouter(r *gin.Engine, k8sClient *kube.K8sClient, promClient *promet
 	authGroup := r.Group("/api/auth")
 	{
 		authGroup.GET("/providers", authHandler.GetProviders)
+		authGroup.POST("/login/password", authHandler.PasswordLogin)
 		authGroup.GET("/login", authHandler.Login)
 		authGroup.GET("/callback", authHandler.Callback)
 		authGroup.POST("/logout", authHandler.Logout)

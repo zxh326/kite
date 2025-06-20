@@ -27,6 +27,10 @@ var (
 	WebhookUsername = "kite-webhook"
 	WebhookPassword = "kite-webhook-password"
 
+	KiteUsername         = os.Getenv("KITE_USERNAME")
+	KitePassword         = os.Getenv("KITE_PASSWORD")
+	PasswordLoginEnabled = KiteUsername != "" && KitePassword != ""
+
 	Readonly = false
 )
 

@@ -88,8 +88,6 @@ func (h *LogsHandler) GetPodLogs(c *gin.Context) {
 		c.Header("Content-Type", "text/event-stream")
 		c.Header("Cache-Control", "no-cache")
 		c.Header("Connection", "keep-alive")
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Headers", "Cache-Control")
 		c.Status(http.StatusOK)
 
 		if _, err := c.Writer.WriteString("event: connected\ndata: {\"status\":\"connected\"}\n\n"); err != nil {

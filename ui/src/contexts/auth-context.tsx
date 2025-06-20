@@ -14,16 +14,12 @@ interface User {
   provider: string
 }
 
-interface OAuthProvider {
-  name: string
-  displayName: string
-}
-
 interface AuthContextType {
   user: User | null
   isLoading: boolean
-  providers: OAuthProvider[]
+  providers: string[]
   login: (provider?: string) => Promise<void>
+  loginWithPassword: (username: string, password: string) => Promise<void>
   logout: () => Promise<void>
   checkAuth: () => Promise<void>
   refreshToken: () => Promise<void>
@@ -51,18 +47,14 @@ if (import.meta.env.DEV) {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [providers, setProviders] = useState<OAuthProvider[]>([])
+  const [providers, setProviders] = useState<string[]>([])
 
   const loadProviders = async () => {
     try {
       const response = await fetch(`${base}/api/auth/providers`)
       if (response.ok) {
         const data = await response.json()
-        const providerList = data.providers.map((name: string) => ({
-          name,
-          displayName: name.charAt(0).toUpperCase() + name.slice(1),
-        }))
-        setProviders(providerList)
+        setProviders(data.providers || [])
       }
     } catch (error) {
       console.error('Failed to load OAuth providers:', error)
@@ -106,6 +98,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     } catch (error) {
       console.error('Login failed:', error)
+      throw error
+    }
+  }
+
+  const loginWithPassword = async (username: string, password: string) => {
+    try {
+      const response = await fetch(`${base}/api/auth/login/password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+        credentials: 'include',
+      })
+
+      if (response.ok) {
+        await checkAuth()
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Password login failed')
+      }
+    } catch (error) {
+      console.error('Password login failed:', error)
       throw error
     }
   }
@@ -174,6 +189,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isLoading,
     providers,
     login,
+    loginWithPassword,
     logout,
     checkAuth,
     refreshToken,

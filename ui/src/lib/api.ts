@@ -762,7 +762,9 @@ export const createLogsSSEStream = (
   }
 
   const endpoint = `${API_BASE_URL}/logs/${namespace}/${podName}?${params.toString()}`
-  const eventSource = new EventSource(endpoint)
+  const eventSource = new EventSource(endpoint, {
+    withCredentials: true,
+  })
 
   // Handle SSE open event
   eventSource.onopen = () => {

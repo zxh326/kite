@@ -2,7 +2,6 @@ package auth
 
 import (
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -21,7 +20,13 @@ func NewAuthHandler() *AuthHandler {
 }
 
 func (h *AuthHandler) GetProviders(c *gin.Context) {
-	providers := h.manager.GetAvailableProviders()
+	providers := []string{}
+	if common.OAuthEnabled {
+		providers = h.manager.GetAvailableProviders()
+	}
+	if common.PasswordLoginEnabled {
+		providers = append(providers, "password")
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"providers": providers,
 	})
@@ -55,6 +60,47 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"auth_url": authURL,
 		"provider": provider,
+	})
+}
+
+func (h *AuthHandler) PasswordLogin(c *gin.Context) {
+	if common.KiteUsername == "" || common.KitePassword == "" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Password authentication is not enabled.",
+		})
+		return
+	}
+
+	var req common.PasswordLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+
+	// Validate credentials
+	if req.Username != common.KiteUsername || req.Password != common.KitePassword {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+		return
+	}
+
+	// Create user object
+	user := &User{
+		Username: req.Username,
+		Name:     req.Username,
+		Provider: "password",
+	}
+
+	jwtToken, err := h.manager.GenerateJWT(user, "")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate JWT"})
+		return
+	}
+
+	c.SetCookie("auth_token", jwtToken, common.JWTExpirationSeconds, "/", "", false, true)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Logged in successfully",
 	})
 }
 
@@ -148,8 +194,7 @@ func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var tokenString string
 
-		if os.Getenv("OAUTH_ENABLED") != "true" {
-			// If OAuth is not enabled, allow access without token
+		if !common.OAuthEnabled && !common.PasswordLoginEnabled {
 			c.Set("user", gin.H{
 				"id":         "anonymous",
 				"username":   "anonymous",
