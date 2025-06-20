@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 
 	metricsv1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
+	metricsclient "k8s.io/metrics/pkg/client/clientset/versioned"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -30,6 +31,7 @@ type K8sClient struct {
 	Client        client.Client
 	ClientSet     *kubernetes.Clientset
 	Configuration *rest.Config
+	MetricsClient *metricsclient.Clientset
 }
 
 func init() {
@@ -67,6 +69,11 @@ func NewK8sClient() (*K8sClient, error) {
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, err
+	}
+
+	metricsClient, err := metricsclient.NewForConfig(config)
+	if err != nil {
+		klog.Warningf("failed to create metrics client: %v", err)
 	}
 
 	runtimeScheme := runtime.NewScheme()
@@ -125,5 +132,6 @@ func NewK8sClient() (*K8sClient, error) {
 		Client:        c,
 		ClientSet:     clientset,
 		Configuration: config,
+		MetricsClient: metricsClient,
 	}, nil
 }

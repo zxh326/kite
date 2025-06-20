@@ -228,9 +228,10 @@ export interface ResourceUsageHistory {
 export interface PodMetrics {
   cpu: UsageDataPoint[]
   memory: UsageDataPoint[]
-  networkIn: UsageDataPoint[]
-  networkOut: UsageDataPoint[]
-  diskUsage: UsageDataPoint[]
+  networkIn?: UsageDataPoint[]
+  networkOut?: UsageDataPoint[]
+  diskUsage?: UsageDataPoint[]
+  fallback?: boolean
 }
 
 export interface OverviewData {

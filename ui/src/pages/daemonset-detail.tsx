@@ -570,6 +570,7 @@ export function DaemonSetDetail(props: { namespace: string; name: string }) {
                 pods={relatedPods}
                 containers={relatedPods?.[0]?.spec?.containers || []}
                 defaultQueryName={relatedPods?.[0]?.metadata?.generateName}
+                labelSelector={labelSelector}
               />
             ),
           },

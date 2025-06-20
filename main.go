@@ -87,7 +87,7 @@ func setupAPIRouter(r *gin.Engine, k8sClient *kube.K8sClient, promClient *promet
 		overviewHandler := handlers.NewOverviewHandler(k8sClient, promClient)
 		api.GET("/overview", overviewHandler.GetOverview)
 
-		promHandler := handlers.NewPromHandler(promClient)
+		promHandler := handlers.NewPromHandler(promClient, k8sClient)
 		api.GET("/prometheus/resource-usage-history", promHandler.GetResourceUsageHistory)
 
 		api.GET("/prometheus/pods/:namespace/:podName/metrics", promHandler.GetPodMetrics)

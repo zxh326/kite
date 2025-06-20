@@ -487,11 +487,15 @@ export const fetchPodMetrics = (
   namespace: string,
   podName: string,
   duration: string,
-  container?: string
+  container?: string,
+  labelSelector?: string
 ): Promise<PodMetrics> => {
   let endpoint = `/prometheus/pods/${namespace}/${podName}/metrics?duration=${duration}`
   if (container) {
     endpoint += `&container=${encodeURIComponent(container)}`
+  }
+  if (labelSelector) {
+    endpoint += `&labelSelector=${encodeURIComponent(labelSelector)}`
   }
   return fetchAPI<PodMetrics>(endpoint)
 }
@@ -504,6 +508,7 @@ export const usePodMetrics = (
     staleTime?: number
     container?: string
     refreshInterval?: string | boolean
+    labelSelector?: string
   }
 ) => {
   // Convert refresh interval to milliseconds
@@ -519,9 +524,22 @@ export const usePodMetrics = (
   }
 
   return useQuery({
-    queryKey: ['pod-metrics', namespace, podName, duration, options?.container],
+    queryKey: [
+      'pod-metrics',
+      namespace,
+      podName,
+      duration,
+      options?.container,
+      options?.labelSelector,
+    ],
     queryFn: () =>
-      fetchPodMetrics(namespace, podName, duration, options?.container),
+      fetchPodMetrics(
+        namespace,
+        podName,
+        duration,
+        options?.container,
+        options?.labelSelector
+      ),
     enabled: !!namespace && !!podName,
     staleTime: options?.staleTime || 10000, // 10 seconds cache
     refetchInterval: getRefreshInterval(options?.refreshInterval),

@@ -19,6 +19,7 @@ interface PodMonitoringProps {
   defaultQueryName?: string
   pods?: Pod[]
   containers: Container[]
+  labelSelector?: string
 }
 
 export function PodMonitoring({
@@ -27,6 +28,7 @@ export function PodMonitoring({
   defaultQueryName,
   pods,
   containers,
+  labelSelector,
 }: PodMonitoringProps) {
   const [selectedPod, setSelectedPod] = useState<string | undefined>(
     podName || undefined
@@ -126,6 +128,7 @@ export function PodMonitoring({
         timeRange={timeRange}
         refreshInterval={refreshInterval}
         onTimeRangeChange={setTimeRange}
+        labelSelector={labelSelector}
       />
     </div>
   )

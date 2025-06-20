@@ -7,7 +7,6 @@ import { usePodMetrics } from '@/lib/api'
 import { useIsMobile } from '@/hooks/use-mobile'
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -19,13 +18,6 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 
 const cpuChartConfig = {
   cpu: {
@@ -41,15 +33,16 @@ interface PodResourceUsageChartProps {
   onTimeRangeChange: (value: string) => void
   container?: string | null
   refreshInterval?: string
+  labelSelector?: string
 }
 
 export function PodResourceUsageChart({
   namespace,
   podName,
   timeRange,
-  onTimeRangeChange,
   container,
   refreshInterval = '30s',
+  labelSelector,
 }: PodResourceUsageChartProps) {
   const isMobile = useIsMobile()
 
@@ -61,6 +54,7 @@ export function PodResourceUsageChart({
     {
       container: container ?? undefined,
       refreshInterval: refreshInterval,
+      labelSelector: labelSelector ?? undefined,
     }
   )
 
@@ -114,12 +108,6 @@ export function PodResourceUsageChart({
     }),
     [useGB]
   )
-
-  const timeRangeOptions = [
-    { value: '30m', label: 'Last 30 min' },
-    { value: '1h', label: 'Last 1 hour' },
-    { value: '24h', label: 'Last 24 hours' },
-  ]
 
   const titlePrefix = container ? `Container "${container}"` : ''
 
@@ -175,28 +163,6 @@ export function PodResourceUsageChart({
           <CardHeader>
             <CardTitle>{titlePrefix} CPU Usage</CardTitle>
             <CardDescription>Real-time CPU usage over time</CardDescription>
-            <CardAction>
-              <Select value={timeRange} onValueChange={onTimeRangeChange}>
-                <SelectTrigger
-                  className="w-40"
-                  size="sm"
-                  aria-label="Select time range"
-                >
-                  <SelectValue placeholder="Last 1 hour" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  {timeRangeOptions.map((option) => (
-                    <SelectItem
-                      key={option.value}
-                      value={option.value}
-                      className="rounded-lg"
-                    >
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardAction>
           </CardHeader>
           <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
             <div className="flex items-center justify-center h-[250px] text-muted-foreground">
@@ -231,6 +197,11 @@ export function PodResourceUsageChart({
 
   return (
     <div className="space-y-6">
+      {data?.fallback && (
+        <div className="rounded bg-yellow-100 text-yellow-800 px-4 py-2 text-sm border border-yellow-300 mb-2">
+          Current data is from metrics-server, limited historical data.
+        </div>
+      )}
       {data.cpu?.length > 0 && (
         <Card className="@container/card">
           <CardHeader>
@@ -273,6 +244,7 @@ export function PodResourceUsageChart({
                     return date.toLocaleTimeString('en-US', {
                       hour: '2-digit',
                       minute: '2-digit',
+                      second: '2-digit',
                       hour12: false,
                     })
                   }}
@@ -297,6 +269,7 @@ export function PodResourceUsageChart({
                           day: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit',
+                          second: '2-digit',
                           hour12: false,
                         })
                       }}
@@ -363,6 +336,7 @@ export function PodResourceUsageChart({
                     return date.toLocaleTimeString('en-US', {
                       hour: '2-digit',
                       minute: '2-digit',
+                      second: '2-digit',
                       hour12: false,
                     })
                   }}
@@ -389,6 +363,7 @@ export function PodResourceUsageChart({
                           day: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit',
+                          second: '2-digit',
                           hour12: false,
                         })
                       }}

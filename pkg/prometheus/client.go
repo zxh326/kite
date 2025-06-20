@@ -40,8 +40,9 @@ type ResourceUsageHistory struct {
 type PodMetrics struct {
 	CPU        []UsageDataPoint `json:"cpu"`
 	Memory     []UsageDataPoint `json:"memory"`
-	NetworkIn  []UsageDataPoint `json:"networkIn"`
-	NetworkOut []UsageDataPoint `json:"networkOut"`
+	NetworkIn  []UsageDataPoint `json:"networkIn,omitempty"`
+	NetworkOut []UsageDataPoint `json:"networkOut,omitempty"`
+	Fallback   bool             `json:"fallback"`
 }
 
 type PodCurrentMetrics struct {

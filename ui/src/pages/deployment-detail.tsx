@@ -720,6 +720,7 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
                 namespace={namespace}
                 pods={relatedPods}
                 containers={relatedPods?.[0]?.spec?.containers || []}
+                labelSelector={labelSelector}
               />
             ),
           },
