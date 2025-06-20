@@ -24,6 +24,10 @@ Kite is a lightweight, modern Kubernetes dashboard that provides an intuitive in
 ![Dashboard Overview](docs/screenshots/overview.png)
 _Comprehensive cluster overview with real-time metrics and resource statistics_
 
+<details>
+
+<summary>More screenshots</summary>
+
 ### 🚀 Resource Management
 
 ![Deployment Detail](docs/screenshots/deployment-detail.png)
@@ -53,6 +57,8 @@ _Execute commands directly in pods through the browser interface_
 
 ![OAuth Login](docs/screenshots/oauth.png)
 _Secure authentication with GitHub and custom OAuth providers_
+
+</details>
 
 ---
 
