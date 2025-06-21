@@ -1,10 +1,13 @@
 import { useState } from 'react'
+import yaml from 'js-yaml'
 import { Deployment } from 'kubernetes-types/apps/v1'
-import { Plus, X } from 'lucide-react'
+import { Container } from 'kubernetes-types/core/v1'
+import { Plus, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { createResource } from '@/lib/api'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -22,8 +25,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
 
 import { NamespaceSelector } from '../selector/namespace-selector'
+import { SimpleYamlEditor } from '../simple-yaml-editor'
+import { EnvironmentEditor } from './environment-editor'
 
 interface DeploymentCreateDialogProps {
   open: boolean
@@ -32,14 +38,9 @@ interface DeploymentCreateDialogProps {
   defaultNamespace?: string
 }
 
-interface DeploymentFormData {
+interface ContainerConfig {
   name: string
-  namespace: string
   image: string
-  replicas: number
-  containerName: string
-  labels: Array<{ key: string; value: string }>
-  env: Array<{ name: string; value: string }>
   port?: number
   pullPolicy: 'Always' | 'IfNotPresent' | 'Never'
   resources: {
@@ -52,16 +53,20 @@ interface DeploymentFormData {
       memory: string
     }
   }
+  container: Container
 }
 
-const initialFormData: DeploymentFormData = {
-  name: '',
-  namespace: 'default',
+interface DeploymentFormData {
+  name: string
+  namespace: string
+  replicas: number
+  labels: Array<{ key: string; value: string }>
+  containers: ContainerConfig[]
+}
+
+const createDefaultContainer = (index: number): ContainerConfig => ({
+  name: `container-${index + 1}`,
   image: '',
-  replicas: 1,
-  containerName: '',
-  labels: [{ key: 'app', value: '' }],
-  env: [],
   pullPolicy: 'IfNotPresent',
   resources: {
     requests: {
@@ -73,6 +78,18 @@ const initialFormData: DeploymentFormData = {
       memory: '',
     },
   },
+  container: {
+    name: `container-${index + 1}`,
+    image: '',
+  },
+})
+
+const initialFormData: DeploymentFormData = {
+  name: '',
+  namespace: 'default',
+  replicas: 1,
+  labels: [{ key: 'app', value: '' }],
+  containers: [createDefaultContainer(0)],
 }
 
 export function DeploymentCreateDialog({
@@ -87,6 +104,7 @@ export function DeploymentCreateDialog({
   })
   const [isCreating, setIsCreating] = useState(false)
   const [step, setStep] = useState(1)
+  const [editedYaml, setEditedYaml] = useState<string>('')
   const totalSteps = 3
 
   const updateFormData = (updates: Partial<DeploymentFormData>) => {
@@ -120,31 +138,139 @@ export function DeploymentCreateDialog({
     }))
   }
 
-  const addEnvVar = () => {
+  const addContainer = () => {
     setFormData((prev) => ({
       ...prev,
-      env: [...prev.env, { name: '', value: '' }],
+      containers: [
+        ...prev.containers,
+        createDefaultContainer(prev.containers.length),
+      ],
     }))
   }
 
-  const updateEnvVar = (
+  const removeContainer = (index: number) => {
+    if (formData.containers.length <= 1) {
+      toast.error('At least one container is required')
+      return
+    }
+    setFormData((prev) => ({
+      ...prev,
+      containers: prev.containers.filter((_, i) => i !== index),
+    }))
+  }
+
+  const updateContainer = (
     index: number,
-    field: 'name' | 'value',
-    value: string
+    updates: Partial<ContainerConfig>
   ) => {
     setFormData((prev) => ({
       ...prev,
-      env: prev.env.map((env, i) =>
-        i === index ? { ...env, [field]: value } : env
+      containers: prev.containers.map((container, i) =>
+        i === index ? { ...container, ...updates } : container
       ),
     }))
   }
 
-  const removeEnvVar = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      env: prev.env.filter((_, i) => i !== index),
-    }))
+  const generateDeploymentYaml = (): string => {
+    // Build deployment object
+    const labelsObj = formData.labels.reduce(
+      (acc, label) => {
+        if (label.key && label.value) {
+          acc[label.key] = label.value
+        }
+        return acc
+      },
+      {} as Record<string, string>
+    )
+
+    // Ensure app label matches name if not set
+    if (!labelsObj.app && formData.name) {
+      labelsObj.app = formData.name
+    }
+
+    // Build containers array
+    const containers = formData.containers.map((containerConfig) => {
+      const container: Container = {
+        name: containerConfig.name,
+        image: containerConfig.image,
+        imagePullPolicy: containerConfig.pullPolicy,
+        ...(containerConfig.container.env &&
+          containerConfig.container.env.length > 0 && {
+            env: containerConfig.container.env.filter(
+              (env) => env.name && (env.value || env.valueFrom)
+            ),
+          }),
+        ...(containerConfig.container.envFrom &&
+          containerConfig.container.envFrom.length > 0 && {
+            envFrom: containerConfig.container.envFrom.filter(
+              (source) => source.configMapRef?.name || source.secretRef?.name
+            ),
+          }),
+        ...(containerConfig.port && {
+          ports: [
+            {
+              containerPort: containerConfig.port,
+            },
+          ],
+        }),
+        ...((containerConfig.resources.requests.cpu ||
+          containerConfig.resources.requests.memory ||
+          containerConfig.resources.limits.cpu ||
+          containerConfig.resources.limits.memory) && {
+          resources: {
+            ...((containerConfig.resources.requests.cpu ||
+              containerConfig.resources.requests.memory) && {
+              requests: {
+                ...(containerConfig.resources.requests.cpu && {
+                  cpu: containerConfig.resources.requests.cpu,
+                }),
+                ...(containerConfig.resources.requests.memory && {
+                  memory: containerConfig.resources.requests.memory,
+                }),
+              },
+            }),
+            ...((containerConfig.resources.limits.cpu ||
+              containerConfig.resources.limits.memory) && {
+              limits: {
+                ...(containerConfig.resources.limits.cpu && {
+                  cpu: containerConfig.resources.limits.cpu,
+                }),
+                ...(containerConfig.resources.limits.memory && {
+                  memory: containerConfig.resources.limits.memory,
+                }),
+              },
+            }),
+          },
+        }),
+      }
+      return container
+    })
+
+    const deployment: Deployment = {
+      apiVersion: 'apps/v1',
+      kind: 'Deployment',
+      metadata: {
+        name: formData.name,
+        namespace: formData.namespace,
+        labels: labelsObj,
+      },
+      spec: {
+        replicas: formData.replicas,
+        selector: {
+          matchLabels: labelsObj,
+        },
+        template: {
+          metadata: {
+            labels: labelsObj,
+          },
+          spec: {
+            containers,
+          },
+        },
+      },
+    }
+
+    return yaml.dump(deployment, { indent: 2, noRefs: true })
   }
 
   const validateStep = (stepNum: number): boolean => {
@@ -157,7 +283,9 @@ export function DeploymentCreateDialog({
           formData.labels.every((label) => label.key && label.value)
         )
       case 2:
-        return !!(formData.image && formData.containerName)
+        return formData.containers.every(
+          (container) => container.image && container.name
+        )
       case 3:
         return true // Review step - always valid
       default:
@@ -180,99 +308,35 @@ export function DeploymentCreateDialog({
 
     setIsCreating(true)
     try {
-      // Build deployment object
-      const labelsObj = formData.labels.reduce(
-        (acc, label) => {
-          if (label.key && label.value) {
-            acc[label.key] = label.value
-          }
-          return acc
-        },
-        {} as Record<string, string>
-      )
-
-      // Ensure app label matches name if not set
-      if (!labelsObj.app && formData.name) {
-        labelsObj.app = formData.name
+      // Parse the edited YAML
+      let deployment: Deployment
+      try {
+        const yamlContent = editedYaml || generateDeploymentYaml()
+        deployment = yaml.load(yamlContent) as Deployment
+      } catch (yamlError) {
+        console.error('Failed to parse YAML:', yamlError)
+        toast.error(
+          `Invalid YAML format: ${
+            yamlError instanceof Error ? yamlError.message : 'Unknown error'
+          }`
+        )
+        return
       }
 
-      const deployment: Deployment = {
-        apiVersion: 'apps/v1',
-        kind: 'Deployment',
-        metadata: {
-          name: formData.name,
-          namespace: formData.namespace,
-          labels: labelsObj,
-        },
-        spec: {
-          replicas: formData.replicas,
-          selector: {
-            matchLabels: labelsObj,
-          },
-          template: {
-            metadata: {
-              labels: labelsObj,
-            },
-            spec: {
-              containers: [
-                {
-                  name: formData.containerName || formData.name,
-                  image: formData.image,
-                  imagePullPolicy: formData.pullPolicy,
-                  ...(formData.env.length > 0 && {
-                    env: formData.env.filter((env) => env.name && env.value),
-                  }),
-                  ...(formData.port && {
-                    ports: [
-                      {
-                        containerPort: formData.port,
-                      },
-                    ],
-                  }),
-                  ...((formData.resources.requests.cpu ||
-                    formData.resources.requests.memory ||
-                    formData.resources.limits.cpu ||
-                    formData.resources.limits.memory) && {
-                    resources: {
-                      ...((formData.resources.requests.cpu ||
-                        formData.resources.requests.memory) && {
-                        requests: {
-                          ...(formData.resources.requests.cpu && {
-                            cpu: formData.resources.requests.cpu,
-                          }),
-                          ...(formData.resources.requests.memory && {
-                            memory: formData.resources.requests.memory,
-                          }),
-                        },
-                      }),
-                      ...((formData.resources.limits.cpu ||
-                        formData.resources.limits.memory) && {
-                        limits: {
-                          ...(formData.resources.limits.cpu && {
-                            cpu: formData.resources.limits.cpu,
-                          }),
-                          ...(formData.resources.limits.memory && {
-                            memory: formData.resources.limits.memory,
-                          }),
-                        },
-                      }),
-                    },
-                  }),
-                },
-              ],
-            },
-          },
-        },
+      // Validate required fields
+      if (!deployment.metadata?.name || !deployment.metadata?.namespace) {
+        toast.error('Deployment must have a name and namespace')
+        return
       }
 
       const createdDeployment = await createResource(
         'deployments',
-        formData.namespace,
+        deployment.metadata.namespace,
         deployment
       )
 
       toast.success(
-        `Deployment "${formData.name}" created successfully in namespace "${formData.namespace}"`
+        `Deployment "${deployment.metadata.name}" created successfully in namespace "${deployment.metadata.namespace}"`
       )
 
       // Reset form and close dialog
@@ -281,10 +345,11 @@ export function DeploymentCreateDialog({
         namespace: defaultNamespace || 'default',
       })
       setStep(1)
+      setEditedYaml('')
       onOpenChange(false)
 
       // Call success callback with created deployment
-      onSuccess(createdDeployment, formData.namespace)
+      onSuccess(createdDeployment, deployment.metadata.namespace)
     } catch (error) {
       console.error('Failed to create deployment:', error)
       toast.error(
@@ -305,6 +370,7 @@ export function DeploymentCreateDialog({
         namespace: defaultNamespace || 'default',
       })
       setStep(1)
+      setEditedYaml('')
     }
     onOpenChange(open)
   }
@@ -323,7 +389,6 @@ export function DeploymentCreateDialog({
                   const value = e.target.value
                   updateFormData({
                     name: value,
-                    containerName: value, // Auto-fill container name
                   })
                   // Update app label with full name value
                   const appLabelIndex = formData.labels.findIndex(
@@ -408,270 +473,250 @@ export function DeploymentCreateDialog({
 
       case 2:
         return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="image">Container Image *</Label>
-              <Input
-                id="image"
-                value={formData.image}
-                onChange={(e) => updateFormData({ image: e.target.value })}
-                placeholder="nginx:latest"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="containerName">Container Name *</Label>
-              <Input
-                id="containerName"
-                value={formData.containerName}
-                onChange={(e) =>
-                  updateFormData({ containerName: e.target.value })
-                }
-                placeholder="container-name"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Resources (optional)</Label>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm text-muted-foreground">
-                    Requests
-                  </Label>
-                  <div className="space-y-1">
-                    <Input
-                      placeholder="CPU (e.g., 100m)"
-                      value={formData.resources.requests.cpu}
-                      onChange={(e) =>
-                        updateFormData({
-                          resources: {
-                            ...formData.resources,
-                            requests: {
-                              ...formData.resources.requests,
-                              cpu: e.target.value,
-                            },
-                          },
-                        })
-                      }
-                    />
-                    <Input
-                      placeholder="Memory (e.g., 128Mi)"
-                      value={formData.resources.requests.memory}
-                      onChange={(e) =>
-                        updateFormData({
-                          resources: {
-                            ...formData.resources,
-                            requests: {
-                              ...formData.resources.requests,
-                              memory: e.target.value,
-                            },
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm text-muted-foreground">
-                    Limits
-                  </Label>
-                  <div className="space-y-1">
-                    <Input
-                      placeholder="CPU (e.g., 500m)"
-                      value={formData.resources.limits.cpu}
-                      onChange={(e) =>
-                        updateFormData({
-                          resources: {
-                            ...formData.resources,
-                            limits: {
-                              ...formData.resources.limits,
-                              cpu: e.target.value,
-                            },
-                          },
-                        })
-                      }
-                    />
-                    <Input
-                      placeholder="Memory (e.g., 256Mi)"
-                      value={formData.resources.limits.memory}
-                      onChange={(e) =>
-                        updateFormData({
-                          resources: {
-                            ...formData.resources,
-                            limits: {
-                              ...formData.resources.limits,
-                              memory: e.target.value,
-                            },
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Environment Variables (optional)</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addEnvVar}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Variable
-                </Button>
-              </div>
-              <div className="space-y-2">
-                {formData.env.map((env, index) => (
-                  <div key={index} className="flex gap-2 items-center">
-                    <Input
-                      placeholder="NAME"
-                      value={env.name}
-                      onChange={(e) =>
-                        updateEnvVar(index, 'name', e.target.value)
-                      }
-                    />
-                    <Input
-                      placeholder="value"
-                      value={env.value}
-                      onChange={(e) =>
-                        updateEnvVar(index, 'value', e.target.value)
-                      }
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeEnvVar(index)}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="port">Container Port (optional)</Label>
-              <Input
-                id="port"
-                type="number"
-                min="1"
-                max="65535"
-                value={formData.port || ''}
-                onChange={(e) =>
-                  updateFormData({
-                    port: e.target.value ? parseInt(e.target.value) : undefined,
-                  })
-                }
-                placeholder="8080"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pullPolicy">Image Pull Policy</Label>
-              <Select
-                value={formData.pullPolicy}
-                onValueChange={(value) =>
-                  updateFormData({
-                    pullPolicy: value as 'Always' | 'IfNotPresent' | 'Never',
-                  })
-                }
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <Label className="text-lg font-medium">Containers</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addContainer}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="IfNotPresent">IfNotPresent</SelectItem>
-                  <SelectItem value="Always">Always</SelectItem>
-                  <SelectItem value="Never">Never</SelectItem>
-                </SelectContent>
-              </Select>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Container
+              </Button>
             </div>
+
+            {formData.containers.map((containerConfig, containerIndex) => (
+              <Card key={containerIndex}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base">
+                      Container {containerIndex + 1}
+                    </CardTitle>
+                    {formData.containers.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeContainer(containerIndex)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor={`image-${containerIndex}`}>
+                        Container Image *
+                      </Label>
+                      <Input
+                        id={`image-${containerIndex}`}
+                        value={containerConfig.image}
+                        onChange={(e) =>
+                          updateContainer(containerIndex, {
+                            image: e.target.value,
+                            container: {
+                              ...containerConfig.container,
+                              image: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="nginx:latest"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`name-${containerIndex}`}>
+                        Container Name *
+                      </Label>
+                      <Input
+                        id={`name-${containerIndex}`}
+                        value={containerConfig.name}
+                        onChange={(e) =>
+                          updateContainer(containerIndex, {
+                            name: e.target.value,
+                            container: {
+                              ...containerConfig.container,
+                              name: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="container-name"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Resources (optional)</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">
+                          Requests
+                        </Label>
+                        <div className="space-y-1">
+                          <Input
+                            placeholder="CPU (e.g., 100m)"
+                            value={containerConfig.resources.requests.cpu}
+                            onChange={(e) =>
+                              updateContainer(containerIndex, {
+                                resources: {
+                                  ...containerConfig.resources,
+                                  requests: {
+                                    ...containerConfig.resources.requests,
+                                    cpu: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                          />
+                          <Input
+                            placeholder="Memory (e.g., 128Mi)"
+                            value={containerConfig.resources.requests.memory}
+                            onChange={(e) =>
+                              updateContainer(containerIndex, {
+                                resources: {
+                                  ...containerConfig.resources,
+                                  requests: {
+                                    ...containerConfig.resources.requests,
+                                    memory: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">
+                          Limits
+                        </Label>
+                        <div className="space-y-1">
+                          <Input
+                            placeholder="CPU (e.g., 500m)"
+                            value={containerConfig.resources.limits.cpu}
+                            onChange={(e) =>
+                              updateContainer(containerIndex, {
+                                resources: {
+                                  ...containerConfig.resources,
+                                  limits: {
+                                    ...containerConfig.resources.limits,
+                                    cpu: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                          />
+                          <Input
+                            placeholder="Memory (e.g., 256Mi)"
+                            value={containerConfig.resources.limits.memory}
+                            onChange={(e) =>
+                              updateContainer(containerIndex, {
+                                resources: {
+                                  ...containerConfig.resources,
+                                  limits: {
+                                    ...containerConfig.resources.limits,
+                                    memory: e.target.value,
+                                  },
+                                },
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <EnvironmentEditor
+                      container={containerConfig.container}
+                      onUpdate={(updates) =>
+                        updateContainer(containerIndex, {
+                          container: {
+                            ...containerConfig.container,
+                            ...updates,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor={`port-${containerIndex}`}>
+                        Container Port (optional)
+                      </Label>
+                      <Input
+                        id={`port-${containerIndex}`}
+                        type="number"
+                        min="1"
+                        max="65535"
+                        value={containerConfig.port || ''}
+                        onChange={(e) =>
+                          updateContainer(containerIndex, {
+                            port: e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined,
+                          })
+                        }
+                        placeholder="8080"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`pullPolicy-${containerIndex}`}>
+                        Image Pull Policy
+                      </Label>
+                      <Select
+                        value={containerConfig.pullPolicy}
+                        onValueChange={(value) =>
+                          updateContainer(containerIndex, {
+                            pullPolicy: value as
+                              | 'Always'
+                              | 'IfNotPresent'
+                              | 'Never',
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="IfNotPresent">
+                            IfNotPresent
+                          </SelectItem>
+                          <SelectItem value="Always">Always</SelectItem>
+                          <SelectItem value="Never">Never</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardContent>
+                {containerIndex < formData.containers.length - 1 && (
+                  <Separator />
+                )}
+              </Card>
+            ))}
           </div>
         )
 
       case 3:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Review Configuration</h3>
-            <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
-              <div>
-                <strong>Name:</strong> {formData.name}
-              </div>
-              <div>
-                <strong>Namespace:</strong> {formData.namespace}
-              </div>
-              <div>
-                <strong>Image:</strong> {formData.image}
-              </div>
-              <div>
-                <strong>Container Name:</strong> {formData.containerName}
-              </div>
-              <div>
-                <strong>Replicas:</strong> {formData.replicas}
-              </div>
-              {formData.port && (
-                <div>
-                  <strong>Port:</strong> {formData.port}
-                </div>
-              )}
-              <div>
-                <strong>Pull Policy:</strong> {formData.pullPolicy}
-              </div>
-              <div>
-                <strong>Labels:</strong>
-                <div className="ml-4 space-y-1">
-                  {formData.labels.map((label, index) => (
-                    <div key={index} className="text-sm">
-                      {label.key}: {label.value}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              {formData.env.length > 0 && (
-                <div>
-                  <strong>Environment Variables:</strong>
-                  <div className="ml-4 space-y-1">
-                    {formData.env.map((env, index) => (
-                      <div key={index} className="text-sm">
-                        {env.name}: {env.value}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {(formData.resources.requests.cpu ||
-                formData.resources.requests.memory ||
-                formData.resources.limits.cpu ||
-                formData.resources.limits.memory) && (
-                <div>
-                  <strong>Resources:</strong>
-                  <div className="ml-4 space-y-1">
-                    {(formData.resources.requests.cpu ||
-                      formData.resources.requests.memory) && (
-                      <div className="text-sm">
-                        <strong>Requests:</strong>
-                        {formData.resources.requests.cpu &&
-                          ` CPU: ${formData.resources.requests.cpu}`}
-                        {formData.resources.requests.memory &&
-                          ` Memory: ${formData.resources.requests.memory}`}
-                      </div>
-                    )}
-                    {(formData.resources.limits.cpu ||
-                      formData.resources.limits.memory) && (
-                      <div className="text-sm">
-                        <strong>Limits:</strong>
-                        {formData.resources.limits.cpu &&
-                          ` CPU: ${formData.resources.limits.cpu}`}
-                        {formData.resources.limits.memory &&
-                          ` Memory: ${formData.resources.limits.memory}`}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+            <h3 className="text-lg font-medium">Review & Edit Configuration</h3>
+            <p className="text-sm text-muted-foreground">
+              Review and edit the generated YAML configuration before creating
+              the deployment. You can modify any part of the configuration
+              directly in the editor below.
+            </p>
+            <SimpleYamlEditor
+              value={generateDeploymentYaml()}
+              onChange={(value) => setEditedYaml(value || '')}
+              disabled={false}
+              height="500px"
+            />
           </div>
         )
 
@@ -685,9 +730,9 @@ export function DeploymentCreateDialog({
       case 1:
         return 'Basic Configuration'
       case 2:
-        return 'Container & Resources'
+        return 'Containers & Resources'
       case 3:
-        return 'Review & Create'
+        return 'Edit YAML & Create'
       default:
         return ''
     }
@@ -695,7 +740,15 @@ export function DeploymentCreateDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleDialogChange}>
-      <DialogContent className="!max-w-4xl max-h-[90vh] overflow-y-auto sm:!max-w-4xl">
+      <DialogContent
+        className="!max-w-4xl max-h-[90vh] overflow-y-auto sm:!max-w-4xl"
+        onPointerDownOutside={(e) => {
+          e.preventDefault()
+        }}
+        onEscapeKeyDown={(e) => {
+          e.preventDefault()
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Create Deployment</DialogTitle>
           <DialogDescription>

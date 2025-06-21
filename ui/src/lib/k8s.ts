@@ -239,10 +239,6 @@ export function getDeploymentStatus(
   const availableReplicas = status.availableReplicas || 0
   const readyReplicas = status.readyReplicas || 0
 
-  if (availableReplicas === 0) {
-    return 'Not Available'
-  }
-
   if (desiredReplicas !== actualReplicas) {
     return 'Progressing'
   }
