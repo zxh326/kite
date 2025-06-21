@@ -36,7 +36,6 @@ export function ImageEditor({ container, onUpdate }: ImageEditorProps) {
           value={container.image || ''}
           onChange={(e) => updateImage(e.target.value)}
           placeholder="nginx:latest"
-          className="font-mono"
         />
         <p className="text-sm text-muted-foreground">
           Specify the container image including tag (e.g., nginx:1.21,

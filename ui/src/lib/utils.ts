@@ -64,6 +64,23 @@ export function formatDate(timestamp: string, addTo = false): string {
   return addTo ? `${s} (${getAge(timestamp)})` : s
 }
 
+export function formatChartXTicks(
+  timestamp: string,
+  isSameDay: boolean
+): string {
+  const options: Intl.DateTimeFormatOptions = {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }
+  if (!isSameDay) {
+    options.year = 'numeric'
+    options.month = '2-digit'
+    options.day = '2-digit'
+  }
+  return new Date(timestamp).toLocaleString(undefined, options)
+}
+
 // Format bytes to human readable format
 export function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B'

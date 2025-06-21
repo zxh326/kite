@@ -146,7 +146,7 @@ export function ResourcePaginationTable<T>({
           return metadata?.namespace || '-'
         },
         cell: ({ getValue }: { getValue: () => string }) => (
-          <Badge variant="outline" className="ml-2 font-mono">
+          <Badge variant="outline" className="ml-2 ">
             {getValue()}
           </Badge>
         ),
@@ -357,7 +357,7 @@ export function ResourcePaginationTable<T>({
             selectedNamespace !== '_all' && (
               <div className="text-muted-foreground flex items-center mt-1">
                 <span>Namespace:</span>
-                <Badge variant="outline" className="ml-2 font-mono">
+                <Badge variant="outline" className="ml-2 ">
                   {selectedNamespace}
                 </Badge>
               </div>

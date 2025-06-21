@@ -92,8 +92,7 @@ export function DeleteConfirmationDialog({
 
           <div className="space-y-2">
             <Label htmlFor="confirmation">
-              Type{' '}
-              <span className="font-mono font-semibold">{resourceName}</span> to
+              Type <span className=" font-semibold">{resourceName}</span> to
               confirm:
             </Label>
             <Input
@@ -101,7 +100,6 @@ export function DeleteConfirmationDialog({
               value={confirmationInput}
               onChange={(e) => setConfirmationInput(e.target.value)}
               placeholder={resourceName}
-              className="font-mono"
               autoComplete="off"
             />
           </div>

@@ -27,9 +27,7 @@ export function CRDListPage() {
       columnHelper.accessor('spec.group', {
         header: 'Group',
         enableColumnFilter: true,
-        cell: ({ getValue }) => (
-          <span className="font-mono text-sm">{getValue()}</span>
-        ),
+        cell: ({ getValue }) => <span className=" text-sm">{getValue()}</span>,
       }),
       columnHelper.accessor('spec.versions', {
         header: 'Versions',

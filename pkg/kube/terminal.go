@@ -63,7 +63,8 @@ func (session *TerminalSession) Start(ctx context.Context, subResource string) e
 		TTY:       true,
 	}, scheme.ParameterCodec)
 
-	exec, err := remotecommand.NewWebSocketExecutor(session.k8sClient.Configuration, "POST", req.URL().String())
+	// TODO: use NewWebSocketExecutor
+	exec, err := remotecommand.NewSPDYExecutor(session.k8sClient.Configuration, "POST", req.URL())
 
 	if err != nil {
 		log.Printf("Failed to create executor: %v", err)

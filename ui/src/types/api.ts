@@ -230,7 +230,6 @@ export interface PodMetrics {
   memory: UsageDataPoint[]
   networkIn?: UsageDataPoint[]
   networkOut?: UsageDataPoint[]
-  diskUsage?: UsageDataPoint[]
   fallback?: boolean
 }
 

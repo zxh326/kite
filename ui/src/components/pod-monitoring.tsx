@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Container, Pod } from 'kubernetes-types/core/v1'
 
+import { usePodMetrics } from '@/lib/api'
 import {
   Select,
   SelectContent,
@@ -10,7 +11,8 @@ import {
 } from '@/components/ui/select'
 import { ContainerSelector } from '@/components/selector/container-selector'
 
-import { PodResourceUsageChart } from './pod-resource-usage-chart'
+import CPUUsageChart from './chart/cpu-usage-chart'
+import MemoryUsageChart from './chart/memory-usage-chart'
 import { PodSelector } from './selector/pod-selector'
 
 interface PodMonitoringProps {
@@ -37,7 +39,28 @@ export function PodMonitoring({
   const [selectedContainer, setSelectedContainer] = useState<
     string | undefined
   >(undefined)
-  const [refreshInterval, setRefreshInterval] = useState('30s')
+  const [refreshInterval, setRefreshInterval] = useState(30 * 1000)
+
+  const queryPodName = useMemo(() => {
+    return (
+      selectedPod ||
+      podName ||
+      defaultQueryName ||
+      pods?.[0]?.metadata?.generateName?.split('-').slice(0, -2).join('-') ||
+      ''
+    )
+  }, [selectedPod, podName, defaultQueryName, pods])
+
+  const { data, isLoading, error } = usePodMetrics(
+    namespace,
+    queryPodName,
+    timeRange,
+    {
+      container: selectedContainer,
+      refreshInterval: refreshInterval,
+      labelSelector: labelSelector,
+    }
+  )
 
   const timeRangeOptions = [
     { value: '30m', label: 'Last 30 min' },
@@ -46,11 +69,11 @@ export function PodMonitoring({
   ]
 
   const refreshIntervalOptions = [
-    { value: 'off', label: 'Off' },
-    { value: '5s', label: '5 seconds' },
-    { value: '10s', label: '10 seconds' },
-    { value: '30s', label: '30 seconds' },
-    { value: '60s', label: '60 seconds' },
+    { value: 0, label: 'Off' },
+    { value: 5 * 1000, label: '5 seconds' },
+    { value: 10 * 1000, label: '10 seconds' },
+    { value: 30 * 1000, label: '30 seconds' },
+    { value: 60 * 1000, label: '60 seconds' },
   ]
 
   return (
@@ -73,13 +96,16 @@ export function PodMonitoring({
         </div>
 
         <div className="space-y-2">
-          <Select value={refreshInterval} onValueChange={setRefreshInterval}>
+          <Select
+            value={refreshInterval.toString()}
+            onValueChange={(value) => setRefreshInterval(Number(value))}
+          >
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Select refresh interval" />
             </SelectTrigger>
             <SelectContent>
               {refreshIntervalOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
+                <SelectItem key={option.value} value={option.value.toString()}>
                   {option.label}
                 </SelectItem>
               ))}
@@ -112,24 +138,25 @@ export function PodMonitoring({
         )}
       </div>
 
-      <PodResourceUsageChart
-        namespace={namespace}
-        podName={
-          selectedPod ||
-          podName ||
-          defaultQueryName ||
-          pods?.[0]?.metadata?.generateName
-            ?.split('-')
-            .slice(0, -2)
-            .join('-') ||
-          ''
-        }
-        container={selectedContainer}
-        timeRange={timeRange}
-        refreshInterval={refreshInterval}
-        onTimeRangeChange={setTimeRange}
-        labelSelector={labelSelector}
-      />
+      <div className="space-y-6">
+        {data?.fallback && (
+          <div className="rounded bg-yellow-100 text-yellow-800 px-4 py-2 text-sm border border-yellow-300 mb-2">
+            Current data is from metrics-server, limited historical data.
+          </div>
+        )}
+        {/* CPU Usage Chart */}
+        <CPUUsageChart
+          data={data?.cpu || []}
+          isLoading={isLoading}
+          syncId="resource-usage"
+          error={error}
+        />
+        <MemoryUsageChart
+          data={data?.memory || []}
+          isLoading={isLoading}
+          syncId="resource-usage"
+        />
+      </div>
     </div>
   )
 }

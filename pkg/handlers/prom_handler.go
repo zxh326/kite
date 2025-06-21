@@ -15,17 +15,6 @@ import (
 	metricsv1beta1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
-type ResourceRequest struct {
-	CPU    *ResourceMetric `json:"cpu"`
-	Memory *ResourceMetric `json:"memory"`
-}
-
-type ResourceMetric struct {
-	Request float64 `json:"request"`
-	Total   float64 `json:"total"`
-	Unit    string  `json:"unit"`
-}
-
 type PromHandler struct {
 	prometheusClient       *prometheus.Client
 	k8sClient              *kube.K8sClient
@@ -158,12 +147,17 @@ func (h *PromHandler) fetchPodMetricsFromMetricsServer(ctx context.Context, name
 	defer h.metricsServerCacheLock.Unlock()
 
 	appendPoint := func(cache []prometheus.UsageDataPoint, value float64, ts time.Time) []prometheus.UsageDataPoint {
+		for i := len(cache) - 1; i >= 0; i-- {
+			if ts.Sub(cache[i].Timestamp) < 15*time.Second {
+				cache[i].Value = value
+				return cache
+			}
+		}
 		return append(cache, prometheus.UsageDataPoint{Timestamp: ts, Value: value})
 	}
 
 	var cpuSeries, memSeries []prometheus.UsageDataPoint
-	handlePodMetrics := func(podMetrics *metricsv1beta1.PodMetrics) {
-		var timestamp = time.Now()
+	handlePodMetrics := func(podMetrics *metricsv1beta1.PodMetrics, timestamp time.Time) {
 		for _, c := range podMetrics.Containers {
 			key := namespace + "/" + podMetrics.Name + "/" + c.Name
 			cpuUsage := float64(c.Usage.Cpu().MilliValue()) / 1000.0
@@ -185,8 +179,12 @@ func (h *PromHandler) fetchPodMetricsFromMetricsServer(ctx context.Context, name
 		if err != nil {
 			return nil, err
 		}
+		if len(podMetricsList.Items) == 0 {
+			return nil, fmt.Errorf("no pod metrics found")
+		}
+		timestamp := time.Now()
 		for _, podMetrics := range podMetricsList.Items {
-			handlePodMetrics(&podMetrics)
+			handlePodMetrics(&podMetrics, timestamp)
 		}
 		return &prometheus.PodMetrics{
 			CPU:      mergeUsageDataPointsSum(cpuSeries),
@@ -200,13 +198,14 @@ func (h *PromHandler) fetchPodMetricsFromMetricsServer(ctx context.Context, name
 	if err != nil {
 		return nil, err
 	}
-	handlePodMetrics(podMetrics)
+	handlePodMetrics(podMetrics, podMetrics.Timestamp.Time)
 	return &prometheus.PodMetrics{
 		CPU:      cpuSeries,
 		Memory:   memSeries,
 		Fallback: true,
 	}, nil
 }
+
 func mergeUsageDataPointsSum(points []prometheus.UsageDataPoint) []prometheus.UsageDataPoint {
 	m := make(map[int64]float64)
 	for _, pt := range points {

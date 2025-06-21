@@ -1,15 +1,21 @@
 import { useState } from 'react'
 
-import { useOverview } from '@/lib/api'
+import { useOverview, useResourceUsageHistory } from '@/lib/api'
+import NetworkUsageChart from '@/components/chart/network-usage-chart'
+import ResourceUtilizationChart from '@/components/chart/resource-utilization'
 import { ClusterStatsCards } from '@/components/cluster-stats-cards'
-import { NetworkUsageChart } from '@/components/network-usage-chart'
 import { RecentEvents } from '@/components/recent-events'
-import { ResourceUsageHistoryChart } from '@/components/resource-usage-history-chart'
 import { ResourceCharts } from '@/components/resources-charts'
 
 export function Overview() {
-  const [timeRange, setTimeRange] = useState('1h')
+  const [timeRange] = useState('30m')
   const { data: overview, isLoading, error, isError } = useOverview()
+
+  const {
+    data: resourceUsage,
+    isLoading: isLoadingResourceUsage,
+    error: errorResourceUsage,
+  } = useResourceUsageHistory(timeRange)
 
   if (error) {
     return (
@@ -42,14 +48,18 @@ export function Overview() {
 
       {overview?.prometheusEnabled && (
         <div className="grid grid-cols-1 gap-4 @5xl/main:grid-cols-2">
-          <ResourceUsageHistoryChart
-            timeRange={timeRange}
-            onTimeRangeChange={setTimeRange}
+          <ResourceUtilizationChart
+            cpu={resourceUsage?.cpu || []}
+            memory={resourceUsage?.memory || []}
+            isLoading={isLoadingResourceUsage}
+            error={errorResourceUsage}
           />
 
           <NetworkUsageChart
-            timeRange={timeRange}
-            onTimeRangeChange={setTimeRange}
+            networkIn={resourceUsage?.networkIn || []}
+            networkOut={resourceUsage?.networkOut || []}
+            isLoading={isLoadingResourceUsage}
+            error={errorResourceUsage}
           />
         </div>
       )}

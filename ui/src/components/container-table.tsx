@@ -129,9 +129,7 @@ export function ContainerTable(props: {
                                 <span className="text-muted-foreground">
                                   CPU:
                                 </span>
-                                <span className="font-mono">
-                                  {container.resources.requests.cpu}
-                                </span>
+                                <span>{container.resources.requests.cpu}</span>
                               </div>
                             )}
                             {container.resources.requests.memory && (
@@ -139,7 +137,7 @@ export function ContainerTable(props: {
                                 <span className="text-muted-foreground">
                                   Memory:
                                 </span>
-                                <span className="font-mono">
+                                <span>
                                   {container.resources.requests.memory}
                                 </span>
                               </div>
@@ -158,9 +156,7 @@ export function ContainerTable(props: {
                                 <span className="text-muted-foreground">
                                   CPU:
                                 </span>
-                                <span className="font-mono">
-                                  {container.resources.limits.cpu}
-                                </span>
+                                <span>{container.resources.limits.cpu}</span>
                               </div>
                             )}
                             {container.resources.limits.memory && (
@@ -168,9 +164,7 @@ export function ContainerTable(props: {
                                 <span className="text-muted-foreground">
                                   Memory:
                                 </span>
-                                <span className="font-mono">
-                                  {container.resources.limits.memory}
-                                </span>
+                                <span>{container.resources.limits.memory}</span>
                               </div>
                             )}
                           </div>
@@ -202,7 +196,7 @@ export function ContainerTable(props: {
                     <div className="max-h-32 overflow-y-auto space-y-1">
                       {container.env.slice(0, 5).map((envVar, envIndex) => (
                         <div key={envIndex} className="text-sm">
-                          <div className="font-mono text-xs">
+                          <div className=" text-xs">
                             <span className="text-blue-600 dark:text-blue-400">
                               {envVar.name}
                             </span>
@@ -257,7 +251,7 @@ export function ContainerTable(props: {
                                     >
                                       ConfigMap
                                     </Badge>
-                                    <span className="font-mono text-xs text-blue-600 dark:text-blue-400">
+                                    <span className=" text-xs text-blue-600 dark:text-blue-400">
                                       {envFromSource.configMapRef.name}
                                     </span>
                                     {envFromSource.configMapRef.optional && (
@@ -278,7 +272,7 @@ export function ContainerTable(props: {
                                     >
                                       Secret
                                     </Badge>
-                                    <span className="font-mono text-xs text-green-600 dark:text-green-400">
+                                    <span className=" text-xs text-green-600 dark:text-green-400">
                                       {envFromSource.secretRef.name}
                                     </span>
                                     {envFromSource.secretRef.optional && (
@@ -327,7 +321,7 @@ export function ContainerTable(props: {
                                 <Badge variant="outline" className="text-xs">
                                   {mount.name}
                                 </Badge>
-                                <span className="text-muted-foreground font-mono text-xs">
+                                <span className="text-muted-foreground  text-xs">
                                   {mount.mountPath}
                                 </span>
                                 {mount.readOnly && (

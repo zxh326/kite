@@ -44,7 +44,6 @@ export function ResourceEditor({ container, onUpdate }: ResourceEditorProps) {
                 updateResources('requests', 'cpu', e.target.value)
               }
               placeholder="100m"
-              className="font-mono"
             />
             <p className="text-xs text-muted-foreground mt-1">
               e.g., 100m (0.1 CPU), 1 (1 CPU)
@@ -61,7 +60,6 @@ export function ResourceEditor({ container, onUpdate }: ResourceEditorProps) {
                 updateResources('requests', 'memory', e.target.value)
               }
               placeholder="128Mi"
-              className="font-mono"
             />
             <p className="text-xs text-muted-foreground mt-1">
               e.g., 128Mi, 1Gi, 512M
@@ -85,7 +83,6 @@ export function ResourceEditor({ container, onUpdate }: ResourceEditorProps) {
               value={container.resources?.limits?.cpu || ''}
               onChange={(e) => updateResources('limits', 'cpu', e.target.value)}
               placeholder="500m"
-              className="font-mono"
             />
             <p className="text-xs text-muted-foreground mt-1">
               e.g., 500m (0.5 CPU), 2 (2 CPUs)
@@ -102,7 +99,6 @@ export function ResourceEditor({ container, onUpdate }: ResourceEditorProps) {
                 updateResources('limits', 'memory', e.target.value)
               }
               placeholder="512Mi"
-              className="font-mono"
             />
             <p className="text-xs text-muted-foreground mt-1">
               e.g., 512Mi, 2Gi, 1G

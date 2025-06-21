@@ -38,15 +38,13 @@ export function CRListPage() {
         columnHelper.accessor('kind', {
           header: 'Kind',
           cell: ({ getValue }) => (
-            <span className="font-mono text-sm">{getValue()}</span>
+            <span className=" text-sm">{getValue()}</span>
           ),
         }),
         columnHelper.accessor('apiVersion', {
           header: 'API Version',
           cell: ({ getValue }) => (
-            <span className="font-mono text-xs text-gray-600">
-              {getValue()}
-            </span>
+            <span className=" text-xs text-gray-600">{getValue()}</span>
           ),
         }),
         columnHelper.accessor('status', {

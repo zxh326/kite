@@ -38,11 +38,9 @@ type ResourceUsageHistory struct {
 
 // PodMetrics contains metrics for a specific pod
 type PodMetrics struct {
-	CPU        []UsageDataPoint `json:"cpu"`
-	Memory     []UsageDataPoint `json:"memory"`
-	NetworkIn  []UsageDataPoint `json:"networkIn,omitempty"`
-	NetworkOut []UsageDataPoint `json:"networkOut,omitempty"`
-	Fallback   bool             `json:"fallback"`
+	CPU      []UsageDataPoint `json:"cpu"`
+	Memory   []UsageDataPoint `json:"memory"`
+	Fallback bool             `json:"fallback"`
 }
 
 type PodCurrentMetrics struct {
@@ -110,20 +108,22 @@ func (c *Client) GetResourceUsageHistory(ctx context.Context, instance string, d
 		return nil, fmt.Errorf("error querying Memory usage: %w", err)
 	}
 
-	conditions = []string{}
+	conditions = []string{
+		`id="/"`,
+	}
 	if instance != "" {
 		conditions = append(conditions, fmt.Sprintf(`instance="%s"`, instance))
 	}
 
 	// Query Network incoming bytes rate (bytes per second)
-	networkInQuery := fmt.Sprintf(`sum(rate(container_network_receive_bytes_total{%s}[5m]))`, strings.Join(conditions, ","))
+	networkInQuery := fmt.Sprintf(`sum(rate(container_network_receive_bytes_total{%s}[1m]))`, strings.Join(conditions, ","))
 	networkInData, err := c.queryRange(ctx, networkInQuery, start, now, step)
 	if err != nil {
 		return nil, fmt.Errorf("error querying Network incoming bytes: %w", err)
 	}
 
 	// Query Network outgoing bytes rate (bytes per second)
-	networkOutQuery := fmt.Sprintf(`sum(rate(container_network_transmit_bytes_total{%s}[5m]))`, strings.Join(conditions, ","))
+	networkOutQuery := fmt.Sprintf(`sum(rate(container_network_transmit_bytes_total{%s}[1m]))`, strings.Join(conditions, ","))
 	networkOutData, err := c.queryRange(ctx, networkOutQuery, start, now, step)
 	if err != nil {
 		return nil, fmt.Errorf("error querying Network outgoing bytes: %w", err)
@@ -226,6 +226,42 @@ func (c *Client) GetMemoryUsage(ctx context.Context, namespace, podNamePrefix, c
 	return c.queryRange(ctx, query, start, now, step)
 }
 
+func (c *Client) GetNetworkInUsage(ctx context.Context, namespace, podNamePrefix, container string, timeRange, step time.Duration) ([]UsageDataPoint, error) {
+	now := time.Now()
+	start := now.Add(-timeRange)
+
+	conditions := []string{}
+	if podNamePrefix != "" {
+		conditions = append(conditions, fmt.Sprintf(`pod=~"%s.*"`, podNamePrefix))
+	}
+	if container != "" {
+		conditions = append(conditions, fmt.Sprintf(`container="%s"`, container))
+	}
+	if namespace != "" {
+		conditions = append(conditions, fmt.Sprintf(`namespace="%s"`, namespace))
+	}
+	query := fmt.Sprintf(`sum(rate(container_network_receive_bytes_total{%s}[1m]))`, strings.Join(conditions, ","))
+	return c.queryRange(ctx, query, start, now, step)
+}
+
+func (c *Client) GetNetworkOutUsage(ctx context.Context, namespace, podNamePrefix, container string, timeRange, step time.Duration) ([]UsageDataPoint, error) {
+	now := time.Now()
+	start := now.Add(-timeRange)
+
+	conditions := []string{}
+	if podNamePrefix != "" {
+		conditions = append(conditions, fmt.Sprintf(`pod=~"%s.*"`, podNamePrefix))
+	}
+	if container != "" {
+		conditions = append(conditions, fmt.Sprintf(`container="%s"`, container))
+	}
+	if namespace != "" {
+		conditions = append(conditions, fmt.Sprintf(`namespace="%s"`, namespace))
+	}
+	query := fmt.Sprintf(`sum(rate(container_network_transmit_bytes_total{%s}[1m]))`, strings.Join(conditions, ","))
+	return c.queryRange(ctx, query, start, now, step)
+}
+
 // GetPodMetrics fetches metrics for a specific pod
 func (c *Client) GetPodMetrics(ctx context.Context, namespace, podName, container string, duration string) (*PodMetrics, error) {
 	var step time.Duration
@@ -245,9 +281,6 @@ func (c *Client) GetPodMetrics(ctx context.Context, namespace, podName, containe
 		return nil, fmt.Errorf("unsupported duration: %s", duration)
 	}
 
-	now := time.Now()
-	start := now.Add(-timeRange)
-
 	cpuData, err := c.GetCPUUsage(ctx, namespace, podName, container, timeRange, step)
 	if err != nil {
 		return nil, fmt.Errorf("error querying pod CPU usage: %w", err)
@@ -258,24 +291,8 @@ func (c *Client) GetPodMetrics(ctx context.Context, namespace, podName, containe
 		return nil, fmt.Errorf("error querying pod Memory usage: %w", err)
 	}
 
-	// Network incoming bytes for specific pod
-	networkInQuery := fmt.Sprintf(`sum(rate(container_network_receive_bytes_total{namespace="%s",pod="%s"}[1m]))`, namespace, podName)
-	networkInData, err := c.queryRange(ctx, networkInQuery, start, now, step)
-	if err != nil {
-		return nil, fmt.Errorf("error querying pod Network incoming bytes: %w", err)
-	}
-
-	// Network outgoing bytes for specific pod
-	networkOutQuery := fmt.Sprintf(`sum(rate(container_network_transmit_bytes_total{namespace="%s",pod="%s"}[1m]))`, namespace, podName)
-	networkOutData, err := c.queryRange(ctx, networkOutQuery, start, now, step)
-	if err != nil {
-		return nil, fmt.Errorf("error querying pod Network outgoing bytes: %w", err)
-	}
-
 	return &PodMetrics{
-		CPU:        cpuData,
-		Memory:     memoryData,
-		NetworkIn:  networkInData,
-		NetworkOut: networkOutData,
+		CPU:    cpuData,
+		Memory: memoryData,
 	}, nil
 }

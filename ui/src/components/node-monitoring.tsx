@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { useResourceUsageHistory } from '@/lib/api'
 import {
   Select,
   SelectContent,
@@ -8,8 +9,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-import { NetworkUsageChart } from './network-usage-chart'
-import { ResourceUsageHistoryChart } from './resource-usage-history-chart'
+import NetworkUsageChart from './chart/network-usage-chart'
+import ResourceUtilizationChart from './chart/resource-utilization'
 
 interface NodeMonitoringProps {
   name: string
@@ -17,6 +18,14 @@ interface NodeMonitoringProps {
 
 export function NodeMonitoring({ name }: NodeMonitoringProps) {
   const [timeRange, setTimeRange] = useState('1h')
+
+  const {
+    data: resourceUsage,
+    isLoading: isLoadingResourceUsage,
+    error: errorResourceUsage,
+  } = useResourceUsageHistory(timeRange, {
+    instance: name,
+  })
 
   const timeRangeOptions = [
     { value: '30m', label: 'Last 30 min' },
@@ -45,17 +54,19 @@ export function NodeMonitoring({ name }: NodeMonitoringProps) {
       </div>
 
       {/* Resource Usage Charts */}
-      <ResourceUsageHistoryChart
-        timeRange={timeRange}
-        instance={name}
-        onTimeRangeChange={setTimeRange}
+      <ResourceUtilizationChart
+        cpu={resourceUsage?.cpu || []}
+        memory={resourceUsage?.memory || []}
+        isLoading={isLoadingResourceUsage}
+        error={errorResourceUsage}
       />
 
       {/* Network Usage Chart */}
       <NetworkUsageChart
-        timeRange={timeRange}
-        instance={name}
-        onTimeRangeChange={setTimeRange}
+        networkIn={resourceUsage?.networkIn || []}
+        networkOut={resourceUsage?.networkOut || []}
+        isLoading={isLoadingResourceUsage}
+        error={errorResourceUsage}
       />
     </div>
   )

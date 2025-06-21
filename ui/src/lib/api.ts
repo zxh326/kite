@@ -507,22 +507,10 @@ export const usePodMetrics = (
   options?: {
     staleTime?: number
     container?: string
-    refreshInterval?: string | boolean
+    refreshInterval?: number
     labelSelector?: string
   }
 ) => {
-  // Convert refresh interval to milliseconds
-  const getRefreshInterval = (interval?: string | boolean) => {
-    if (interval === false || interval === 'off') return false
-    if (interval === true) return 30000 // default 30s
-    if (typeof interval === 'string') {
-      const value = parseInt(interval)
-      if (interval.endsWith('s')) return value * 1000
-      if (interval.endsWith('m')) return value * 60 * 1000
-    }
-    return 30000 // fallback to 30s
-  }
-
   return useQuery({
     queryKey: [
       'pod-metrics',
@@ -542,7 +530,7 @@ export const usePodMetrics = (
       ),
     enabled: !!namespace && !!podName,
     staleTime: options?.staleTime || 10000, // 10 seconds cache
-    refetchInterval: getRefreshInterval(options?.refreshInterval),
+    refetchInterval: options?.refreshInterval || 30 * 1000, // 1 second
     retry: 0,
     placeholderData: (prevData) => prevData,
   })

@@ -34,7 +34,7 @@ export function IngressListPage() {
         cell: ({ row }) => {
           const rules = row.original.spec?.rules || []
           return (
-            <Badge variant="outline" className="ml-2 font-mono">
+            <Badge variant="outline" className="ml-2 ">
               {rules.length > 0 ? rules.map((r) => r.host).join(', ') : 'N/A'}
             </Badge>
           )

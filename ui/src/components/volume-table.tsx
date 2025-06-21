@@ -3,13 +3,20 @@ import { Link } from 'react-router-dom'
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
+import { Column, SimpleTable } from '@/components/simple-table'
 
 interface VolumeTableProps {
   namespace: string
   volumes?: Volume[]
   containers?: Container[]
   isLoading?: boolean
+}
+
+interface VolumeTableData {
+  name: string
+  type: string
+  details: React.ReactNode
+  mounts: string
 }
 
 export function VolumeTable({
@@ -33,120 +40,157 @@ export function VolumeTable({
     )
   }
 
+  const getVolumeType = (volume: Volume): string => {
+    const keys = Object.keys(volume).filter((key) => key !== 'name')
+    return keys[0] || 'Unknown'
+  }
+
+  const getVolumeDetails = (volume: Volume): React.ReactNode => {
+    if (volume.persistentVolumeClaim) {
+      return (
+        <Link
+          to={`/persistentvolumeclaims/${namespace}/${volume.persistentVolumeClaim.claimName}`}
+          className="text-blue-600 hover:underline"
+        >
+          {volume.persistentVolumeClaim.claimName}
+        </Link>
+      )
+    }
+    if (volume.configMap) {
+      return (
+        <Link
+          to={`/configmaps/${namespace}/${volume.configMap.name}`}
+          className="text-blue-600 hover:underline"
+        >
+          {volume.configMap.name || 'N/A'}
+        </Link>
+      )
+    }
+    if (volume.secret) {
+      return (
+        <Link
+          to={`/secrets/${namespace}/${volume.secret.secretName}`}
+          className="text-blue-600 hover:underline"
+        >
+          {volume.secret.secretName || 'N/A'}
+        </Link>
+      )
+    }
+    if (volume.hostPath) {
+      return (
+        <span className="text-sm text-muted-foreground">
+          {volume.hostPath.path || 'N/A'}
+        </span>
+      )
+    }
+    if (volume.emptyDir) {
+      const medium = volume.emptyDir.medium || 'Default'
+      const sizeLimit = volume.emptyDir.sizeLimit
+      return (
+        <span className="text-sm text-muted-foreground">
+          {`${medium}${sizeLimit ? `, Size: ${sizeLimit}` : ''}`}
+        </span>
+      )
+    }
+    return <span className="text-sm text-muted-foreground">N/A</span>
+  }
+
+  const getVolumeMounts = (volume: Volume): string => {
+    const mounts: string[] = []
+
+    containers?.forEach((container) => {
+      container.volumeMounts?.forEach((mount) => {
+        if (mount.name === volume.name) {
+          const mountInfo = `${container.name}:${mount.mountPath}`
+          const readOnly = mount.readOnly ? ' (RO)' : ''
+          mounts.push(mountInfo + readOnly)
+        }
+      })
+    })
+
+    return mounts.length > 0 ? mounts.join(', ') : 'No mounts'
+  }
+
+  const tableData: VolumeTableData[] =
+    volumes?.map((volume) => ({
+      name: volume.name,
+      type: getVolumeType(volume),
+      details: getVolumeDetails(volume),
+      mounts: getVolumeMounts(volume),
+    })) || []
+
+  const columns: Column<VolumeTableData>[] = [
+    {
+      header: 'Name',
+      accessor: (item) => item.name,
+      cell: (value) => <span className="font-medium">{value as string}</span>,
+    },
+    {
+      header: 'Type',
+      accessor: (item) => item.type,
+      cell: (value) => (
+        <Badge variant="outline" className="text-xs">
+          {value as string}
+        </Badge>
+      ),
+    },
+    {
+      header: 'Details',
+      accessor: (item) => item.details,
+      cell: (value) => value as React.ReactNode,
+    },
+    {
+      header: 'Volume Mounts',
+      accessor: (item) => item.mounts,
+      cell: (value) => {
+        const mounts = value as string
+        if (mounts === 'No mounts') {
+          return <span className="text-muted-foreground">{mounts}</span>
+        }
+
+        const mountList = mounts.split(', ')
+        return (
+          <div className="space-y-1">
+            {mountList.map((mount, index) => {
+              const isReadOnly = mount.includes(' (RO)')
+              const cleanMount = mount.replace(' (RO)', '')
+              const [container, path] = cleanMount.split(':')
+
+              return (
+                <div key={index} className="flex items-center gap-2 text-xs">
+                  <span className="font-medium">{container}</span>
+                  <span>→</span>
+                  <span className="text-muted-foreground">{path}</span>
+                  {isReadOnly && (
+                    <Badge variant="secondary" className="text-xs">
+                      RO
+                    </Badge>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )
+      },
+    },
+  ]
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Volumes</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {volumes?.length ? (
-            volumes.map((volume, index) => (
-              <div key={index} className="border rounded-lg p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">Name</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {volume.name}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Type</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {Object.keys(volume).filter((key) => key !== 'name')[0] ||
-                        'Unknown'}
-                    </p>
-                  </div>
-                  {volume.persistentVolumeClaim && (
-                    <div className="md:col-span-2">
-                      <Label className="text-sm font-medium">
-                        PVC Claim Name
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        <Link
-                          to={`/persistentvolumeclaims/${namespace}/${volume.persistentVolumeClaim.claimName}`}
-                          className="text-blue-600 hover:underline"
-                        >
-                          {volume.persistentVolumeClaim.claimName}
-                        </Link>
-                      </p>
-                    </div>
-                  )}
-                  {volume.configMap && (
-                    <div className="md:col-span-2">
-                      <Label className="text-sm font-medium">
-                        ConfigMap Name
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        {volume.configMap.name || 'N/A'}
-                      </p>
-                    </div>
-                  )}
-                  {volume.secret && (
-                    <div className="md:col-span-2">
-                      <Label className="text-sm font-medium">Secret Name</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {volume.secret.secretName || 'N/A'}
-                      </p>
-                    </div>
-                  )}
-                  {volume.hostPath && (
-                    <div className="md:col-span-2">
-                      <Label className="text-sm font-medium">Host Path</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {volume.hostPath.path || 'N/A'}
-                      </p>
-                    </div>
-                  )}
-                  {volume.emptyDir && (
-                    <div className="md:col-span-2">
-                      <Label className="text-sm font-medium">
-                        Empty Directory
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        Medium: {volume.emptyDir.medium || 'Default'}
-                        {volume.emptyDir.sizeLimit &&
-                          `, Size Limit: ${volume.emptyDir.sizeLimit}`}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Volume Mounts */}
-                <div className="mt-4">
-                  <Label className="text-sm font-medium">Volume Mounts</Label>
-                  <div className="mt-2 space-y-2">
-                    {containers?.map((container) =>
-                      container.volumeMounts
-                        ?.filter((mount) => mount.name === volume.name)
-                        .map((mount, mountIndex) => (
-                          <div
-                            key={`${container.name}-${mountIndex}`}
-                            className="flex items-center gap-4 text-sm bg-muted/50 p-2 rounded"
-                          >
-                            <span className="font-medium">
-                              {container.name}
-                            </span>
-                            <span>→</span>
-                            <span>{mount.mountPath}</span>
-                            {mount.readOnly && (
-                              <Badge variant="secondary" className="text-xs">
-                                ReadOnly
-                              </Badge>
-                            )}
-                          </div>
-                        ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center text-muted-foreground py-8">
-              No volumes configured for this resource.
-            </div>
-          )}
-        </div>
+        <SimpleTable
+          data={tableData}
+          columns={columns}
+          emptyMessage="No volumes configured for this resource."
+          pagination={{
+            enabled: tableData.length > 10,
+            pageSize: 10,
+            showPageInfo: true,
+          }}
+        />
       </CardContent>
     </Card>
   )
