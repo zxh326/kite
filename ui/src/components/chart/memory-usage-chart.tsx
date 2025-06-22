@@ -48,7 +48,7 @@ const MemoryUsageChart = React.memo((prop: MemoryUsageChartProps) => {
   const useGB = React.useMemo(() => {
     if (!memoryChartData.length) return false
     const maxMemory = Math.max(...memoryChartData.map((point) => point.memory))
-    return maxMemory > 1024
+    return maxMemory > 900
   }, [memoryChartData])
 
   // Convert memory data to GB if needed
@@ -151,7 +151,7 @@ const MemoryUsageChart = React.memo((prop: MemoryUsageChartProps) => {
               axisLine={false}
               tickMargin={8}
               tickFormatter={(value) =>
-                `${value.toFixed(0)}${useGB ? ' GB' : ' MB'}`
+                `${value.toFixed(useGB ? 2 : 1)}${useGB ? 'GB' : 'MB'}`
               }
               domain={[0, (dataMax: number) => dataMax * 1.1]}
             />

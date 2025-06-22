@@ -26,9 +26,9 @@ import {
 } from '../ui/chart'
 import { Skeleton } from '../ui/skeleton'
 
-interface NetworkUsageChartProps {
-  networkIn: UsageDataPoint[]
-  networkOut: UsageDataPoint[]
+interface DiskIOUsageChartProps {
+  diskRead: UsageDataPoint[]
+  diskWrite: UsageDataPoint[]
   isLoading?: boolean
   error?: Error | null
   syncId?: string
@@ -49,49 +49,49 @@ const formatBytes = (bytes: number) => {
 }
 
 const chartConfig = {
-  networkOut: {
-    label: 'Outgoing',
-    color: 'oklch(0.55 0.22 235)', // Updated blue color to match theme
+  diskWrite: {
+    label: 'Write',
+    color: 'oklch(0.55 0.22 235)', // Blue color for write operations
   },
-  networkIn: {
-    label: 'Incoming',
-    color: 'oklch(0.55 0.20 145)', // Updated green color to match theme
+  diskRead: {
+    label: 'Read',
+    color: 'oklch(0.55 0.20 145)', // Green color for read operations
   },
 } satisfies ChartConfig
 
-const NetworkUsageChart = React.memo((prop: NetworkUsageChartProps) => {
-  const { networkIn, networkOut, isLoading, error, syncId } = prop
+const DiskIOUsageChart = React.memo((prop: DiskIOUsageChartProps) => {
+  const { diskRead, diskWrite, isLoading, error, syncId } = prop
 
   const chartData = React.useMemo(() => {
-    if (!networkIn || !networkOut) return []
+    if (!diskRead || !diskWrite) return []
 
-    // Combine NetworkIn and NetworkOut data by timestamp
+    // Combine DiskRead and DiskWrite data by timestamp
     const combinedData = new Map()
 
-    // Add NetworkIn data (as negative values to display below X-axis)
-    networkIn.forEach((point) => {
+    // Add DiskRead data (as negative values to display below X-axis)
+    diskRead.forEach((point) => {
       const timestamp = new Date(point.timestamp).getTime()
       combinedData.set(timestamp, {
         timestamp: point.timestamp,
         time: timestamp,
-        networkIn: Math.max(0, point.value), // Convert to negative for below X-axis
+        diskRead: Math.max(0, point.value),
       })
     })
 
-    // Add NetworkOut data (positive values for above X-axis)
-    networkOut.forEach((point) => {
+    // Add DiskWrite data (positive values for above X-axis)
+    diskWrite.forEach((point) => {
       const timestamp = new Date(point.timestamp).getTime()
       const existing = combinedData.get(timestamp) || {
         timestamp: point.timestamp,
         time: timestamp,
       }
-      existing.networkOut = Math.max(0, point.value) // Positive values for above X-axis
+      existing.diskWrite = Math.max(0, point.value) // Positive values for above X-axis
       combinedData.set(timestamp, existing)
     })
 
     // Convert to array and sort by timestamp
     return Array.from(combinedData.values()).sort((a, b) => a.time - b.time)
-  }, [networkIn, networkOut])
+  }, [diskRead, diskWrite])
 
   const isSameDay = React.useMemo(() => {
     if (chartData.length < 2) return true
@@ -107,7 +107,7 @@ const NetworkUsageChart = React.memo((prop: NetworkUsageChartProps) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Network Usage
+            Disk I/O Usage
           </CardTitle>
         </CardHeader>
         <CardContent className="px-2 sm:px-6">
@@ -124,7 +124,7 @@ const NetworkUsageChart = React.memo((prop: NetworkUsageChartProps) => {
     return (
       <Card className="@container/card">
         <CardHeader>
-          <CardTitle>Network Usage</CardTitle>
+          <CardTitle>Disk I/O Usage</CardTitle>
         </CardHeader>
         <CardContent className="px-2 sm:px-6">
           <Alert variant="destructive">
@@ -138,18 +138,18 @@ const NetworkUsageChart = React.memo((prop: NetworkUsageChartProps) => {
 
   // Show empty state
   if (
-    !networkIn ||
-    !networkOut ||
-    (networkIn.length === 0 && networkOut.length === 0)
+    !diskRead ||
+    !diskWrite ||
+    (diskRead.length === 0 && diskWrite.length === 0)
   ) {
     return (
       <Card className="@container/card">
         <CardHeader>
-          <CardTitle>Network Usage</CardTitle>
+          <CardTitle>Disk I/O Usage</CardTitle>
         </CardHeader>
         <CardContent className="px-2 sm:px-6">
           <div className="flex h-[250px] w-full items-center justify-center text-muted-foreground">
-            <p>No network usage data available</p>
+            <p>No disk I/O usage data available</p>
           </div>
         </CardContent>
       </Card>
@@ -159,7 +159,7 @@ const NetworkUsageChart = React.memo((prop: NetworkUsageChartProps) => {
   return (
     <Card className="@container/card">
       <CardHeader>
-        <CardTitle>Network Usage</CardTitle>
+        <CardTitle>Disk I/O Usage</CardTitle>
       </CardHeader>
       <CardContent className="px-2 sm:px-6">
         <ChartContainer
@@ -168,27 +168,27 @@ const NetworkUsageChart = React.memo((prop: NetworkUsageChartProps) => {
         >
           <AreaChart data={chartData} syncId={syncId}>
             <defs>
-              <linearGradient id="fillNetworkOut" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="fillDiskWrite" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor="var(--color-networkOut)"
+                  stopColor="var(--color-diskWrite)"
                   stopOpacity={0.8}
                 />
                 <stop
                   offset="95%"
-                  stopColor="var(--color-networkOut)"
+                  stopColor="var(--color-diskWrite)"
                   stopOpacity={0.1}
                 />
               </linearGradient>
-              <linearGradient id="fillNetworkIn" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="fillDiskRead" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor="var(--color-networkIn)"
+                  stopColor="var(--color-diskRead)"
                   stopOpacity={0.8}
                 />
                 <stop
                   offset="95%"
-                  stopColor="var(--color-networkIn)"
+                  stopColor="var(--color-diskRead)"
                   stopOpacity={0.1}
                 />
               </linearGradient>
@@ -237,19 +237,19 @@ const NetworkUsageChart = React.memo((prop: NetworkUsageChartProps) => {
             />
             <Area
               isAnimationActive={false}
-              dataKey="networkOut"
+              dataKey="diskWrite"
               type="monotone"
-              fill="url(#fillNetworkOut)"
-              stroke="var(--color-networkOut)"
+              fill="url(#fillDiskWrite)"
+              stroke="var(--color-diskWrite)"
               strokeWidth={2}
               dot={false}
             />
             <Area
               isAnimationActive={false}
-              dataKey="networkIn"
+              dataKey="diskRead"
               type="monotone"
-              fill="url(#fillNetworkIn)"
-              stroke="var(--color-networkIn)"
+              fill="url(#fillDiskRead)"
+              stroke="var(--color-diskRead)"
               strokeWidth={2}
               dot={false}
             />
@@ -261,4 +261,6 @@ const NetworkUsageChart = React.memo((prop: NetworkUsageChartProps) => {
   )
 })
 
-export default NetworkUsageChart
+DiskIOUsageChart.displayName = 'DiskIOUsageChart'
+
+export default DiskIOUsageChart

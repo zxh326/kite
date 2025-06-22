@@ -12,7 +12,9 @@ import {
 import { ContainerSelector } from '@/components/selector/container-selector'
 
 import CPUUsageChart from './chart/cpu-usage-chart'
+import DiskIOUsageChart from './chart/disk-io-usage-chart'
 import MemoryUsageChart from './chart/memory-usage-chart'
+import NetworkUsageChart from './chart/network-usage-chart'
 import { PodSelector } from './selector/pod-selector'
 
 interface PodMonitoringProps {
@@ -138,13 +140,13 @@ export function PodMonitoring({
         )}
       </div>
 
-      <div className="space-y-6">
+      {/* Charts */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         {data?.fallback && (
-          <div className="rounded bg-yellow-100 text-yellow-800 px-4 py-2 text-sm border border-yellow-300 mb-2">
+          <div className="xl:col-span-2 rounded bg-yellow-100 text-yellow-800 px-4 py-2 text-sm border border-yellow-300">
             Current data is from metrics-server, limited historical data.
           </div>
         )}
-        {/* CPU Usage Chart */}
         <CPUUsageChart
           data={data?.cpu || []}
           isLoading={isLoading}
@@ -153,6 +155,18 @@ export function PodMonitoring({
         />
         <MemoryUsageChart
           data={data?.memory || []}
+          isLoading={isLoading}
+          syncId="resource-usage"
+        />
+        <NetworkUsageChart
+          networkIn={data?.networkIn || []}
+          networkOut={data?.networkOut || []}
+          isLoading={isLoading}
+          syncId="resource-usage"
+        />
+        <DiskIOUsageChart
+          diskRead={data?.diskRead || []}
+          diskWrite={data?.diskWrite || []}
           isLoading={isLoading}
           syncId="resource-usage"
         />

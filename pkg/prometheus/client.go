@@ -34,13 +34,19 @@ type ResourceUsageHistory struct {
 	Memory     []UsageDataPoint `json:"memory"`
 	NetworkIn  []UsageDataPoint `json:"networkIn"`
 	NetworkOut []UsageDataPoint `json:"networkOut"`
+	DiskRead   []UsageDataPoint `json:"diskRead"`
+	DiskWrite  []UsageDataPoint `json:"diskWrite"`
 }
 
 // PodMetrics contains metrics for a specific pod
 type PodMetrics struct {
-	CPU      []UsageDataPoint `json:"cpu"`
-	Memory   []UsageDataPoint `json:"memory"`
-	Fallback bool             `json:"fallback"`
+	CPU        []UsageDataPoint `json:"cpu"`
+	Memory     []UsageDataPoint `json:"memory"`
+	NetworkIn  []UsageDataPoint `json:"networkIn"`
+	NetworkOut []UsageDataPoint `json:"networkOut"`
+	DiskRead   []UsageDataPoint `json:"diskRead"`
+	DiskWrite  []UsageDataPoint `json:"diskWrite"`
+	Fallback   bool             `json:"fallback"`
 }
 
 type PodCurrentMetrics struct {
@@ -262,6 +268,48 @@ func (c *Client) GetNetworkOutUsage(ctx context.Context, namespace, podNamePrefi
 	return c.queryRange(ctx, query, start, now, step)
 }
 
+func (c *Client) GetDiskReadUsage(ctx context.Context, namespace, podNamePrefix, container string, timeRange, step time.Duration) ([]UsageDataPoint, error) {
+	now := time.Now()
+	start := now.Add(-timeRange)
+
+	conditions := []string{
+		`container!="POD"`, // Exclude the "POD" container
+		`container!=""`,    // Exclude empty containers
+	}
+	if podNamePrefix != "" {
+		conditions = append(conditions, fmt.Sprintf(`pod=~"%s.*"`, podNamePrefix))
+	}
+	if container != "" {
+		conditions = append(conditions, fmt.Sprintf(`container="%s"`, container))
+	}
+	if namespace != "" {
+		conditions = append(conditions, fmt.Sprintf(`namespace="%s"`, namespace))
+	}
+	query := fmt.Sprintf(`sum(rate(container_fs_reads_bytes_total{%s}[1m]))`, strings.Join(conditions, ","))
+	return c.queryRange(ctx, query, start, now, step)
+}
+
+func (c *Client) GetDiskWriteUsage(ctx context.Context, namespace, podNamePrefix, container string, timeRange, step time.Duration) ([]UsageDataPoint, error) {
+	now := time.Now()
+	start := now.Add(-timeRange)
+
+	conditions := []string{
+		`container!="POD"`, // Exclude the "POD" container
+		`container!=""`,    // Exclude empty containers
+	}
+	if podNamePrefix != "" {
+		conditions = append(conditions, fmt.Sprintf(`pod=~"%s.*"`, podNamePrefix))
+	}
+	if container != "" {
+		conditions = append(conditions, fmt.Sprintf(`container="%s"`, container))
+	}
+	if namespace != "" {
+		conditions = append(conditions, fmt.Sprintf(`namespace="%s"`, namespace))
+	}
+	query := fmt.Sprintf(`sum(rate(container_fs_writes_bytes_total{%s}[1m]))`, strings.Join(conditions, ","))
+	return c.queryRange(ctx, query, start, now, step)
+}
+
 // GetPodMetrics fetches metrics for a specific pod
 func (c *Client) GetPodMetrics(ctx context.Context, namespace, podName, container string, duration string) (*PodMetrics, error) {
 	var step time.Duration
@@ -270,13 +318,13 @@ func (c *Client) GetPodMetrics(ctx context.Context, namespace, podName, containe
 	switch duration {
 	case "30m":
 		timeRange = 30 * time.Minute
-		step = 1 * time.Minute
+		step = 15 * time.Second
 	case "1h":
 		timeRange = 1 * time.Hour
-		step = 2 * time.Minute
+		step = 1 * time.Minute
 	case "24h":
 		timeRange = 24 * time.Hour
-		step = 30 * time.Minute
+		step = 5 * time.Minute
 	default:
 		return nil, fmt.Errorf("unsupported duration: %s", duration)
 	}
@@ -291,8 +339,33 @@ func (c *Client) GetPodMetrics(ctx context.Context, namespace, podName, containe
 		return nil, fmt.Errorf("error querying pod Memory usage: %w", err)
 	}
 
+	networkInData, err := c.GetNetworkInUsage(ctx, namespace, podName, container, timeRange, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying pod Network incoming usage: %w", err)
+	}
+
+	networkOutData, err := c.GetNetworkOutUsage(ctx, namespace, podName, container, timeRange, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying pod Network outgoing usage: %w", err)
+	}
+
+	diskReadData, err := c.GetDiskReadUsage(ctx, namespace, podName, container, timeRange, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying pod Disk read usage: %w", err)
+	}
+
+	diskWriteData, err := c.GetDiskWriteUsage(ctx, namespace, podName, container, timeRange, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying pod Disk write usage: %w", err)
+	}
+
 	return &PodMetrics{
-		CPU:    cpuData,
-		Memory: memoryData,
+		CPU:        cpuData,
+		Memory:     memoryData,
+		NetworkIn:  networkInData,
+		NetworkOut: networkOutData,
+		DiskRead:   diskReadData,
+		DiskWrite:  diskWriteData,
+		Fallback:   false,
 	}, nil
 }

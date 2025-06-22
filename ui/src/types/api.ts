@@ -222,6 +222,8 @@ export interface ResourceUsageHistory {
   memory: UsageDataPoint[]
   networkIn: UsageDataPoint[]
   networkOut: UsageDataPoint[]
+  diskRead: UsageDataPoint[]
+  diskWrite: UsageDataPoint[]
 }
 
 // Pod monitoring types
@@ -230,6 +232,8 @@ export interface PodMetrics {
   memory: UsageDataPoint[]
   networkIn?: UsageDataPoint[]
   networkOut?: UsageDataPoint[]
+  diskRead?: UsageDataPoint[]
+  diskWrite?: UsageDataPoint[]
   fallback?: boolean
 }
 
