@@ -89,6 +89,20 @@ format: ## Format code
 pre-commit: format lint ## Run pre-commit checks
 	@echo "✅ Pre-commit checks completed!"
 
+deploy-demo: frontend
+	@echo "🚀 Deploying demo..."
+	@echo "This is a placeholder for the demo deployment process."
+	git stash
+	git checkout main
+	git pull
+	git checkout demo
+	git rebase main
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o $(BINARY_NAME)-demo .
+	scp ./$(BINARY_NAME)-demo root@tencent-sg:/root/kite.1
+	ssh root@tencent-sg "mv /root/kite.1 /root/kite && systemctl restart kite.service"
+	git checkout main
+	git stash pop
+	rm -f $(BINARY_NAME)-demo
 
 define go-install-tool
 @[ -f "$(1)-$(3)" ] || { \

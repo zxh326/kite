@@ -149,6 +149,13 @@ export function LoginPage() {
               </CardTitle>
               <CardDescription className="text-gray-600">
                 {t('login.subtitle')}
+
+                <p className="text-sm text-gray-500 mt-2">
+                  login with username: admin, password: pass
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  or use github login (OAuth allow for any users)
+                </p>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
