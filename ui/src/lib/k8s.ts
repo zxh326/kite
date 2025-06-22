@@ -1,5 +1,6 @@
 import { Deployment } from 'kubernetes-types/apps/v1'
 import { Pod } from 'kubernetes-types/core/v1'
+import { ObjectMeta } from 'kubernetes-types/meta/v1'
 
 import { DeploymentStatusType } from '@/types/k8s'
 
@@ -255,4 +256,56 @@ export function getDeploymentStatus(
   }
 
   return 'Unknown'
+}
+
+// Get owner reference information for a pod
+export function getOwnerInfo(metadata?: ObjectMeta) {
+  if (!metadata) {
+    return null
+  }
+  const ownerRefs = metadata.ownerReferences
+  if (!ownerRefs || ownerRefs.length === 0) {
+    return null
+  }
+
+  const ownerRef = ownerRefs[0]
+  const standardK8sResources = [
+    'pods',
+    'deployments',
+    'statefulsets',
+    'daemonsets',
+    'replicasets',
+    'jobs',
+    'cronjobs',
+    'services',
+    'configmaps',
+    'secrets',
+    'persistentvolumeclaims',
+    'persistentvolumes',
+    'ingresses',
+    'namespaces',
+    'nodes',
+    'events',
+    'storageclasses',
+  ]
+
+  const resourcePath = ownerRef.kind.toLowerCase() + 's'
+
+  if (standardK8sResources.includes(resourcePath)) {
+    return {
+      kind: ownerRef.kind,
+      name: ownerRef.name,
+      path: `/${resourcePath}/${metadata.namespace}/${ownerRef.name}`,
+      controller: ownerRef.controller || false,
+    }
+  } else {
+    const apiVersion = ownerRef.apiVersion || ''
+    const group = apiVersion.includes('/') ? apiVersion.split('/')[0] : ''
+    return {
+      kind: ownerRef.kind,
+      name: ownerRef.name,
+      path: `/crds/${ownerRef.kind.toLowerCase()}s.${group}/${metadata.namespace}/${ownerRef.name}`,
+      controller: ownerRef.controller || false,
+    }
+  }
 }

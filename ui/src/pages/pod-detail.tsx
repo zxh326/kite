@@ -6,7 +6,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { deleteResource, updateResource, useResource } from '@/lib/api'
-import { getPodErrorMessage, getPodStatus } from '@/lib/k8s'
+import { getOwnerInfo, getPodErrorMessage, getPodStatus } from '@/lib/k8s'
 import { formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -268,6 +268,29 @@ export function PodDetail(props: { namespace: string; name: string }) {
                           {pod.status?.hostIP || 'Not assigned'}
                         </p>
                       </div>
+                      {getOwnerInfo(pod.metadata) && (
+                        <div>
+                          <Label className="text-xs text-muted-foreground">
+                            Owner
+                          </Label>
+                          <p className="text-sm">
+                            {(() => {
+                              const ownerInfo = getOwnerInfo(pod.metadata)
+                              if (!ownerInfo) {
+                                return 'No owner'
+                              }
+                              return (
+                                <Link
+                                  to={ownerInfo.path}
+                                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                                >
+                                  {ownerInfo.kind}/{ownerInfo.name}
+                                </Link>
+                              )
+                            })()}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     <LabelsAnno
                       labels={pod.metadata?.labels || {}}

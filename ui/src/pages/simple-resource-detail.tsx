@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { IconLoader, IconRefresh, IconTrash } from '@tabler/icons-react'
 import * as yaml from 'js-yaml'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { ResourceType, ResourceTypeMap } from '@/types/api'
 import { deleteResource, updateResource, useResource } from '@/lib/api'
+import { getOwnerInfo } from '@/lib/k8s'
 import { formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -186,6 +187,29 @@ export function SimpleResourceDetail<T extends ResourceType>(props: {
                           {data.metadata?.uid || 'N/A'}
                         </p>
                       </div>
+                      {getOwnerInfo(data.metadata) && (
+                        <div>
+                          <Label className="text-xs text-muted-foreground">
+                            Owner
+                          </Label>
+                          <p className="text-sm">
+                            {(() => {
+                              const ownerInfo = getOwnerInfo(data.metadata)
+                              if (!ownerInfo) {
+                                return 'No owner'
+                              }
+                              return (
+                                <Link
+                                  to={ownerInfo.path}
+                                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                                >
+                                  {ownerInfo.kind}/{ownerInfo.name}
+                                </Link>
+                              )
+                            })()}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     <LabelsAnno
                       labels={data.metadata?.labels || {}}

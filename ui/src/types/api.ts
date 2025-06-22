@@ -1,8 +1,13 @@
 // API types for Custom Resources
 
 import { CustomResourceDefinition } from 'kubernetes-types/apiextensions/v1'
-import { DaemonSet, Deployment, StatefulSet } from 'kubernetes-types/apps/v1'
-import { Job } from 'kubernetes-types/batch/v1'
+import {
+  DaemonSet,
+  Deployment,
+  ReplicaSet,
+  StatefulSet,
+} from 'kubernetes-types/apps/v1'
+import { CronJob, Job } from 'kubernetes-types/batch/v1'
 import {
   ConfigMap,
   Event,
@@ -56,6 +61,7 @@ export type ResourceType =
   | 'statefulsets'
   | 'daemonsets'
   | 'jobs'
+  | 'cronjobs'
   | 'services'
   | 'configmaps'
   | 'secrets'
@@ -69,6 +75,7 @@ export type ResourceType =
   | 'persistentvolumeclaims'
   | 'storageclasses'
   | 'podmetrics'
+  | 'replicasets'
 
 export const clusterScopeResources: ResourceType[] = [
   'crds',
@@ -104,6 +111,10 @@ export interface ResourcesTypeMap {
   }
   jobs: {
     items: Job[]
+    metadata?: listMetadataType
+  }
+  cronjobs: {
+    items: CronJob[]
     metadata?: listMetadataType
   }
   services: {
@@ -170,6 +181,10 @@ export interface ResourcesTypeMap {
     }[]
     metadata?: listMetadataType
   }
+  replicasets: {
+    items: ReplicaSet[]
+    metadata?: listMetadataType
+  }
 }
 
 export interface ResourceTypeMap {
@@ -178,6 +193,7 @@ export interface ResourceTypeMap {
   statefulsets: StatefulSet
   daemonsets: DaemonSet
   jobs: Job
+  cronjobs: CronJob
   services: Service
   configmaps: ConfigMap
   secrets: Secret
@@ -190,6 +206,7 @@ export interface ResourceTypeMap {
   events: Event
   persistentvolumes: PersistentVolume
   storageclasses: StorageClass
+  replicasets: ReplicaSet
   podmetrics: {
     metadata: {
       name: string

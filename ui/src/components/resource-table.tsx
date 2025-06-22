@@ -353,11 +353,13 @@ export function ResourceTable<T>({
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <NamespaceSelector
-              selectedNamespace={selectedNamespace}
-              handleNamespaceChange={handleNamespaceChange}
-              showAll={true}
-            />
+            {!clusterScope && (
+              <NamespaceSelector
+                selectedNamespace={selectedNamespace}
+                handleNamespaceChange={handleNamespaceChange}
+                showAll={true}
+              />
+            )}
             {/* Column Filters */}
             {table
               .getAllColumns()
