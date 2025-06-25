@@ -907,7 +907,11 @@ export function NodeDetail(props: { name: string }) {
                     </>
                   ),
                   content: (
-                    <PodTable pods={relatedPods} isLoading={isLoadingRelated} />
+                    <PodTable
+                      pods={relatedPods}
+                      isLoading={isLoadingRelated}
+                      hiddenNode
+                    />
                   ),
                 },
               ]
