@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 
 import { useResources } from '@/lib/api'
 import { getPodStatus } from '@/lib/k8s'
+import { formatDate } from '@/lib/utils'
 
 import { PodStatusIcon } from './pod-status-icon'
 import { Column, SimpleTable } from './simple-table'
@@ -15,6 +16,7 @@ export function PodTable(props: {
   pods?: Pod[]
   labelSelector?: string
   isLoading?: boolean
+  hiddenNode?: boolean
 }) {
   const { pods, isLoading } = props
 
@@ -71,6 +73,15 @@ export function PodTable(props: {
             </div>
           )
         },
+      },
+      {
+        header: 'Ready',
+        accessor: (pod: Pod) => {
+          const containerStatuses = pod.status?.containerStatuses || []
+          const readyCount = containerStatuses.filter((s) => s.ready).length
+          return `${readyCount} / ${containerStatuses.length}`
+        },
+        cell: (value: unknown) => value as string,
       },
       {
         header: 'Status',
@@ -134,32 +145,35 @@ export function PodTable(props: {
         accessor: (pod: Pod) => pod.status?.podIP || '-',
         cell: (value: unknown) => value as string,
       },
-      {
-        header: 'Node',
-        accessor: (pod: Pod) => pod.spec?.nodeName || '-',
-        cell: (value: unknown) => (
-          <Link
-            to={`/nodes/${value}`}
-            className="text-blue-600 hover:text-blue-800 hover:underline"
-          >
-            {value as string}
-          </Link>
-        ),
-      },
+      ...(props.hiddenNode
+        ? []
+        : [
+            {
+              header: 'Node',
+              accessor: (pod: Pod) => pod.spec?.nodeName || '-',
+              cell: (value: unknown) => (
+                <Link
+                  to={`/nodes/${value}`}
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {value as string}
+                </Link>
+              ),
+            },
+          ]),
       {
         header: 'Created',
         accessor: (pod: Pod) => pod.metadata?.creationTimestamp || '',
         cell: (value: unknown) => {
-          const date = new Date(value as string)
           return (
             <span className="text-muted-foreground text-sm">
-              {date.toLocaleString()}
+              {formatDate(value as string, true)}
             </span>
           )
         },
       },
     ],
-    [metricsMap]
+    [metricsMap, props.hiddenNode]
   )
 
   if (isLoading) {
