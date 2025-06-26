@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  IconClearAll,
   IconDownload,
   IconPalette,
   IconSearch,
@@ -70,6 +71,7 @@ export function LogViewer({
     return (saved as LogTheme) || 'classic'
   })
   const logContainerRef = useRef<HTMLDivElement>(null)
+  const [logStartIndex, setLogStartIndex] = useState(0)
 
   const [selectPodName, setSelectPodName] = useState<string | undefined>(
     podName || pods?.[0]?.metadata?.name || ''
@@ -138,6 +140,12 @@ export function LogViewer({
     }
   )
 
+  const handleClearLogs = useCallback(() => {
+    if (logs) {
+      setLogStartIndex(logs.length)
+    }
+  }, [logs])
+
   // Stop previous stream when critical parameters change
   useEffect(() => {
     // Show reconnecting state when parameters change
@@ -176,9 +184,15 @@ export function LogViewer({
     scrollToBottom()
   }, [logsData.logs.length, scrollToBottom])
 
+  const displayedLogCount = useMemo(
+    () => (logsData?.logs?.slice(logStartIndex) || []).length,
+    [logsData?.logs, logStartIndex]
+  )
+
   const filteredLogs = useMemo(() => {
+    const logsToFilter = logsData?.logs?.slice(logStartIndex) || []
     const logs =
-      logsData?.logs?.filter((line) =>
+      logsToFilter.filter((line) =>
         searchTerm
           ? stripAnsi(line).toLowerCase().includes(searchTerm.toLowerCase())
           : true
@@ -189,7 +203,7 @@ export function LogViewer({
       return logs.slice(-maxDisplayLines)
     }
     return logs
-  }, [logsData?.logs, searchTerm])
+  }, [logsData?.logs, searchTerm, logStartIndex])
 
   const downloadLogs = () => {
     if (!logsData?.logs) return
@@ -237,8 +251,7 @@ export function LogViewer({
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span>
                   {filteredLogs?.length || 0} lines
-                  {searchTerm &&
-                    ` (filtered from ${logsData?.logs?.length || 0})`}
+                  {searchTerm && ` (filtered from ${displayedLogCount || 0})`}
                   {logsData?.logs && logsData.logs.length > 10000 && (
                     <span className="text-yellow-600 ml-1">
                       (showing last 10k lines)
@@ -450,6 +463,16 @@ export function LogViewer({
                 </div>
               </PopoverContent>
             </Popover>
+
+            {/* Clear Logs */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearLogs}
+              title="Clear logs"
+            >
+              <IconClearAll className="h-4 w-4" />
+            </Button>
 
             {/* Download */}
             <Button
