@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Pod } from 'kubernetes-types/core/v1'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 import { getPodStatus } from '@/lib/k8s'
 import { formatDate } from '@/lib/utils'
@@ -10,6 +11,7 @@ import { PodStatusIcon } from '@/components/pod-status-icon'
 import { ResourceTable } from '@/components/resource-table'
 
 export function PodListPage() {
+  const { t } = useTranslation()
   // Define column helper outside of any hooks
   const columnHelper = createColumnHelper<Pod>()
 
@@ -17,7 +19,7 @@ export function PodListPage() {
   const columns = useMemo(
     () => [
       columnHelper.accessor('metadata.name', {
-        header: 'Name',
+        header: t('common.name'),
         cell: ({ row }) => (
           <div className="font-medium text-blue-500 hover:underline">
             <Link
@@ -32,7 +34,7 @@ export function PodListPage() {
       }),
       columnHelper.accessor((row) => row.status!.containerStatuses, {
         id: 'containers',
-        header: 'Ready',
+        header: t('pods.ready'),
         cell: ({ row }) => {
           const containerStatuses = row.original.status!.containerStatuses || []
           return (
@@ -44,7 +46,7 @@ export function PodListPage() {
         },
       }),
       columnHelper.accessor('status.phase', {
-        header: 'Status',
+        header: t('common.status'),
         enableColumnFilter: true,
         cell: ({ row }) => {
           const status = getPodStatus(row.original)
@@ -61,12 +63,12 @@ export function PodListPage() {
         cell: ({ getValue }) => getValue() || '-',
       }),
       columnHelper.accessor('spec.nodeName', {
-        header: 'Node',
+        header: t('pods.node'),
         enableColumnFilter: true,
         cell: ({ getValue }) => getValue() || '-',
       }),
       columnHelper.accessor('metadata.creationTimestamp', {
-        header: 'Created',
+        header: t('common.created'),
         cell: ({ getValue }) => {
           const dateStr = formatDate(getValue() || '')
 
@@ -76,7 +78,7 @@ export function PodListPage() {
         },
       }),
     ],
-    [columnHelper]
+    [columnHelper, t]
   )
 
   // Custom filter for pod search

@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { OverviewData } from '@/types/api'
 import {
@@ -17,6 +18,7 @@ export interface ResourceChartsProps {
 }
 
 export function ResourceCharts(props: ResourceChartsProps) {
+  const { t } = useTranslation()
   const { isLoading, error, isError } = props
   const chartData = useMemo(() => {
     const { cpu, memory } = props.data || {
@@ -25,7 +27,7 @@ export function ResourceCharts(props: ResourceChartsProps) {
     }
     return [
       {
-        name: 'CPU Resources',
+        name: t('monitoring.cpuUsage'),
         request: cpu.requested / 1000,
         limit: cpu.limited / 1000,
         total: cpu.allocatable / 1000,
@@ -34,7 +36,7 @@ export function ResourceCharts(props: ResourceChartsProps) {
         unit: 'cores',
       },
       {
-        name: 'Memory Resources',
+        name: t('monitoring.memoryUsage'),
         request: memory.requested / 1024 / 1024 / 1024 / 1024,
         limit: memory.limited / 1024 / 1024 / 1024 / 1024,
         total: memory.allocatable / 1024 / 1024 / 1024 / 1024,
@@ -43,7 +45,7 @@ export function ResourceCharts(props: ResourceChartsProps) {
         unit: 'GiB',
       },
     ]
-  }, [props])
+  }, [props, t])
 
   if (isLoading) {
     return (
