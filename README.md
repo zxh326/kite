@@ -124,6 +124,8 @@ docker run --rm -p 8080:8080 -v ~/.kube/config:/home/nonroot/.kube/config ghcr.i
 
    ```bash
    kubectl apply -f deploy/install.yaml
+   # or install it online
+   kubectl apply -f https://raw.githubusercontent.com/zxh326/kite/refs/heads/main/deploy/install.yaml
    ```
 
 2. **Access via port-forward**
