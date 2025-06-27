@@ -131,7 +131,7 @@ docker run --rm -p 8080:8080 -v ~/.kube/config:/home/nonroot/.kube/config ghcr.i
 2. **Access via port-forward**
 
    ```bash
-   kubectl port-forward -n kube-system svc/kite 8080:8080
+   kubectl port-forward -n kube-system svc/kite 8080:80
    ```
 
 ### Build from Source
