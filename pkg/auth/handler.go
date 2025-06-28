@@ -123,7 +123,8 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 
 	if code == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Authorization code not provided",
+			// "error": "Authorization code not provided",
+			"error": i18n.I18N.T("Errors.AuthCodeMissing"),
 		})
 		return
 	}
@@ -182,7 +183,8 @@ func (h *AuthHandler) GetUser(c *gin.Context) {
 	user, exists := c.Get("user")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Not authenticated",
+			// "error": "Not authenticated",
+			"error": i18n.I18N.T("Errors.Unauthenticated"),
 		})
 		return
 	}
@@ -216,7 +218,8 @@ func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 			authHeader := c.GetHeader("Authorization")
 			if authHeader == "" {
 				c.JSON(http.StatusUnauthorized, gin.H{
-					"error": "No authorization token provided",
+					// "error": "No authorization token provided",
+					"error": i18n.I18N.T("Errors.NoTokenProvided"),
 				})
 				c.Abort()
 				return
@@ -226,7 +229,8 @@ func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 				tokenString = authHeader[7:]
 			} else {
 				c.JSON(http.StatusUnauthorized, gin.H{
-					"error": "Invalid authorization header format",
+					// "error": "Invalid authorization header format",
+					"error": i18n.I18N.T("Errors.InvalidHeaderFormat"),
 				})
 				c.Abort()
 				return
@@ -240,7 +244,8 @@ func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 			refreshedToken, refreshErr := h.manager.RefreshJWT(tokenString)
 			if refreshErr != nil {
 				c.JSON(http.StatusUnauthorized, gin.H{
-					"error": "Invalid or expired token",
+					// "error": "Invalid or expired token",
+					"error": i18n.I18N.T("Errors.TokenInvalidOrExpired"),
 				})
 				c.Abort()
 				return
@@ -253,7 +258,8 @@ func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 			claims, err = h.manager.ValidateJWT(refreshedToken)
 			if err != nil {
 				c.JSON(http.StatusUnauthorized, gin.H{
-					"error": "Failed to validate refreshed token",
+					// "error": "Failed to validate refreshed token",
+					"error": i18n.I18N.T("Errors.TokenValidationFailed"),
 				})
 				c.Abort()
 				return
@@ -277,7 +283,8 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	tokenString, err := c.Cookie("auth_token")
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "No token found",
+			// "error": "No token found",
+			"error": i18n.I18N.T("Errors.TokenNotFound"),
 		})
 		return
 	}
@@ -286,7 +293,8 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	newToken, err := h.manager.RefreshJWT(tokenString)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Failed to refresh token",
+			// "error": "Failed to refresh token",
+			"error": i18n.I18N.T("Errors.TokenRefreshFailed"),
 		})
 		return
 	}
