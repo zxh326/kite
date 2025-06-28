@@ -9,15 +9,17 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zxh326/kite/pkg/common"
-	"github.com/zxh326/kite/pkg/kube"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/kube"
 )
 
 type GenericResourceHandler[T client.Object, V client.ObjectList] struct {
@@ -110,19 +112,6 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 			listOpts = append(listOpts, client.InNamespace(namespace))
 		}
 	}
-	if c.Query("limit") != "" {
-		limit, err := strconv.ParseInt(c.Query("limit"), 10, 64)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid limit parameter"})
-			return
-		}
-		listOpts = append(listOpts, client.Limit(limit))
-	}
-
-	if c.Query("continue") != "" {
-		continueToken := c.Query("continue")
-		listOpts = append(listOpts, client.Continue(continueToken))
-	}
 
 	// Add label selector support
 	if c.Query("labelSelector") != "" {
@@ -156,8 +145,6 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 	}
 
 	// Sort by creation timestamp in descending order (newest first)
-	// Extract items using reflection and sort them directly
-
 	items, err := meta.ExtractList(objectList)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to extract items from list"})
@@ -178,9 +165,44 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 
 		return t1.After(t2.Time)
 	})
-	_ = meta.SetList(objectList, items)
 
-	c.JSON(http.StatusOK, objectList)
+	// Check if pagination parameters are provided
+	pageParam := c.Query("page")
+	pageSizeParam := c.Query("pageSize")
+	hasPaginationParams := pageParam != "" || pageSizeParam != ""
+
+	if hasPaginationParams {
+		// Pagination logic
+		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+		pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
+
+		totalItems := len(items)
+		startIndex := (page - 1) * pageSize
+		endIndex := startIndex + pageSize
+		if startIndex < 0 {
+			startIndex = 0
+		}
+		if endIndex > totalItems {
+			endIndex = totalItems
+		}
+
+		paginatedItems := []runtime.Object{}
+		if startIndex < totalItems {
+			paginatedItems = items[startIndex:endIndex]
+		}
+
+		// Set paginated items back to the list
+		_ = meta.SetList(objectList, paginatedItems)
+
+		// Create response using helper function
+		response := common.NewPaginatedResponse(objectList, totalItems, page, pageSize)
+
+		c.JSON(http.StatusOK, response)
+	} else {
+		// Return original format for non-paginated requests
+		_ = meta.SetList(objectList, items)
+		c.JSON(http.StatusOK, objectList)
+	}
 }
 
 func (h *GenericResourceHandler[T, V]) Create(c *gin.Context) {
