@@ -1,0 +1,16 @@
+{
+    "errors": {
+        "invalid_payload": "请求数据无效",
+        "invalid_credentials": "用户名或密码错误",
+        "jwt_generation_failed": "生成 JWT 失败",
+        "auth_code_missing": "缺少授权码",
+        "provider_not_found": "未找到提供方：{{provider}}",
+        "unauthenticated": "未认证的访问",
+        "no_token_provided": "未提供授权令牌",
+        "invalid_header_format": "授权头格式无效",
+        "token_invalid_or_expired": "令牌无效或已过期",
+        "token_validation_failed": "验证刷新令牌失败",
+        "token_not_found": "未找到令牌",
+        "token_refresh_failed": "刷新令牌失败"
+    }
+}

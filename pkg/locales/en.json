@@ -1,0 +1,16 @@
+{
+    "errors": {
+        "invalid_payload": "Invalid request payload",
+        "invalid_credentials": "Invalid username or password",
+        "jwt_generation_failed": "Failed to generate JWT",
+        "auth_code_missing": "Authorization code not provided",
+        "provider_not_found": "Provider not found: {provider}",
+        "unauthenticated": "Not authenticated",
+        "no_token_provided": "No authorization token provided",
+        "invalid_header_format": "Invalid authorization header format",
+        "token_invalid_or_expired": "Invalid or expired token",
+        "token_validation_failed": "Failed to validate refreshed token",
+        "token_not_found": "No token found",
+        "token_refresh_failed": "Failed to refresh token"
+    }
+}
