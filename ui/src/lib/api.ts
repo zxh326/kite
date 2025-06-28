@@ -344,57 +344,6 @@ export const useResources = <T extends ResourceType>(
   })
 }
 
-export const useResourcesV2 = <T extends ResourceType>(
-  resource: T,
-  namespace?: string,
-  options?: {
-    staleTime?: number
-    limit?: number
-    continue?: string
-    labelSelector?: string
-  }
-): ReturnType<
-  typeof useQuery<
-    ResourcesTypeMap[T],
-    Error,
-    PaginatedResult<ResourcesItems<T>>
-  >
-> => {
-  return useQuery({
-    queryKey: [
-      resource,
-      namespace,
-      options?.limit,
-      options?.continue,
-      options?.labelSelector,
-    ],
-    queryFn: () => {
-      return fetchResources<ResourcesTypeMap[T]>(
-        resource,
-        namespace,
-        options?.limit,
-        options?.continue,
-        options?.labelSelector
-      )
-    },
-    enabled:
-      clusterScopeResources.includes(resource) ||
-      (namespace !== undefined && namespace !== ''),
-    select: (data: ResourcesTypeMap[T]) => {
-      return {
-        items: data.items,
-        pagination: {
-          hasNextPage: !!data.metadata?.continue,
-          nextContinueToken: data.metadata?.continue,
-          remainingItems: data.metadata?.remainingItemCount,
-        },
-      }
-    },
-    placeholderData: (prevData) => prevData,
-    staleTime: options?.staleTime || (resource === 'crds' ? 5000 : 1000),
-  })
-}
-
 export const fetchResource = <T>(
   resource: string,
   name: string,
@@ -540,154 +489,78 @@ export const usePodMetrics = (
 export const usePaginatedResources = <T extends ResourceType>(
   resource: T,
   namespace?: string,
-  options?: {
-    staleTime?: number
-    pageSize?: number
-    initialContinueToken?: string
-  }
+  initialPageSize: number = 20
 ) => {
-  const [continueToken, setContinueToken] = useState<string | undefined>(
-    options?.initialContinueToken
-  )
-  const [allItems, setAllItems] = useState<ResourcesItems<T>>(
-    [] as ResourcesItems<T>
-  )
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(initialPageSize)
 
-  const pageSize = options?.pageSize || 20
+  // Reset page to 1 when namespace changes
+  useEffect(() => {
+    setPage(1)
+  }, [namespace])
 
-  const query = useResourcesV2(resource, namespace, {
-    staleTime: options?.staleTime,
-    limit: pageSize,
-    continue: continueToken,
+  const query = useQuery({
+    queryKey: [resource, namespace, page, pageSize],
+    queryFn: () => {
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+      })
+      const endpoint = namespace
+        ? `/${resource}/${namespace}?${queryParams}`
+        : `/${resource}?${queryParams}`
+
+      const fullUrl = API_BASE_URL + endpoint
+
+      return fetch(fullUrl).then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`)
+        }
+
+        const data = await res.json()
+
+        // Extract pagination info from response body
+        const pagination = data.pagination || {}
+        const totalCount = pagination.totalCount || 0
+        const totalPages = pagination.totalPages || 1
+        const currentPage = pagination.currentPage || 1
+        const pageSize = pagination.pageSize || 20
+
+        // Return the items along with pagination info
+        return {
+          items: data.items?.items || data.items || [],
+          totalPages,
+          totalCount,
+          currentPage,
+          pageSize,
+        }
+      })
+    },
+    enabled:
+      clusterScopeResources.includes(resource) ||
+      (namespace !== undefined && namespace !== ''),
+    placeholderData: (prevData) => prevData,
+    staleTime: resource === 'crds' ? 5000 : 1000,
   })
 
-  const { data, isLoading, error, refetch } = query
-
-  // Update all items when new data comes in
-  useEffect(() => {
-    if (data?.items) {
-      if (!continueToken) {
-        // First page or refresh
-        setAllItems(data.items)
-      } else {
-        // Subsequent pages - append to existing items
-        setAllItems((prev) => [...prev, ...data.items] as ResourcesItems<T>)
-      }
-      setIsLoadingMore(false)
-    }
-  }, [data, continueToken])
-
-  const loadNextPage = useCallback(() => {
-    if (
-      data?.pagination.hasNextPage &&
-      data.pagination.nextContinueToken &&
-      !isLoadingMore
-    ) {
-      setIsLoadingMore(true)
-      setContinueToken(data.pagination.nextContinueToken)
-    }
-  }, [data?.pagination, isLoadingMore])
-
-  const reset = useCallback(() => {
-    setContinueToken(undefined)
-    setAllItems([] as ResourcesItems<T>)
-    setIsLoadingMore(false)
-  }, [])
-
-  const refresh = useCallback(() => {
-    reset()
-    refetch()
-  }, [reset, refetch])
+  const handleSetPageSize = (size: number) => {
+    setPageSize(size)
+    setPage(1) // Reset to first page when page size changes
+  }
 
   return {
-    // Data
-    items: allItems,
-    currentPageItems: data?.items || ([] as ResourcesItems<T>),
-
-    // Pagination info
-    hasNextPage: data?.pagination.hasNextPage || false,
-    remainingItems: data?.pagination.remainingItems,
-    isLoadingMore,
-
-    // Loading states
-    isLoading: isLoading && !continueToken, // Only true for initial load
-    isLoadingNextPage: isLoadingMore,
-
-    // Error
-    error,
-
-    // Actions
-    loadNextPage,
-    refresh,
-    reset,
+    ...query,
+    items: query.data?.items || [],
+    page,
+    setPage,
+    pageSize,
+    setPageSize: handleSetPageSize,
+    totalPages: query.data?.totalPages || 1,
+    totalCount: query.data?.totalCount || 0,
   }
 }
 
 // Simple pagination hook for traditional page-by-page navigation
-export const useSimplePagination = <T extends ResourceType>(
-  resource: T,
-  namespace?: string,
-  pageSize: number = 20
-) => {
-  const [currentPage, setCurrentPage] = useState(0)
-  const [continueTokens, setContinueTokens] = useState<(string | undefined)[]>([
-    undefined,
-  ])
-
-  const query = useResourcesV2(resource, namespace, {
-    limit: pageSize,
-    continue: continueTokens[currentPage],
-  })
-
-  const { data, isLoading, error } = query
-
-  const goToNextPage = useCallback(() => {
-    if (data?.pagination.hasNextPage && data.pagination.nextContinueToken) {
-      const nextPage = currentPage + 1
-      setContinueTokens((prev) => {
-        const newTokens = [...prev]
-        newTokens[nextPage] = data.pagination.nextContinueToken
-        return newTokens
-      })
-      setCurrentPage(nextPage)
-    }
-  }, [data?.pagination, currentPage])
-
-  const goToPreviousPage = useCallback(() => {
-    if (currentPage > 0) {
-      setCurrentPage(currentPage - 1)
-    }
-  }, [currentPage])
-
-  const resetPagination = useCallback(() => {
-    setCurrentPage(0)
-    setContinueTokens([undefined])
-  }, [])
-
-  return {
-    // Data
-    items: data?.items || ([] as ResourcesItems<T>),
-
-    // Pagination info
-    currentPage,
-    hasNextPage: data?.pagination.hasNextPage || false,
-    hasPreviousPage: currentPage > 0,
-    remainingItems: data?.pagination.remainingItems,
-    pageSize,
-
-    // Loading states
-    isLoading,
-
-    // Error
-    error,
-
-    // Actions
-    goToNextPage,
-    goToPreviousPage,
-    resetPagination,
-  }
-}
 
 // Logs API functions
 export interface LogsResponse {
