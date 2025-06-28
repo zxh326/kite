@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/i18n"
 	"k8s.io/klog/v2"
 )
 
@@ -41,7 +42,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	oauthProvider, err := h.manager.GetProvider(provider)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Provider not supported: " + provider,
+			"error": i18n.I18N.T("Errors.ProviderNotFound", map[string]any{"provider": provider}),
 		})
 		return
 	}
@@ -66,20 +67,21 @@ func (h *AuthHandler) Login(c *gin.Context) {
 func (h *AuthHandler) PasswordLogin(c *gin.Context) {
 	if common.KiteUsername == "" || common.KitePassword == "" {
 		c.JSON(http.StatusForbidden, gin.H{
-			"error": "Password authentication is not enabled.",
+			// "error": "Password authentication is not enabled.",
+			"error": i18n.I18N.T("Errors.InvalidCredentials"),
 		})
 		return
 	}
 
 	var req common.PasswordLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.I18N.T("Errors.InvalidPayload")})
 		return
 	}
 
 	// Validate credentials
 	if req.Username != common.KiteUsername || req.Password != common.KitePassword {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": i18n.I18N.T("Errors.InvalidCredentials")})
 		return
 	}
 
@@ -92,7 +94,7 @@ func (h *AuthHandler) PasswordLogin(c *gin.Context) {
 
 	jwtToken, err := h.manager.GenerateJWT(user, "")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate JWT"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.I18N.T("Errors.JWTGenerationFailed")})
 		return
 	}
 
@@ -130,7 +132,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 	oauthProvider, err := h.manager.GetProvider(provider)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Provider not found: " + provider,
+			"error": i18n.I18N.T("Errors.ProviderNotFound", map[string]any{"provider": provider}),
 		})
 		return
 	}

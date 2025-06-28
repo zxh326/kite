@@ -4,7 +4,7 @@
         "invalid_credentials": "用户名或密码错误",
         "jwt_generation_failed": "生成 JWT 失败",
         "auth_code_missing": "缺少授权码",
-        "provider_not_found": "未找到提供方：{{provider}}",
+        "provider_not_found": "未找到提供方：{provider}",
         "unauthenticated": "未认证的访问",
         "no_token_provided": "未提供授权令牌",
         "invalid_header_format": "授权头格式无效",
