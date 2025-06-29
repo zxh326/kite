@@ -22,6 +22,7 @@ import {
 } from '@tabler/icons-react'
 import { ChevronDown } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 import {
   Sidebar,
@@ -38,134 +39,108 @@ import {
 
 import { Collapsible, CollapsibleTrigger } from './ui/collapsible'
 
-const menus = {
-  Workload: [
-    {
-      title: 'Pods',
-      url: '/pods',
-      icon: IconBox,
-    },
-    {
-      title: 'Deployments',
-      url: '/deployments',
-      icon: IconRocket,
-    },
-    {
-      title: 'StatefulSets',
-      url: '/statefulsets',
-      icon: IconStack2,
-    },
-    {
-      title: 'DaemonSets',
-      url: '/daemonsets',
-      icon: IconTopologyBus,
-    },
-    {
-      title: 'Jobs',
-      url: '/jobs',
-      icon: IconPlayerPlay,
-    },
-    {
-      title: 'CronJobs',
-      url: '/cronjobs',
-      icon: IconClockHour4,
-    },
-  ],
-  Traffic: [
-    {
-      title: 'Ingresses',
-      url: '/ingresses',
-      icon: IconRouter,
-    },
-    {
-      title: 'Services',
-      url: '/services',
-      icon: IconNetwork,
-    },
-  ],
-  Storage: [
-    {
-      title: 'PVCs',
-      url: '/persistentvolumeclaims',
-      icon: IconFileDatabase,
-    },
-    {
-      title: 'PVs',
-      url: '/persistentvolumes',
-      icon: IconDatabase,
-    },
-    {
-      title: 'Storage Classes',
-      url: '/storageclasses',
-      icon: IconFileDatabase,
-    },
-  ],
-  Config: [
-    {
-      title: 'ConfigMaps',
-      url: '/configmaps',
-      icon: IconMap,
-    },
-    {
-      title: 'Secrets',
-      url: '/secrets',
-      icon: IconLock,
-    },
-  ],
-  // 'Access Control': [
-  //   {
-  //     title: 'ServiceAccounts',
-  //     url: '/serviceaccounts',
-  //     icon: IconUserCheck,
-  //   },
-  //   {
-  //     title: 'Roles',
-  //     url: '/roles',
-  //     icon: IconKey,
-  //   },
-  //   {
-  //     title: 'RoleBindings',
-  //     url: '/rolebindings',
-  //     icon: IconLink,
-  //   },
-  //   {
-  //     title: 'ClusterRoles',
-  //     url: '/clusterroles',
-  //     icon: IconShieldCheck,
-  //   },
-  //   {
-  //     title: 'ClusterRoleBindings',
-  //     url: '/clusterrolebindings',
-  //     icon: IconUsers,
-  //   },
-  // ],
-  Other: [
-    {
-      title: 'Namespaces',
-      url: '/namespaces',
-      icon: IconBoxMultiple,
-    },
-    {
-      title: 'Nodes',
-      url: '/nodes',
-      icon: IconServer2,
-    },
-    {
-      title: 'Events',
-      url: '/events',
-      icon: IconBell,
-    },
-    {
-      title: 'CRDs',
-      url: '/crds',
-      icon: IconCode,
-    },
-  ],
-}
-
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { t } = useTranslation()
   const location = useLocation()
   const { isMobile, setOpenMobile } = useSidebar()
+
+  const menus = {
+    [t('nav.workloads')]: [
+      {
+        title: t('nav.pods'),
+        url: '/pods',
+        icon: IconBox,
+      },
+      {
+        title: t('nav.deployments'),
+        url: '/deployments',
+        icon: IconRocket,
+      },
+      {
+        title: 'StatefulSets',
+        url: '/statefulsets',
+        icon: IconStack2,
+      },
+      {
+        title: 'DaemonSets',
+        url: '/daemonsets',
+        icon: IconTopologyBus,
+      },
+      {
+        title: t('nav.jobs'),
+        url: '/jobs',
+        icon: IconPlayerPlay,
+      },
+      {
+        title: 'CronJobs',
+        url: '/cronjobs',
+        icon: IconClockHour4,
+      },
+    ],
+    Traffic: [
+      {
+        title: t('nav.ingresses'),
+        url: '/ingresses',
+        icon: IconRouter,
+      },
+      {
+        title: t('nav.services'),
+        url: '/services',
+        icon: IconNetwork,
+      },
+    ],
+    Storage: [
+      {
+        title: 'PVCs',
+        url: '/persistentvolumeclaims',
+        icon: IconFileDatabase,
+      },
+      {
+        title: 'PVs',
+        url: '/persistentvolumes',
+        icon: IconDatabase,
+      },
+      {
+        title: 'Storage Classes',
+        url: '/storageclasses',
+        icon: IconFileDatabase,
+      },
+    ],
+    Config: [
+      {
+        title: t('nav.configMaps'),
+        url: '/configmaps',
+        icon: IconMap,
+      },
+      {
+        title: t('nav.secrets'),
+        url: '/secrets',
+        icon: IconLock,
+      },
+    ],
+    Other: [
+      {
+        title: t('nav.namespaces'),
+        url: '/namespaces',
+        icon: IconBoxMultiple,
+      },
+      {
+        title: t('nav.nodes'),
+        url: '/nodes',
+        icon: IconServer2,
+      },
+      {
+        title: 'Events',
+        url: '/events',
+        icon: IconBell,
+      },
+      {
+        title: 'CRDs',
+        url: '/crds',
+        icon: IconCode,
+      },
+    ],
+  }
 
   // Function to check if current path matches menu item
   const isActive = (url: string) => {
@@ -204,13 +179,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
-                tooltip="Overview"
+                tooltip={t('nav.overview')}
                 asChild
                 isActive={isActive('/')}
               >
                 <Link to="/" onClick={handleMenuItemClick}>
                   <IconLayoutDashboard className="text-sidebar-primary" />
-                  <span className="font-medium">Overview</span>
+                  <span className="font-medium">{t('nav.overview')}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

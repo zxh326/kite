@@ -21,6 +21,13 @@ export default defineConfig({
     watch: {
       ignored: ['**/.vscode/**'],
     },
+    proxy: {
+      '/api/': {
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '/api/'),
+        target: 'https://kite-demo.zzde.me',
+      },
+    },
   },
   resolve: {
     alias: {

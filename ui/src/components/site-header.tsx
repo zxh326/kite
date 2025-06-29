@@ -10,6 +10,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { ColorThemeToggle } from './color-theme-toggle'
 import { CreateResourceDialog } from './create-resource-dialog'
 import { DynamicBreadcrumb } from './dynamic-breadcrumb'
+import { LanguageToggle } from './language-toggle'
 import { ModeToggle } from './mode-toggle'
 import { Search } from './search'
 import { UserMenu } from './user-menu'
@@ -61,6 +62,7 @@ export function SiteHeader() {
                   </a>
                 </Button>
                 <ColorThemeToggle />
+                <LanguageToggle />
                 <ModeToggle />
                 <UserMenu />
               </>
