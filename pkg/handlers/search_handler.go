@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -12,23 +11,20 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/zxh326/kite/pkg/common"
 	"github.com/zxh326/kite/pkg/handlers/resources"
-	"github.com/zxh326/kite/pkg/kube"
 	"github.com/zxh326/kite/pkg/utils"
 )
 
 type SearchHandler struct {
-	k8sClient *kube.K8sClient
-	cache     *expirable.LRU[string, []common.SearchResult]
+	cache *expirable.LRU[string, []common.SearchResult]
 }
 type SearchResponse struct {
 	Results []common.SearchResult `json:"results"`
 	Total   int                   `json:"total"`
 }
 
-func NewSearchHandler(client *kube.K8sClient) *SearchHandler {
+func NewSearchHandler() *SearchHandler {
 	return &SearchHandler{
-		k8sClient: client,
-		cache:     expirable.NewLRU[string, []common.SearchResult](100, nil, time.Minute*10),
+		cache: expirable.NewLRU[string, []common.SearchResult](100, nil, time.Minute*10),
 	}
 }
 
@@ -36,7 +32,7 @@ func (h *SearchHandler) createCacheKey(query string) string {
 	return fmt.Sprintf("search:%s", query)
 }
 
-func (h *SearchHandler) Search(ctx context.Context, query string, limit int) ([]common.SearchResult, error) {
+func (h *SearchHandler) Search(c *gin.Context, query string, limit int) ([]common.SearchResult, error) {
 	var allResults []common.SearchResult
 
 	// Search in different resource types
@@ -44,7 +40,7 @@ func (h *SearchHandler) Search(ctx context.Context, query string, limit int) ([]
 	guessSearchResources, q := utils.GuessSearchResources(query)
 	for name, searchFunc := range searchFuncs {
 		if guessSearchResources == "all" || name == guessSearchResources {
-			results, err := searchFunc(ctx, q, int64(limit))
+			results, err := searchFunc(c, q, int64(limit))
 			if err != nil {
 				continue
 			}
@@ -88,14 +84,13 @@ func (h *SearchHandler) GlobalSearch(c *gin.Context) {
 		}
 		go func() {
 			// Perform search in the background to update cache
-			_, _ = h.Search(context.Background(), query, limit)
+			_, _ = h.Search(c, query, limit)
 		}()
 		c.JSON(http.StatusOK, response)
 		return
 	}
 
-	ctx := c.Request.Context()
-	allResults, err := h.Search(ctx, query, limit)
+	allResults, err := h.Search(c, query, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to perform search"})
 		return

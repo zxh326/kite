@@ -41,3 +41,9 @@ type PasswordLoginRequest struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
+
+type ClusterInfo struct {
+	Name      string `json:"name"`
+	Version   string `json:"version"`
+	IsDefault bool   `json:"isDefault"`
+}

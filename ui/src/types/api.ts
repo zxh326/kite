@@ -22,6 +22,13 @@ import {
 import { Ingress } from 'kubernetes-types/networking/v1'
 import { StorageClass } from 'kubernetes-types/storage/v1'
 
+// Cluster types
+export interface Cluster {
+  name: string
+  version: string
+  isDefault: boolean
+}
+
 export interface CustomResource {
   apiVersion: string
   kind: string

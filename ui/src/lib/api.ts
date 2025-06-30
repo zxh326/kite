@@ -767,6 +767,11 @@ export const createLogsSSEStream = (
     params.append('sinceSeconds', options.sinceSeconds.toString())
   }
 
+  const currentCluster = localStorage.getItem('current-cluster')
+  if (currentCluster) {
+    params.append('x-cluster-name', currentCluster)
+  }
+
   const endpoint = `${API_BASE_URL}/logs/${namespace}/${podName}?${params.toString()}`
   const eventSource = new EventSource(endpoint, {
     withCredentials: true,

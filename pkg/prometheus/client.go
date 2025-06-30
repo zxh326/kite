@@ -57,6 +57,9 @@ type PodCurrentMetrics struct {
 }
 
 func NewClient(prometheusURL string) (*Client, error) {
+	if prometheusURL == "" {
+		return nil, fmt.Errorf("prometheus URL cannot be empty")
+	}
 	client, err := api.NewClient(api.Config{
 		Address: prometheusURL,
 	})

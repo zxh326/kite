@@ -13,7 +13,7 @@ _A modern, intuitive Kubernetes dashboard_
 
 </div>
 
-Kite is a lightweight, modern Kubernetes dashboard that provides an intuitive interface for managing and monitoring your Kubernetes clusters. It offers real-time metrics, comprehensive resource management, and a beautiful user experience.
+Kite is a lightweight, modern Kubernetes dashboard that provides an intuitive interface for managing and monitoring your Kubernetes clusters. It offers real-time metrics, comprehensive resource management, multi-cluster support, and a beautiful user experience.
 
 ---
 
@@ -68,6 +68,13 @@ _Secure authentication with GitHub and custom OAuth providers_
 
 - 🌓 **Multi-Theme Support** - Dark/light/color themes with system preference detection
 - 🔍 **Advanced Search** - Global search with across all resources
+- 🏘️ **Multi-Cluster Management** - Seamlessly switch between multiple Kubernetes clusters
+
+### 🏘️ **Multi-Cluster Management**
+
+- 🔄 **Seamless Cluster Switching** - Switch between multiple Kubernetes clusters with a single click
+- 📊 **Per-Cluster Monitoring** - Independent Prometheus configuration for each cluster
+- ⚙️ **Kubeconfig Integration** - Automatic discovery of clusters from your kubeconfig file
 
 ### 🔍 **Comprehensive Resource Management**
 
@@ -96,17 +103,18 @@ _Secure authentication with GitHub and custom OAuth providers_
 
 ### Environment Variables
 
-| Variable            | Description                                                                                       | Default                       | Required |
-| ------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------- | -------- |
-| `PORT`              | Server port                                                                                       | `8080`                        | No       |
-| `KUBECONFIG`        | Kubernetes config path                                                                            | `inCluster or ~/.kube/config` | No       |
-| `ENABLE_ANALYTICS`  | Enable anonymous usage analytics                                                                  | `false`                       | No       |
-| `PROMETHEUS_URL`    | Prometheus server URL [Prometheus Setup Guide](docs/PROMETHEUS_SETUP.md)                          | `-`                           | No       |
-| `JWT_SECRET`        | JWT secret for signing tokens. default is random string                                           | `random string`               | Yes\*    |
-| `OAUTH_ENABLED`     | Enable OAuth authentication. [OAuth Setup Guide](docs/OAUTH_SETUP.md).                            | `false`                       | No       |
-| `OAUTH_ALLOW_USERS` | Comma-separated list of users allowed to access the dashboard,support wildcard (\*) for all users | `-`                           | OAuth\*  |
-| `KITE_USERNAME`     | Username for basic authentication. If set, enables password auth.                                 | `-`                           | No       |
-| `KITE_PASSWORD`     | Password for basic authentication. If set, enables password auth.                                 | `-`                           | No       |
+| Variable                   | Description                                                                                       | Default                       | Required |
+| -------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------- | -------- |
+| `PORT`                     | Server port                                                                                       | `8080`                        | No       |
+| `KUBECONFIG`               | Kubernetes config path for multi-cluster access                                                   | `inCluster or ~/.kube/config` | No       |
+| `ENABLE_ANALYTICS`         | Enable anonymous usage analytics                                                                  | `false`                       | No       |
+| `PROMETHEUS_URL`           | Default Prometheus server URL [Prometheus Setup Guide](docs/PROMETHEUS_SETUP.md)                  | `-`                           | No       |
+| `<CLUSTER>_PROMETHEUS_URL` | Cluster-specific Prometheus URL (see Multi-Cluster section below)                                 | `-`                           | No       |
+| `JWT_SECRET`               | JWT secret for signing tokens. default is random string                                           | `random string`               | Yes\*    |
+| `OAUTH_ENABLED`            | Enable OAuth authentication. [OAuth Setup Guide](docs/OAUTH_SETUP.md).                            | `false`                       | No       |
+| `OAUTH_ALLOW_USERS`        | Comma-separated list of users allowed to access the dashboard,support wildcard (\*) for all users | `-`                           | OAuth\*  |
+| `KITE_USERNAME`            | Username for basic authentication. If set, enables password auth.                                 | `-`                           | No       |
+| `KITE_PASSWORD`            | Password for basic authentication. If set, enables password auth.                                 | `-`                           | No       |
 
 \*Required only when OAuth is enabled
 

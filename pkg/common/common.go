@@ -15,7 +15,6 @@ const (
 
 var (
 	Port            = "8080"
-	PrometheusURL   = ""
 	JwtSecret       = ""
 	OAuthEnabled    = false
 	OAuthProviders  = ""
@@ -35,11 +34,6 @@ var (
 )
 
 func LoadEnvs() {
-	if url := os.Getenv("PROMETHEUS_URL"); url != "" {
-		PrometheusURL = url
-	} else {
-		klog.Warning("PROMETHEUS_URL is not set, some features may not work as expected")
-	}
 	if secret := os.Getenv("JWT_SECRET"); secret != "" {
 		JwtSecret = secret
 	} else {

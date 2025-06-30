@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zxh326/kite/pkg/kube"
+	"github.com/zxh326/kite/pkg/cluster"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,10 +14,9 @@ type EventHandler struct {
 	GenericResourceHandler[*corev1.Event, *corev1.EventList]
 }
 
-func NewEventHandler(k8sClient *kube.K8sClient) *EventHandler {
+func NewEventHandler() *EventHandler {
 	return &EventHandler{
 		GenericResourceHandler: *NewGenericResourceHandler[*corev1.Event, *corev1.EventList](
-			k8sClient,
 			"events",
 			false,
 			false,
@@ -29,8 +28,8 @@ func (h *EventHandler) ListResourceEvents(c *gin.Context) {
 	name := c.Query("name")
 	namespace := c.Query("namespace")
 	resource := c.Query("resource")
-
-	target, err := GetResource(c.Request.Context(), resource, namespace, name)
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	target, err := GetResource(c, resource, namespace, name)
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Failed to get resource: " + err.Error()})
@@ -43,7 +42,7 @@ func (h *EventHandler) ListResourceEvents(c *gin.Context) {
 		return
 	}
 	obj := target.(metav1.Object)
-	events, err := h.K8sClient.ClientSet.CoreV1().Events(obj.GetNamespace()).List(c.Request.Context(), metav1.ListOptions{
+	events, err := cs.K8sClient.ClientSet.CoreV1().Events(obj.GetNamespace()).List(c.Request.Context(), metav1.ListOptions{
 		FieldSelector: "involvedObject.kind=" + objType.GetKind() +
 			",involvedObject.apiVersion=" + objType.GetAPIVersion() +
 			",involvedObject.name=" + name,

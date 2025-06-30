@@ -2,11 +2,13 @@ import { useState } from 'react'
 import githubIcon from '@/assets/github.svg'
 import { Plus } from 'lucide-react'
 
+import { useCluster } from '@/hooks/use-cluster'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 
+import { ClusterSelector } from './cluster-selector'
 import { ColorThemeToggle } from './color-theme-toggle'
 import { CreateResourceDialog } from './create-resource-dialog'
 import { DynamicBreadcrumb } from './dynamic-breadcrumb'
@@ -16,7 +18,9 @@ import { UserMenu } from './user-menu'
 
 export function SiteHeader() {
   const isMobile = useIsMobile()
+  const { clusters, isLoading } = useCluster()
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const shouldShowClusterSelector = !isLoading && clusters.length > 1
 
   return (
     <>
@@ -29,6 +33,15 @@ export function SiteHeader() {
           />
           <DynamicBreadcrumb />
           <div className="ml-auto flex items-center gap-2">
+            {shouldShowClusterSelector && (
+              <>
+                <ClusterSelector />
+                <Separator
+                  orientation="vertical"
+                  className="mx-2 data-[orientation=vertical]:h-4"
+                />
+              </>
+            )}
             <Search />
             <Plus
               className="h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground"

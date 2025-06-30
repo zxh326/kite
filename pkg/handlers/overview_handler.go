@@ -4,18 +4,12 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
-	"github.com/zxh326/kite/pkg/kube"
-	"github.com/zxh326/kite/pkg/prometheus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-type OverviewHandler struct {
-	k8sClient  *kube.K8sClient
-	promClient *prometheus.Client
-}
 
 type OverviewData struct {
 	TotalNodes      int                   `json:"totalNodes"`
@@ -28,19 +22,14 @@ type OverviewData struct {
 	Resource        common.ResourceMetric `json:"resource"`
 }
 
-func NewOverviewHandler(client *kube.K8sClient, promClient *prometheus.Client) *OverviewHandler {
-	return &OverviewHandler{
-		k8sClient:  client,
-		promClient: promClient,
-	}
-}
-
-func (h *OverviewHandler) GetOverview(c *gin.Context) {
+func GetOverview(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 
 	// TODO: if prometheus is enabled, get data from prometheus
 	// Get nodes
-	nodes, err := h.k8sClient.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	nodes, err := cs.K8sClient.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -62,7 +51,7 @@ func (h *OverviewHandler) GetOverview(c *gin.Context) {
 	}
 
 	// Get pods
-	pods, err := h.k8sClient.ClientSet.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
+	pods, err := cs.K8sClient.ClientSet.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -89,14 +78,14 @@ func (h *OverviewHandler) GetOverview(c *gin.Context) {
 	}
 
 	// Get namespaces
-	namespaces, err := h.k8sClient.ClientSet.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+	namespaces, err := cs.K8sClient.ClientSet.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	// Get services
-	services, err := h.k8sClient.ClientSet.CoreV1().Services("").List(ctx, metav1.ListOptions{})
+	services, err := cs.K8sClient.ClientSet.CoreV1().Services("").List(ctx, metav1.ListOptions{})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -108,7 +97,7 @@ func (h *OverviewHandler) GetOverview(c *gin.Context) {
 		RunningPods:     runningPods,
 		TotalNamespaces: len(namespaces.Items),
 		TotalServices:   len(services.Items),
-		PromEnabled:     h.promClient != nil,
+		PromEnabled:     cs.PromClient != nil,
 		Resource: common.ResourceMetric{
 			CPU: common.Resource{
 				Allocatable: cpuAllocatable.MilliValue(),
