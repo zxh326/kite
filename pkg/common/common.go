@@ -1,16 +1,23 @@
 package common
 
 import (
+	"context"
 	"os"
 
-	"github.com/zxh326/kite/pkg/utils"
 	"k8s.io/klog/v2"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/zxh326/kite/pkg/utils"
 )
 
 const (
 	JWTExpirationSeconds = 24 * 60 * 60 // 24 hours
 
-	NodeTerminalPodName = "kite-node-terminal-agent"
+	NodeTerminalPodName     = "kite-node-terminal-agent"
+	PodNodeNameIndexName    = "spec.nodeName"
+	PodStatusPhaseIndexName = "status.phase"
+	PodMetaDataIndexName    = "metadata.name"
 )
 
 var (
@@ -86,4 +93,15 @@ func LoadEnvs() {
 	if readonly := os.Getenv("READONLY"); readonly == "true" {
 		Readonly = true
 	}
+}
+
+func AddKubeFieldCacheField[T client.Object](ctx context.Context, mgr ctrl.Manager, indexKey string, extractValue func(T) []string) error {
+	var obj T
+	return mgr.GetFieldIndexer().IndexField(ctx, obj, indexKey, func(rawObj client.Object) []string {
+		typeObj, ok := rawObj.(T)
+		if !ok {
+			return nil
+		}
+		return extractValue(typeObj)
+	})
 }

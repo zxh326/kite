@@ -16,14 +16,15 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-
 	metricsv1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	metricsclient "k8s.io/metrics/pkg/client/clientset/versioned"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
+	"github.com/zxh326/kite/pkg/common"
 )
 
 // K8sClient holds the Kubernetes client instances
@@ -106,14 +107,32 @@ func NewK8sClient() (*K8sClient, error) {
 		}
 
 		// Add field indexer for Pod spec.nodeName to enable efficient querying by node
-		if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Pod{}, "spec.nodeName", func(rawObj client.Object) []string {
+		if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Pod{}, common.PodNodeNameIndexName, func(rawObj client.Object) []string {
 			pod := rawObj.(*corev1.Pod)
 			if pod.Spec.NodeName == "" {
 				return nil
 			}
 			return []string{pod.Spec.NodeName}
 		}); err != nil {
-			return nil, fmt.Errorf("failed to create field indexer for spec.nodeName: %w", err)
+			return nil, fmt.Errorf("failed to create field indexer for %s: %w", common.PodNodeNameIndexName, err)
+		}
+		if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Pod{}, common.PodStatusPhaseIndexName, func(rawObj client.Object) []string {
+			pod := rawObj.(*corev1.Pod)
+			if pod.Status.Phase == "" {
+				return nil
+			}
+			return []string{string(pod.Status.Phase)}
+		}); err != nil {
+			return nil, fmt.Errorf("failed to create field indexer for %s: %w", common.PodStatusPhaseIndexName, err)
+		}
+		if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Pod{}, common.PodMetaDataIndexName, func(rawObj client.Object) []string {
+			pod := rawObj.(*corev1.Pod)
+			if pod.Name == "" {
+				return nil
+			}
+			return []string{string(pod.Name)}
+		}); err != nil {
+			return nil, fmt.Errorf("failed to create field indexer for %s: %w", common.PodStatusPhaseIndexName, err)
 		}
 
 		go func() {

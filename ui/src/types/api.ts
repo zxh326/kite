@@ -48,6 +48,21 @@ export interface CustomResourceList {
   }
 }
 
+// Pagination types
+export interface PaginationInfo {
+  totalCount: number
+  totalPages: number
+  currentPage: number
+  pageSize: number
+  hasNextPage: boolean
+  hasPrevPage: boolean
+}
+
+export interface PaginatedResponse<T = unknown> {
+  items: T
+  pagination: PaginationInfo
+}
+
 export interface DeploymentRelatedResource {
   events: Event[]
   pods: Pod[]

@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { IconAlertTriangle, IconInfoCircle, IconX } from '@tabler/icons-react'
 import { formatDistanceToNow } from 'date-fns'
 
-import { useResources } from '@/lib/api'
+import { useResourcesV2 } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import {
   Card,
@@ -13,12 +13,14 @@ import {
 } from '@/components/ui/card'
 
 export function RecentEvents() {
-  const { data, isLoading } = useResources('events', undefined, {
+  const { data, isLoading } = useResourcesV2('events', undefined, {
     limit: 20,
   })
-
   const events = useMemo(() => {
-    return data?.slice().sort((a, b) => {
+    if (!data?.items || !Array.isArray(data.items)) {
+      return []
+    }
+    return [...data.items].sort((a, b) => {
       const dateA = new Date(
         a.metadata.creationTimestamp || a.firstTimestamp || ''
       )

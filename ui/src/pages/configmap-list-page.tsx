@@ -1,14 +1,15 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { ConfigMap } from 'kubernetes-types/core/v1'
 import { Link } from 'react-router-dom'
 
 import { formatDate } from '@/lib/utils'
-import { ResourceTable } from '@/components/resource-table'
+import { ResourcePaginationTable } from '@/components/resource-pagination-table'
 
 export function ConfigMapListPage() {
   // Define column helper outside of any hooks
   const columnHelper = createColumnHelper<ConfigMap>()
+  const [selectedNamespace, setSelectedNamespace] = useState<string>()
 
   // Define columns for the configmap table
   const columns = useMemo(
@@ -76,9 +77,13 @@ export function ConfigMapListPage() {
   )
 
   return (
-    <ResourceTable
-      resourceName="ConfigMaps"
+    <ResourcePaginationTable<ConfigMap>
+      resourceType="configmaps"
       columns={columns}
+      clusterScope={false}
+      selectedNamespace={selectedNamespace}
+      onNamespaceChange={setSelectedNamespace}
+      pageSize={10}
       searchQueryFilter={configMapSearchFilter}
     />
   )

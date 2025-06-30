@@ -7,6 +7,7 @@ import {
   clusterScopeResources,
   DeploymentRelatedResource,
   OverviewData,
+  PaginatedResponse,
   PodMetrics,
   ResourcesTypeMap,
   ResourceType,
@@ -18,15 +19,15 @@ import { API_BASE_URL, apiClient } from './api-client'
 
 type ResourcesItems<T extends ResourceType> = ResourcesTypeMap[T]['items']
 
-// Pagination result type
-export interface PaginatedResult<T> {
-  items: T
-  pagination: {
-    hasNextPage: boolean
-    nextContinueToken?: string
-    remainingItems?: number
-  }
-}
+// Pagination result type (now using the shared PaginatedResponse type)
+// export interface PaginatedResult<T> {
+//   items: T
+//   pagination: {
+//     hasNextPage: boolean
+//     nextContinueToken?: string
+//     remainingItems?: number
+//   }
+// }
 
 // Generic fetch function with error handling
 async function fetchAPI<T>(endpoint: string): Promise<T> {
@@ -42,6 +43,7 @@ export const fetchResources = <T>(
   resource: string,
   namespace?: string,
   limit?: number,
+  offset?: number,
   continueToken?: string,
   labelSelector?: string,
   fieldSelector?: string
@@ -49,8 +51,11 @@ export const fetchResources = <T>(
   let endpoint = namespace ? `/${resource}/${namespace}` : `/${resource}`
   const params = new URLSearchParams()
 
-  if (limit) {
+  if (limit !== undefined) {
     params.append('limit', limit.toString())
+  }
+  if (offset !== undefined) {
+    params.append('offset', offset.toString())
   }
   if (continueToken) {
     params.append('continue', continueToken)
@@ -66,7 +71,12 @@ export const fetchResources = <T>(
     endpoint += `?${params.toString()}`
   }
 
-  return fetchAPI<T>(endpoint)
+ 
+
+  return fetchAPI<T>(endpoint).then(result => {
+  
+    return result
+  })
 }
 
 export const fetchDeploymentRelated = (
@@ -333,13 +343,68 @@ export const useResources = <T extends ResourceType>(
         options?.fieldSelector
       )
     },
-    enabled: !options?.disable,
+
     select: (data: ResourcesTypeMap[T]): ResourcesItems<T> => data.items,
     placeholderData: (prevData) => prevData,
     retry(failureCount, error) {
       return failureCount < 3 && (error as unknown as Response).status > 500
     },
     refetchInterval: options?.refreshInterval || 0,
+    staleTime: options?.staleTime || (resource === 'crds' ? 5000 : 1000),
+  })
+}
+
+export const useResourcesV2 = <T extends ResourceType>(
+  resource: T,
+  namespace?: string,
+  options?: {
+    staleTime?: number
+    limit?: number
+    continue?: string
+    labelSelector?: string
+  }
+): ReturnType<
+  typeof useQuery<
+    ResourcesTypeMap[T],
+    Error,
+    PaginatedResponse<ResourcesItems<T>>
+  >
+> => {
+  return useQuery({
+    queryKey: [
+      resource,
+      namespace,
+      options?.limit,
+      options?.continue,
+      options?.labelSelector,
+    ],
+    queryFn: () => {
+      return fetchResources<ResourcesTypeMap[T]>(
+        resource,
+        namespace,
+        options?.limit,
+        undefined, // offset
+        options?.continue,
+        options?.labelSelector
+      )
+    },
+    enabled:
+      clusterScopeResources.includes(resource) ||
+      (namespace !== undefined && namespace !== ''),
+    select: (data: ResourcesTypeMap[T]) => {
+      return {
+        items: data.items,
+        pagination: {
+          totalCount: (data.metadata?.remainingItemCount || 0) + data.items.length,
+          totalPages: 1, // For continue-based pagination, we don't know total pages
+          currentPage: 1, // For continue-based pagination, page concept doesn't apply
+          pageSize: options?.limit || data.items.length,
+          hasNextPage: !!data.metadata?.continue,
+          hasPrevPage: false, // Continue-based pagination doesn't support prev
+        },
+      }
+    },
+    placeholderData: (prevData) => prevData,
     staleTime: options?.staleTime || (resource === 'crds' ? 5000 : 1000),
   })
 }
@@ -489,78 +554,265 @@ export const usePodMetrics = (
 export const usePaginatedResources = <T extends ResourceType>(
   resource: T,
   namespace?: string,
-  initialPageSize: number = 20
+  options?: {
+    staleTime?: number
+    pageSize?: number
+    initialContinueToken?: string
+  }
 ) => {
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(initialPageSize)
+  const [continueToken, setContinueToken] = useState<string | undefined>(
+    options?.initialContinueToken
+  )
+  const [allItems, setAllItems] = useState<ResourcesItems<T>>(
+    [] as ResourcesItems<T>
+  )
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
-  // Reset page to 1 when namespace changes
-  useEffect(() => {
-    setPage(1)
-  }, [namespace])
+  const pageSize = options?.pageSize || 20
 
-  const query = useQuery({
-    queryKey: [resource, namespace, page, pageSize],
-    queryFn: () => {
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        pageSize: pageSize.toString(),
-      })
-      const endpoint = namespace
-        ? `/${resource}/${namespace}?${queryParams}`
-        : `/${resource}?${queryParams}`
-
-      const fullUrl = API_BASE_URL + endpoint
-
-      return fetch(fullUrl).then(async (res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`)
-        }
-
-        const data = await res.json()
-
-        // Extract pagination info from response body
-        const pagination = data.pagination || {}
-        const totalCount = pagination.totalCount || 0
-        const totalPages = pagination.totalPages || 1
-        const currentPage = pagination.currentPage || 1
-        const pageSize = pagination.pageSize || 20
-
-        // Return the items along with pagination info
-        return {
-          items: data.items?.items || data.items || [],
-          totalPages,
-          totalCount,
-          currentPage,
-          pageSize,
-        }
-      })
-    },
-    enabled:
-      clusterScopeResources.includes(resource) ||
-      (namespace !== undefined && namespace !== ''),
-    placeholderData: (prevData) => prevData,
-    staleTime: resource === 'crds' ? 5000 : 1000,
+  const query = useResourcesV2(resource, namespace, {
+    staleTime: options?.staleTime,
+    limit: pageSize,
+    continue: continueToken,
   })
 
-  const handleSetPageSize = (size: number) => {
-    setPageSize(size)
-    setPage(1) // Reset to first page when page size changes
-  }
+  const { data, isLoading, error, refetch } = query
+
+  // Update all items when new data comes in
+  useEffect(() => {
+    if (data?.items) {
+      if (!continueToken) {
+        // First page or refresh
+        setAllItems(data.items)
+      } else {
+        // Subsequent pages - append to existing items
+        setAllItems((prev) => [...prev, ...data.items] as ResourcesItems<T>)
+      }
+      setIsLoadingMore(false)
+    }
+  }, [data, continueToken])
+
+  const loadNextPage = useCallback(() => {
+    if (
+      data?.pagination.hasNextPage &&
+      data.pagination.nextContinueToken &&
+      !isLoadingMore
+    ) {
+      setIsLoadingMore(true)
+      setContinueToken(data.pagination.nextContinueToken)
+    }
+  }, [data?.pagination, isLoadingMore])
+
+  const reset = useCallback(() => {
+    setContinueToken(undefined)
+    setAllItems([] as ResourcesItems<T>)
+    setIsLoadingMore(false)
+  }, [])
+
+  const refresh = useCallback(() => {
+    reset()
+    refetch()
+  }, [reset, refetch])
 
   return {
-    ...query,
-    items: query.data?.items || [],
-    page,
-    setPage,
-    pageSize,
-    setPageSize: handleSetPageSize,
-    totalPages: query.data?.totalPages || 1,
-    totalCount: query.data?.totalCount || 0,
+    // Data
+    items: allItems,
+    currentPageItems: data?.items || ([] as ResourcesItems<T>),
+
+    // Pagination info
+    hasNextPage: data?.pagination.hasNextPage || false,
+    remainingItems: data?.pagination.remainingItems,
+    isLoadingMore,
+
+    // Loading states
+    isLoading: isLoading && !continueToken, // Only true for initial load
+    isLoadingNextPage: isLoadingMore,
+
+    // Error
+    error,
+
+    // Actions
+    loadNextPage,
+    refresh,
+    reset,
   }
 }
 
 // Simple pagination hook for traditional page-by-page navigation
+export const useSimplePagination = <T extends ResourceType>(
+  resource: T,
+  namespace?: string,
+  pageSize: number = 20
+) => {
+  const [currentPage, setCurrentPage] = useState(0)
+  const [continueTokens, setContinueTokens] = useState<(string | undefined)[]>([
+    undefined,
+  ])
+
+  const query = useResourcesV2(resource, namespace, {
+    limit: pageSize,
+    continue: continueTokens[currentPage],
+  })
+
+  const { data, isLoading, error } = query
+
+  const goToNextPage = useCallback(() => {
+    if (data?.pagination.hasNextPage && data.pagination.nextContinueToken) {
+      const nextPage = currentPage + 1
+      setContinueTokens((prev) => {
+        const newTokens = [...prev]
+        newTokens[nextPage] = data.pagination.nextContinueToken
+        return newTokens
+      })
+      setCurrentPage(nextPage)
+    }
+  }, [data?.pagination, currentPage])
+
+  const goToPreviousPage = useCallback(() => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1)
+    }
+  }, [currentPage])
+
+  const resetPagination = useCallback(() => {
+    setCurrentPage(0)
+    setContinueTokens([undefined])
+  }, [])
+
+  return {
+    // Data
+    items: data?.items || ([] as ResourcesItems<T>),
+
+    // Pagination info
+    currentPage,
+    hasNextPage: data?.pagination.hasNextPage || false,
+    hasPreviousPage: currentPage > 0,
+    remainingItems: data?.pagination.remainingItems,
+    pageSize,
+
+    // Loading states
+    isLoading,
+
+    // Error
+    error,
+
+    // Actions
+    goToNextPage,
+    goToPreviousPage,
+    resetPagination,
+  }
+}
+
+// Offset-based pagination hook for traditional page navigation with total count
+export const useOffsetPaginatedResources = <T extends ResourceType>(
+  resource: T,
+  namespace?: string,
+  pageSize: number = 20,
+  options?: {
+    refreshInterval?: number
+    fieldSelector?: string
+    labelSelector?: string
+  }
+) => {
+  const [page, setPage] = useState(1)
+  const offset = (page - 1) * pageSize
+
+  const query = useQuery({
+    queryKey: [
+      'offsetPaginatedResources',
+      resource,
+      namespace,
+      pageSize,
+      offset,
+      options?.fieldSelector,
+      options?.labelSelector,
+    ],
+    queryFn: () =>
+      fetchResources<PaginatedResponse<ResourcesItems<T>>>(
+        resource,
+        namespace,
+        pageSize,
+        offset,
+        undefined,
+        options?.labelSelector,
+        options?.fieldSelector
+      ),
+    refetchInterval: options?.refreshInterval,
+    staleTime: 5000,
+  })
+
+  const { data, isLoading, error, refetch } = query
+
+  const goToPage = useCallback((newPage: number) => {
+    if (newPage >= 1 && (!data || newPage <= data.pagination.totalPages)) {
+      setPage(newPage)
+    }
+  }, [data])
+
+  const goToNextPage = useCallback(() => {
+    if (data?.pagination.hasNextPage) {
+      setPage(prev => prev + 1)
+    }
+  }, [data?.pagination.hasNextPage])
+
+  const goToPreviousPage = useCallback(() => {
+    if (page > 1) {
+      setPage(prev => prev - 1)
+    }
+  }, [page])
+
+  const resetPagination = useCallback(() => {
+    setPage(1)
+  }, [])
+
+  return {
+    // Data - Extract items from the nested structure with improved debugging
+    // Backend returns PaginatedResponse where items might be a nested object containing the actual list
+    items: (() => {
+        // Try different extraction patterns
+      const nestedItems = ((data?.items as unknown) as { items?: ResourcesItems<T> })?.items
+      const directItems = data?.items as ResourcesItems<T>
+      
+      // Return the first valid array we find
+      if (Array.isArray(nestedItems) && nestedItems.length > 0) {
+        return nestedItems
+      }
+      if (Array.isArray(directItems) && directItems.length > 0) {
+        return directItems
+      }
+      if (Array.isArray(nestedItems)) {
+        return nestedItems
+      }
+      if (Array.isArray(directItems)) {
+        return directItems
+      }
+      
+      return [] as ResourcesItems<T>
+    })(),
+
+    // Pagination info
+    page,
+    pageSize,
+    totalPages: data?.pagination.totalPages || 0,
+    totalCount: data?.pagination.totalCount || 0,
+    hasNextPage: data?.pagination.hasNextPage || false,
+    hasPreviousPage: data?.pagination.hasPrevPage || false,
+
+    // Loading states
+    isLoading,
+
+    // Error
+    error,
+
+    // Actions
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    resetPagination,
+    refetch,
+    setPage,
+  }
+}
 
 // Logs API functions
 export interface LogsResponse {

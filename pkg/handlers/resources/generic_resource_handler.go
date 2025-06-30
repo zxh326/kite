@@ -105,12 +105,46 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
+	// Check if pagination is requested by checking for limit parameter
+	var usePagination bool = false
+	var limit int64 = 10 // default limit when pagination is used
+	var offset int64 = 0 // default offset
+
+	if c.Query("limit") != "" {
+		usePagination = true
+		var err error
+		limit, err = strconv.ParseInt(c.Query("limit"), 10, 64)
+		if err != nil || limit <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid limit parameter"})
+			return
+		}
+	}
+
+	if c.Query("offset") != "" {
+		var err error
+		offset, err = strconv.ParseInt(c.Query("offset"), 10, 64)
+		if err != nil || offset < 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid offset parameter"})
+			return
+		}
+		// If offset is provided, enable pagination even without explicit limit
+		if !usePagination {
+			usePagination = true
+		}
+	}
+
 	var listOpts []client.ListOption
 	if !h.isClusterScoped {
 		namespace := c.Param("namespace")
 		if namespace != "" && namespace != "_all" {
 			listOpts = append(listOpts, client.InNamespace(namespace))
 		}
+	}
+
+	// Support for legacy continue token (for compatibility)
+	if c.Query("continue") != "" {
+		continueToken := c.Query("continue")
+		listOpts = append(listOpts, client.Continue(continueToken))
 	}
 
 	// Add label selector support
@@ -145,6 +179,7 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 	}
 
 	// Sort by creation timestamp in descending order (newest first)
+	// Extract items using reflection and sort them directly
 	items, err := meta.ExtractList(objectList)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to extract items from list"})
@@ -166,40 +201,35 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 		return t1.After(t2.Time)
 	})
 
-	// Check if pagination parameters are provided
-	pageParam := c.Query("page")
-	pageSizeParam := c.Query("pageSize")
-	hasPaginationParams := pageParam != "" || pageSizeParam != ""
+	// Apply pagination only if requested
+	if usePagination {
+		totalCount := len(items)
 
-	if hasPaginationParams {
-		// Pagination logic
-		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-		pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
-
-		totalItems := len(items)
-		startIndex := (page - 1) * pageSize
-		endIndex := startIndex + pageSize
-		if startIndex < 0 {
-			startIndex = 0
-		}
-		if endIndex > totalItems {
-			endIndex = totalItems
-		}
-
-		paginatedItems := []runtime.Object{}
-		if startIndex < totalItems {
-			paginatedItems = items[startIndex:endIndex]
+		// Calculate pagination bounds
+		start := offset
+		end := offset + limit
+		if start >= int64(totalCount) {
+			// Return empty result if offset exceeds total count
+			emptyItems := make([]runtime.Object, 0)
+			_ = meta.SetList(objectList, emptyItems)
+		} else {
+			// Ensure end doesn't exceed total count
+			if end > int64(totalCount) {
+				end = int64(totalCount)
+			}
+			// Slice the items for the current page
+			paginatedItems := items[start:end]
+			_ = meta.SetList(objectList, paginatedItems)
 		}
 
-		// Set paginated items back to the list
-		_ = meta.SetList(objectList, paginatedItems)
+		// Calculate current page number for response
+		currentPage := int(offset/limit) + 1
 
-		// Create response using helper function
-		response := common.NewPaginatedResponse(objectList, totalItems, page, pageSize)
-
+		// Return paginated response with metadata
+		response := common.NewPaginatedResponse(objectList, totalCount, currentPage, int(limit))
 		c.JSON(http.StatusOK, response)
 	} else {
-		// Return original format for non-paginated requests
+		// Return original response without pagination metadata
 		_ = meta.SetList(objectList, items)
 		c.JSON(http.StatusOK, objectList)
 	}

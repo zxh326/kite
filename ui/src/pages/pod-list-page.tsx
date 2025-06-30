@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Pod } from 'kubernetes-types/core/v1'
 import { Link } from 'react-router-dom'
@@ -7,12 +7,14 @@ import { getPodStatus } from '@/lib/k8s'
 import { formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { PodStatusIcon } from '@/components/pod-status-icon'
-import { ResourceTable } from '@/components/resource-table'
+import { ResourcePaginationTable } from '@/components/resource-pagination-table'
 
 export function PodListPage() {
+  const [selectedNamespace, setSelectedNamespace] = useState<string>()
+  
   // Define column helper outside of any hooks
   const columnHelper = createColumnHelper<Pod>()
-
+  
   // Define columns for the pod table - moved outside render cycle for better performance
   const columns = useMemo(
     () => [
@@ -46,6 +48,7 @@ export function PodListPage() {
       columnHelper.accessor('status.phase', {
         header: 'Status',
         enableColumnFilter: true,
+        id: "status.phase",
         cell: ({ row }) => {
           const status = getPodStatus(row.original)
           return (
@@ -61,8 +64,10 @@ export function PodListPage() {
         cell: ({ getValue }) => getValue() || '-',
       }),
       columnHelper.accessor('spec.nodeName', {
+        id: "spec.nodeName",
         header: 'Node',
         enableColumnFilter: true,
+        
         cell: ({ getValue }) => getValue() || '-',
       }),
       columnHelper.accessor('metadata.creationTimestamp', {
@@ -79,21 +84,14 @@ export function PodListPage() {
     [columnHelper]
   )
 
-  // Custom filter for pod search
-  const podSearchFilter = useCallback((pod: Pod, query: string) => {
-    return (
-      pod.metadata!.name!.toLowerCase().includes(query) ||
-      (pod.spec!.nodeName?.toLowerCase() || '').includes(query) ||
-      (pod.status!.podIP?.toLowerCase() || '').includes(query)
-    )
-  }, [])
-
   return (
-    <ResourceTable<Pod>
-      resourceName="Pods"
+    <ResourcePaginationTable<Pod>
+      resourceType="pods"
       columns={columns}
       clusterScope={false}
-      searchQueryFilter={podSearchFilter}
+      selectedNamespace={selectedNamespace}
+      onNamespaceChange={setSelectedNamespace}
+      pageSize={20}
     />
   )
 }

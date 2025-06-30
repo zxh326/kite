@@ -15,7 +15,7 @@ import { Namespace } from 'kubernetes-types/core/v1'
 import { Box, Database, RotateCcw, Search, XCircle } from 'lucide-react'
 
 import { ResourceType } from '@/types/api'
-import { useResources, useSimplePagination } from '@/lib/api'
+import {  useOffsetPaginatedResources, useResources } from '@/lib/api'
 import { debounce } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -67,19 +67,36 @@ export function ResourcePaginationTable<T>({
   const namespaceData = !clusterScope ? namespaceQuery.data : undefined
   const isLoadingNamespaces = !clusterScope ? namespaceQuery.isLoading : false
 
-  // Use the useSimplePagination hook
+  // Use the useOffsetPaginatedResources hook for offset/limit pagination
   const {
     items: data,
-    currentPage,
+    page: currentPage,
+    totalPages,
+    totalCount: actualTotalCount,
     hasNextPage,
     hasPreviousPage,
-    remainingItems,
     isLoading,
     error,
+    goToPage,
     goToNextPage,
     goToPreviousPage,
     resetPagination,
-  } = useSimplePagination(resourceType, selectedNamespace, pageSize)
+  } = useOffsetPaginatedResources(resourceType, selectedNamespace, pageSize, {
+    refreshInterval: 5000, // Refresh every 5 seconds
+  })
+
+  // Memoize data to prevent unnecessary re-renders and validate structure
+  const memoizedData = useMemo(() => {
+    if (!data) {
+      return []
+    }
+
+    if (!Array.isArray(data)) {
+      return []
+    }
+
+    return data
+  }, [data])
 
   // Set initial namespace when namespaces are loaded
   useEffect(() => {
@@ -160,9 +177,6 @@ export function ResourcePaginationTable<T>({
     return columns
   }, [columns, clusterScope, selectedNamespace])
 
-  // Memoize data to prevent unnecessary re-renders
-  const memoizedData = useMemo(() => data || [], [data])
-
   // Create table instance using TanStack Table
   const table = useReactTable({
     data: memoizedData as T[],
@@ -196,45 +210,15 @@ export function ResourcePaginationTable<T>({
     },
   })
 
-  // Calculate filtered row counts for current page
-  const totalRowCount = useMemo(() => data?.length || 0, [data])
+  // Calculate filtered row counts for current page using memoized data
+  const totalRowCount = useMemo(() => memoizedData?.length || 0, [memoizedData])
   const filteredRowCount = useMemo(() => {
-    if (!data || data.length === 0) return 0
+    if (!memoizedData || memoizedData.length === 0) return 0
     // Force re-computation when filters change
     void debouncedSearchQuery // Ensure dependency is used
     void columnFilters // Ensure dependency is used
     return table.getFilteredRowModel().rows.length
-  }, [table, data, debouncedSearchQuery, columnFilters])
-
-  // Calculate total count and pages for pagination display
-  // For server-side pagination, we estimate total based on current progress
-  const actualTotalCount = useMemo(() => {
-    const currentPageCount = data?.length || 0
-    if (currentPage === 0 && !hasNextPage) {
-      // First page and no more pages - total is just current page count
-      return currentPageCount
-    }
-    if (hasNextPage) {
-      // There are more pages - estimate minimum total
-      // We know we have at least (currentPage + 1) * pageSize items from seen pages
-      // Plus at least 1 more item on the next page
-      const seenItems = (currentPage + 1) * pageSize
-      return seenItems + Math.max(1, remainingItems || 0)
-    } else {
-      // No more pages - total is (currentPage * pageSize) + current page count
-      return currentPage * pageSize + currentPageCount
-    }
-  }, [currentPage, data?.length, hasNextPage, remainingItems, pageSize])
-
-  const totalPages = useMemo(() => {
-    if (hasNextPage) {
-      // If there are more pages, show at least currentPage + 2
-      return Math.max(currentPage + 2, Math.ceil(actualTotalCount / pageSize))
-    } else {
-      // No more pages - calculate exact total pages
-      return currentPage + 1
-    }
-  }, [currentPage, hasNextPage, actualTotalCount, pageSize])
+  }, [table, memoizedData, debouncedSearchQuery, columnFilters])
 
   // Check if there are active filters
   const hasActiveFilters = useMemo(() => {
@@ -244,7 +228,7 @@ export function ResourcePaginationTable<T>({
   // Render empty state based on condition
   const renderEmptyState = () => {
     // Only show loading state if there's no existing data
-    if (isLoading && (!data || data.length === 0)) {
+    if (isLoading && (!memoizedData || memoizedData.length === 0)) {
       return (
         <div className="h-72 flex flex-col items-center justify-center">
           <div className="mb-4 bg-muted/30 p-6 rounded-full">
@@ -283,7 +267,8 @@ export function ResourcePaginationTable<T>({
       )
     }
 
-    if (data && data.length === 0) {
+    // Only show empty state if we're not loading and have no data at all
+    if (!isLoading && (!memoizedData || memoizedData.length === 0)) {
       return (
         <div className="h-72 flex flex-col items-center justify-center">
           <div className="mb-4 bg-muted/30 p-6 rounded-full">
@@ -317,20 +302,25 @@ export function ResourcePaginationTable<T>({
 
   // Render table rows
   const renderRows = () => {
-    // Get the filtered rows
+    // Get the filtered rows from TanStack Table
     const rows = table.getRowModel().rows
 
     if (rows.length === 0) {
-      return (
-        <TableRow>
-          <TableCell
-            colSpan={enhancedColumns.length}
-            className="h-24 text-center"
-          >
-            No results.
-          </TableCell>
-        </TableRow>
-      )
+      // Show "No results" only if we have data but filtering resulted in no rows
+      if (memoizedData && memoizedData.length > 0) {
+        return (
+          <TableRow>
+            <TableCell
+              colSpan={enhancedColumns.length}
+              className="h-24 text-center"
+            >
+              No results match the current filters.
+            </TableCell>
+          </TableRow>
+        )
+      }
+      // If no data at all, this should be handled by renderEmptyState
+      return null
     }
 
     return rows.map((row) => (
@@ -465,7 +455,7 @@ export function ResourcePaginationTable<T>({
       </div>
 
       {/* Loading indicator for refetch */}
-      {isLoading && data && data.length > 0 && (
+      {isLoading && memoizedData && memoizedData.length > 0 && (
         <div className="flex items-center justify-center py-2 bg-muted/20 rounded-md">
           <Database className="h-4 w-4 text-muted-foreground animate-pulse mr-2" />
           <span className="text-sm text-muted-foreground">
@@ -481,7 +471,10 @@ export function ResourcePaginationTable<T>({
             isLoading && data && data.length > 0 ? 'opacity-75' : 'opacity-100'
           }`}
         >
-          {renderEmptyState() || (
+          {/* Show empty state only if there's absolutely no data */}
+          {!memoizedData || memoizedData.length === 0 ? (
+            renderEmptyState()
+          ) : (
             <>
               <Table>
                 <TableHeader className="bg-muted sticky top-0 z-10">
@@ -529,7 +522,7 @@ export function ResourcePaginationTable<T>({
       </div>
 
       {/* Pagination with memoized calculations */}
-      {data && data.length > 0 && (
+      {memoizedData && memoizedData.length > 0 && (
         <div className="flex items-center justify-between px-4">
           <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
             {hasActiveFilters ? (
@@ -542,14 +535,15 @@ export function ResourcePaginationTable<T>({
                 )}
               </>
             ) : (
-              `${actualTotalCount} row(s) total.`
+              `Total: ${actualTotalCount} row(s), showing page ${currentPage} of ${totalPages}`
             )}
           </div>
           <div className="flex w-full items-center gap-8 lg:w-fit">
             <div className="flex w-fit items-center justify-center text-sm font-medium">
-              Page {currentPage + 1} of {totalPages}
+              Page {currentPage} of {totalPages}
             </div>
             <div className="ml-auto flex items-center gap-2 lg:ml-0">
+              
               <Button
                 variant="outline"
                 className="size-8"
@@ -559,6 +553,31 @@ export function ResourcePaginationTable<T>({
               >
                 <span className="sr-only">Go to previous page</span>←
               </Button>
+
+              {/* Page number select for jumping to specific page */}
+              <div className="flex items-center gap-1">
+                <Select
+                  value={currentPage.toString()}
+                  onValueChange={(value) => {
+                    const pageNum = parseInt(value)
+                    if (pageNum >= 1 && pageNum <= totalPages) {
+                      goToPage(pageNum)
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-16 h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <SelectItem key={page} value={page.toString()}>
+                        {page}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <Button
                 variant="outline"
                 className="size-8"
@@ -568,6 +587,7 @@ export function ResourcePaginationTable<T>({
               >
                 <span className="sr-only">Go to next page</span>→
               </Button>
+      
             </div>
           </div>
         </div>
