@@ -46,7 +46,8 @@ export const fetchResources = <T>(
   offset?: number,
   continueToken?: string,
   labelSelector?: string,
-  fieldSelector?: string
+  fieldSelector?: string,
+  sortBy?: string
 ): Promise<T> => {
   let endpoint = namespace ? `/${resource}/${namespace}` : `/${resource}`
   const params = new URLSearchParams()
@@ -66,15 +67,21 @@ export const fetchResources = <T>(
   if (fieldSelector) {
     params.append('fieldSelector', fieldSelector)
   }
+  if (sortBy) {
+    params.append('sortBy', sortBy)
+    console.log('fetchResources: Adding sortBy parameter:', sortBy)
+  }
 
   if (params.toString()) {
     endpoint += `?${params.toString()}`
   }
 
- 
+  console.log('Final API endpoint:', endpoint)
+
+
 
   return fetchAPI<T>(endpoint).then(result => {
-  
+
     return result
   })
 }
@@ -321,6 +328,7 @@ export const useResources = <T extends ResourceType>(
     limit?: number
     labelSelector?: string
     fieldSelector?: string
+    sortBy?: string
     refreshInterval?: number
     disable?: boolean
   }
@@ -332,6 +340,7 @@ export const useResources = <T extends ResourceType>(
       options?.limit,
       options?.labelSelector,
       options?.fieldSelector,
+      options?.sortBy,
     ],
     queryFn: () => {
       return fetchResources<ResourcesTypeMap[T]>(
@@ -340,7 +349,8 @@ export const useResources = <T extends ResourceType>(
         options?.limit,
         undefined,
         options?.labelSelector,
-        options?.fieldSelector
+        options?.fieldSelector,
+        options?.sortBy
       )
     },
 
@@ -362,6 +372,8 @@ export const useResourcesV2 = <T extends ResourceType>(
     limit?: number
     continue?: string
     labelSelector?: string
+    fieldSelector?: string
+    sortBy?: string
   }
 ): ReturnType<
   typeof useQuery<
@@ -377,6 +389,8 @@ export const useResourcesV2 = <T extends ResourceType>(
       options?.limit,
       options?.continue,
       options?.labelSelector,
+      options?.fieldSelector,
+      options?.sortBy,
     ],
     queryFn: () => {
       return fetchResources<ResourcesTypeMap[T]>(
@@ -385,7 +399,9 @@ export const useResourcesV2 = <T extends ResourceType>(
         options?.limit,
         undefined, // offset
         options?.continue,
-        options?.labelSelector
+        options?.labelSelector,
+        options?.fieldSelector,
+        options?.sortBy
       )
     },
     enabled:
@@ -712,6 +728,7 @@ export const useOffsetPaginatedResources = <T extends ResourceType>(
     refreshInterval?: number
     fieldSelector?: string
     labelSelector?: string
+    sortBy?: string
   }
 ) => {
   const [page, setPage] = useState(1)
@@ -726,17 +743,20 @@ export const useOffsetPaginatedResources = <T extends ResourceType>(
       offset,
       options?.fieldSelector,
       options?.labelSelector,
+      options?.sortBy,
     ],
-    queryFn: () =>
-      fetchResources<PaginatedResponse<ResourcesItems<T>>>(
+    queryFn: () => {
+      return fetchResources<PaginatedResponse<ResourcesItems<T>>>(
         resource,
         namespace,
         pageSize,
         offset,
         undefined,
         options?.labelSelector,
-        options?.fieldSelector
-      ),
+        options?.fieldSelector,
+        options?.sortBy
+      )
+    },
     refetchInterval: options?.refreshInterval,
     staleTime: 5000,
   })
@@ -769,10 +789,10 @@ export const useOffsetPaginatedResources = <T extends ResourceType>(
     // Data - Extract items from the nested structure with improved debugging
     // Backend returns PaginatedResponse where items might be a nested object containing the actual list
     items: (() => {
-        // Try different extraction patterns
+      // Try different extraction patterns
       const nestedItems = ((data?.items as unknown) as { items?: ResourcesItems<T> })?.items
       const directItems = data?.items as ResourcesItems<T>
-      
+
       // Return the first valid array we find
       if (Array.isArray(nestedItems) && nestedItems.length > 0) {
         return nestedItems
@@ -786,7 +806,7 @@ export const useOffsetPaginatedResources = <T extends ResourceType>(
       if (Array.isArray(directItems)) {
         return directItems
       }
-      
+
       return [] as ResourcesItems<T>
     })(),
 

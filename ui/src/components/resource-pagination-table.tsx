@@ -4,10 +4,6 @@ import {
   ColumnFiltersState,
   flexRender,
   getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  getSortedRowModel,
   SortingState,
   useReactTable,
 } from '@tanstack/react-table'
@@ -15,7 +11,7 @@ import { Namespace } from 'kubernetes-types/core/v1'
 import { Box, Database, RotateCcw, Search, XCircle } from 'lucide-react'
 
 import { ResourceType } from '@/types/api'
-import {  useOffsetPaginatedResources, useResources } from '@/lib/api'
+import { useOffsetPaginatedResources, useResources } from '@/lib/api'
 import { debounce } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -55,7 +51,7 @@ export function ResourcePaginationTable<T>({
   selectedNamespace,
   onNamespaceChange,
   searchQueryFilter,
-  pageSize = 20,
+  pageSize = 5,
 }: ResourcePaginationTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -66,6 +62,56 @@ export function ResourcePaginationTable<T>({
   const namespaceQuery = useResources('namespaces')
   const namespaceData = !clusterScope ? namespaceQuery.data : undefined
   const isLoadingNamespaces = !clusterScope ? namespaceQuery.isLoading : false
+
+  // Convert column filters to fieldSelector format for backend filtering
+  const fieldSelector = useMemo(() => {
+    if (columnFilters.length === 0) return undefined
+
+    const fieldSelectors = columnFilters.map(filter => {
+      const { id, value } = filter
+      if (!value || value === '') return null
+
+      // Map UI column IDs to Kubernetes field names
+      let fieldName: string
+      switch (id) {
+        case 'status':
+          fieldName = 'status.phase'
+          break
+        case 'namespace':
+          fieldName = 'metadata.namespace'
+          break
+        case 'name':
+          fieldName = 'metadata.name'
+          break
+        default:
+          // For other fields, try to map to metadata fields or use as-is
+          if (id.includes('.')) {
+            fieldName = id // Already in field selector format
+          } else {
+            fieldName = `metadata.${id}` // Assume it's a metadata field
+          }
+      }
+
+      return `${fieldName}=${value}`
+    }).filter(Boolean)
+
+    return fieldSelectors.length > 0 ? fieldSelectors.join(',') : undefined
+  }, [columnFilters])
+
+  // Convert sorting state to backend format
+  const sortBy = useMemo(() => {
+    if (sorting.length === 0) return undefined
+
+    const sortSpecs = sorting.map(sort => {
+      const direction = sort.desc ? 'desc' : 'asc'
+      return `${sort.id}:${direction}`
+    })
+
+    const result = sortSpecs.join(',')
+    console.log('Sorting state:', sorting)
+    console.log('SortBy parameter:', result)
+    return result
+  }, [sorting])
 
   // Use the useOffsetPaginatedResources hook for offset/limit pagination
   const {
@@ -83,6 +129,8 @@ export function ResourcePaginationTable<T>({
     resetPagination,
   } = useOffsetPaginatedResources(resourceType, selectedNamespace, pageSize, {
     refreshInterval: 5000, // Refresh every 5 seconds
+    fieldSelector,
+    sortBy,
   })
 
   // Memoize data to prevent unnecessary re-renders and validate structure
@@ -133,7 +181,7 @@ export function ResourcePaginationTable<T>({
   // Reset pagination when filters change or namespace changes
   useEffect(() => {
     resetPagination()
-  }, [columnFilters, debouncedSearchQuery, selectedNamespace, resetPagination])
+  }, [fieldSelector, sortBy, debouncedSearchQuery, selectedNamespace, resetPagination])
 
   // Handle namespace change
   const handleNamespaceChange = useCallback(
@@ -182,20 +230,18 @@ export function ResourcePaginationTable<T>({
     data: memoizedData as T[],
     columns: enhancedColumns,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
+    // Use manual pagination, filtering, and sorting since backend handles these
+    manualPagination: true,
+    manualFiltering: true,
+    manualSorting: true,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     state: {
       sorting,
       columnFilters,
-      globalFilter: debouncedSearchQuery, // Use debounced query for filtering
+      globalFilter: debouncedSearchQuery, // Use debounced query for client-side search
     },
-    // For pagination table, we handle pagination via the hook
-    manualPagination: true,
-    // Improve filtering performance and consistency
+    // Custom global filter for search (still client-side since backend doesn't handle search yet)
     globalFilterFn: (row, _columnId, value) => {
       if (searchQueryFilter) {
         return searchQueryFilter(row.original, String(value).toLowerCase())
@@ -210,20 +256,21 @@ export function ResourcePaginationTable<T>({
     },
   })
 
-  // Calculate filtered row counts for current page using memoized data
-  const totalRowCount = useMemo(() => memoizedData?.length || 0, [memoizedData])
+  // Calculate filtered row counts - now using backend total count
+  const totalRowCount = useMemo(() => actualTotalCount || 0, [actualTotalCount])
   const filteredRowCount = useMemo(() => {
-    if (!memoizedData || memoizedData.length === 0) return 0
-    // Force re-computation when filters change
-    void debouncedSearchQuery // Ensure dependency is used
-    void columnFilters // Ensure dependency is used
-    return table.getFilteredRowModel().rows.length
-  }, [table, memoizedData, debouncedSearchQuery, columnFilters])
+    // For search filtering (client-side), count filtered rows
+    if (debouncedSearchQuery && memoizedData) {
+      return table.getFilteredRowModel().rows.length
+    }
+    // For backend filtering, use the total count from backend
+    return actualTotalCount || 0
+  }, [table, memoizedData, debouncedSearchQuery, actualTotalCount])
 
-  // Check if there are active filters
+  // Check if there are active filters - now based on backend parameters
   const hasActiveFilters = useMemo(() => {
-    return Boolean(debouncedSearchQuery) || columnFilters.length > 0
-  }, [debouncedSearchQuery, columnFilters])
+    return Boolean(debouncedSearchQuery) || Boolean(fieldSelector)
+  }, [debouncedSearchQuery, fieldSelector])
 
   // Render empty state based on condition
   const renderEmptyState = () => {
@@ -380,8 +427,9 @@ export function ResourcePaginationTable<T>({
               </Select>
             )}
 
-            {/* Column Filters */}
-            {table
+            {/* Column Filters - Temporarily disabled since we use backend filtering */}
+            {/* TODO: Implement proper column filter options from backend schema or predefined values */}
+            {false && table
               .getAllColumns()
               .filter((column) => {
                 const columnDef = column.columnDef as ColumnDef<T> & {
@@ -393,7 +441,8 @@ export function ResourcePaginationTable<T>({
                 const columnDef = column.columnDef as ColumnDef<T> & {
                   enableColumnFilter?: boolean
                 }
-                const uniqueValues = column.getFacetedUniqueValues()
+                // Since we removed getFacetedUniqueValues, we'd need to provide 
+                // predefined filter options or fetch them from the backend
                 const filterValue = column.getFilterValue() as string
 
                 return (
@@ -416,13 +465,7 @@ export function ResourcePaginationTable<T>({
                           ? columnDef.header
                           : 'Values'}
                       </SelectItem>
-                      {Array.from(uniqueValues.keys())
-                        .sort()
-                        .map((value) => (
-                          <SelectItem key={String(value)} value={String(value)}>
-                            {String(value)} ({uniqueValues.get(value)})
-                          </SelectItem>
-                        ))}
+                      {/* Would need predefined options here */}
                     </SelectContent>
                   </Select>
                 )
@@ -467,9 +510,8 @@ export function ResourcePaginationTable<T>({
       {/* Table card */}
       <div className="overflow-hidden rounded-lg border">
         <div
-          className={`rounded-md transition-opacity duration-200 ${
-            isLoading && data && data.length > 0 ? 'opacity-75' : 'opacity-100'
-          }`}
+          className={`rounded-md transition-opacity duration-200 ${isLoading && data && data.length > 0 ? 'opacity-75' : 'opacity-100'
+            }`}
         >
           {/* Show empty state only if there's absolutely no data */}
           {!memoizedData || memoizedData.length === 0 ? (
@@ -543,7 +585,7 @@ export function ResourcePaginationTable<T>({
               Page {currentPage} of {totalPages}
             </div>
             <div className="ml-auto flex items-center gap-2 lg:ml-0">
-              
+
               <Button
                 variant="outline"
                 className="size-8"
@@ -587,7 +629,7 @@ export function ResourcePaginationTable<T>({
               >
                 <span className="sr-only">Go to next page</span>→
               </Button>
-      
+
             </div>
           </div>
         </div>

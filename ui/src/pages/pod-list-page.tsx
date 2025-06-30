@@ -11,21 +11,21 @@ import { ResourcePaginationTable } from '@/components/resource-pagination-table'
 
 export function PodListPage() {
   const [selectedNamespace, setSelectedNamespace] = useState<string>()
-  
+
   // Define column helper outside of any hooks
   const columnHelper = createColumnHelper<Pod>()
-  
+
   // Define columns for the pod table - moved outside render cycle for better performance
   const columns = useMemo(
     () => [
       columnHelper.accessor('metadata.name', {
+        id: 'metadata.name',
         header: 'Name',
         cell: ({ row }) => (
           <div className="font-medium text-blue-500 hover:underline">
             <Link
-              to={`/pods/${row.original.metadata!.namespace}/${
-                row.original.metadata!.name
-              }`}
+              to={`/pods/${row.original.metadata!.namespace}/${row.original.metadata!.name
+                }`}
             >
               {row.original.metadata!.name}
             </Link>
@@ -60,6 +60,7 @@ export function PodListPage() {
         },
       }),
       columnHelper.accessor('status.podIP', {
+        id: 'status.podIP',
         header: 'IP',
         cell: ({ getValue }) => getValue() || '-',
       }),
@@ -67,10 +68,11 @@ export function PodListPage() {
         id: "spec.nodeName",
         header: 'Node',
         enableColumnFilter: true,
-        
+
         cell: ({ getValue }) => getValue() || '-',
       }),
       columnHelper.accessor('metadata.creationTimestamp', {
+        id: 'metadata.creationTimestamp',
         header: 'Created',
         cell: ({ getValue }) => {
           const dateStr = formatDate(getValue() || '')

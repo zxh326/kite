@@ -177,9 +177,6 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	// Sort by creation timestamp in descending order (newest first)
-	// Extract items using reflection and sort them directly
 	items, err := meta.ExtractList(objectList)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to extract items from list"})
