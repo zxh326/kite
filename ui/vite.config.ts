@@ -21,6 +21,12 @@ export default defineConfig({
     watch: {
       ignored: ['**/.vscode/**'],
     },
+    proxy: {
+      '/api/': {
+        changeOrigin: true,
+        target: 'http://localhost:8080',
+      },
+    },
   },
   resolve: {
     alias: {

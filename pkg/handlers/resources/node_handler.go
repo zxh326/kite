@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/kube"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -16,10 +17,9 @@ type NodeHandler struct {
 	*GenericResourceHandler[*corev1.Node, *corev1.NodeList]
 }
 
-func NewNodeHandler(client *kube.K8sClient) *NodeHandler {
+func NewNodeHandler() *NodeHandler {
 	return &NodeHandler{
 		GenericResourceHandler: NewGenericResourceHandler[*corev1.Node, *corev1.NodeList](
-			client,
 			"nodes",
 			true, // Nodes are cluster-scoped resources
 			true,
@@ -31,7 +31,7 @@ func NewNodeHandler(client *kube.K8sClient) *NodeHandler {
 func (h *NodeHandler) DrainNode(c *gin.Context) {
 	nodeName := c.Param("name")
 	ctx := c.Request.Context()
-
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 	// Parse the request body for drain options
 	var drainRequest struct {
 		Force            bool `json:"force" binding:"required"`
@@ -47,7 +47,7 @@ func (h *NodeHandler) DrainNode(c *gin.Context) {
 
 	// Get the node first to ensure it exists
 	var node corev1.Node
-	if err := h.K8sClient.Client.Get(ctx, types.NamespacedName{Name: nodeName}, &node); err != nil {
+	if err := cs.K8sClient.Get(ctx, types.NamespacedName{Name: nodeName}, &node); err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Node not found"})
 			return
@@ -71,14 +71,14 @@ func (h *NodeHandler) DrainNode(c *gin.Context) {
 	})
 }
 
-func (h *NodeHandler) markNodeSchedulable(ctx context.Context, nodeName string, schedulable bool) error {
+func (h *NodeHandler) markNodeSchedulable(ctx context.Context, client *kube.K8sClient, nodeName string, schedulable bool) error {
 	// Get the current node
 	var node corev1.Node
-	if err := h.K8sClient.Client.Get(ctx, types.NamespacedName{Name: nodeName}, &node); err != nil {
+	if err := client.Get(ctx, types.NamespacedName{Name: nodeName}, &node); err != nil {
 		return err
 	}
 	node.Spec.Unschedulable = !schedulable
-	if err := h.K8sClient.Client.Update(ctx, &node); err != nil {
+	if err := client.Update(ctx, &node); err != nil {
 		return err
 	}
 	return nil
@@ -88,8 +88,9 @@ func (h *NodeHandler) markNodeSchedulable(ctx context.Context, nodeName string, 
 func (h *NodeHandler) CordonNode(c *gin.Context) {
 	nodeName := c.Param("name")
 	ctx := c.Request.Context()
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 
-	if err := h.markNodeSchedulable(ctx, nodeName, false); err != nil {
+	if err := h.markNodeSchedulable(ctx, cs.K8sClient, nodeName, false); err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Node not found"})
 			return
@@ -108,8 +109,9 @@ func (h *NodeHandler) CordonNode(c *gin.Context) {
 func (h *NodeHandler) UncordonNode(c *gin.Context) {
 	nodeName := c.Param("name")
 	ctx := c.Request.Context()
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 
-	if err := h.markNodeSchedulable(ctx, nodeName, true); err != nil {
+	if err := h.markNodeSchedulable(ctx, cs.K8sClient, nodeName, true); err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Node not found"})
 			return
@@ -127,6 +129,7 @@ func (h *NodeHandler) UncordonNode(c *gin.Context) {
 func (h *NodeHandler) TaintNode(c *gin.Context) {
 	nodeName := c.Param("name")
 	ctx := c.Request.Context()
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 
 	// Parse the request body for taint information
 	var taintRequest struct {
@@ -142,7 +145,7 @@ func (h *NodeHandler) TaintNode(c *gin.Context) {
 
 	// Get the current node
 	var node corev1.Node
-	if err := h.K8sClient.Client.Get(ctx, types.NamespacedName{Name: nodeName}, &node); err != nil {
+	if err := cs.K8sClient.Get(ctx, types.NamespacedName{Name: nodeName}, &node); err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Node not found"})
 			return
@@ -173,7 +176,7 @@ func (h *NodeHandler) TaintNode(c *gin.Context) {
 	}
 
 	// Update the node
-	if err := h.K8sClient.Client.Update(ctx, &node); err != nil {
+	if err := cs.K8sClient.Update(ctx, &node); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to taint node: " + err.Error()})
 		return
 	}
@@ -189,6 +192,7 @@ func (h *NodeHandler) TaintNode(c *gin.Context) {
 func (h *NodeHandler) UntaintNode(c *gin.Context) {
 	nodeName := c.Param("name")
 	ctx := c.Request.Context()
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 
 	// Parse the request body for taint key to remove
 	var untaintRequest struct {
@@ -202,7 +206,7 @@ func (h *NodeHandler) UntaintNode(c *gin.Context) {
 
 	// Get the current node
 	var node corev1.Node
-	if err := h.K8sClient.Client.Get(ctx, types.NamespacedName{Name: nodeName}, &node); err != nil {
+	if err := cs.K8sClient.Get(ctx, types.NamespacedName{Name: nodeName}, &node); err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Node not found"})
 			return
@@ -227,7 +231,7 @@ func (h *NodeHandler) UntaintNode(c *gin.Context) {
 	}
 
 	// Update the node
-	if err := h.K8sClient.Client.Update(ctx, &node); err != nil {
+	if err := cs.K8sClient.Update(ctx, &node); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to untaint node: " + err.Error()})
 		return
 	}

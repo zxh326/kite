@@ -1,7 +1,6 @@
 package resources
 
 import (
-	"context"
 	"net/http"
 	"reflect"
 	"sort"
@@ -9,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
-	"github.com/zxh326/kite/pkg/kube"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,7 +20,6 @@ import (
 )
 
 type GenericResourceHandler[T client.Object, V client.ObjectList] struct {
-	K8sClient       *kube.K8sClient
 	name            string
 	isClusterScoped bool
 	objectType      reflect.Type
@@ -30,7 +28,6 @@ type GenericResourceHandler[T client.Object, V client.ObjectList] struct {
 }
 
 func NewGenericResourceHandler[T client.Object, V client.ObjectList](
-	k8sClient *kube.K8sClient,
 	name string,
 	isClusterScoped bool,
 	enableSearch bool,
@@ -39,7 +36,6 @@ func NewGenericResourceHandler[T client.Object, V client.ObjectList](
 	var list V
 
 	return &GenericResourceHandler[T, V]{
-		K8sClient:       k8sClient,
 		name:            name,
 		isClusterScoped: isClusterScoped,
 		enableSearch:    enableSearch,
@@ -60,7 +56,8 @@ func (h *GenericResourceHandler[T, V]) Searchable() bool {
 	return h.enableSearch
 }
 
-func (h *GenericResourceHandler[T, V]) GetResource(ctx context.Context, namespace, name string) (interface{}, error) {
+func (h *GenericResourceHandler[T, V]) GetResource(c *gin.Context, namespace, name string) (interface{}, error) {
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 	object := reflect.New(h.objectType).Interface().(T)
 	namespacedName := types.NamespacedName{Name: name}
 	if !h.isClusterScoped {
@@ -68,14 +65,14 @@ func (h *GenericResourceHandler[T, V]) GetResource(ctx context.Context, namespac
 			namespacedName.Namespace = namespace
 		}
 	}
-	if err := h.K8sClient.Client.Get(ctx, namespacedName, object); err != nil {
+	if err := cs.K8sClient.Get(c.Request.Context(), namespacedName, object); err != nil {
 		return nil, err
 	}
 	return object, nil
 }
 
 func (h *GenericResourceHandler[T, V]) Get(c *gin.Context) {
-	object, err := h.GetResource(c.Request.Context(), c.Param("namespace"), c.Param("name"))
+	object, err := h.GetResource(c, c.Param("namespace"), c.Param("name"))
 	if err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
@@ -99,6 +96,7 @@ func (h *GenericResourceHandler[T, V]) Get(c *gin.Context) {
 }
 
 func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 	objectList := reflect.New(h.listType).Interface().(V)
 
 	ctx := c.Request.Context()
@@ -150,7 +148,7 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 		listOpts = append(listOpts, client.MatchingFieldsSelector{Selector: fieldSelectorOption})
 	}
 
-	if err := h.K8sClient.Client.List(ctx, objectList, listOpts...); err != nil {
+	if err := cs.K8sClient.List(ctx, objectList, listOpts...); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -185,6 +183,7 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 
 func (h *GenericResourceHandler[T, V]) Create(c *gin.Context) {
 	resource := reflect.New(h.objectType).Interface().(T)
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 
 	if err := c.ShouldBindJSON(resource); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -192,7 +191,7 @@ func (h *GenericResourceHandler[T, V]) Create(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	if err := h.K8sClient.Client.Create(ctx, resource); err != nil {
+	if err := cs.K8sClient.Create(ctx, resource); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -203,6 +202,7 @@ func (h *GenericResourceHandler[T, V]) Create(c *gin.Context) {
 func (h *GenericResourceHandler[T, V]) Update(c *gin.Context) {
 	name := c.Param("name")
 	resource := reflect.New(h.objectType).Interface().(T)
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 
 	if err := c.ShouldBindJSON(resource); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -217,7 +217,7 @@ func (h *GenericResourceHandler[T, V]) Update(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	if err := h.K8sClient.Client.Update(ctx, resource); err != nil {
+	if err := cs.K8sClient.Update(ctx, resource); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -228,6 +228,7 @@ func (h *GenericResourceHandler[T, V]) Update(c *gin.Context) {
 func (h *GenericResourceHandler[T, V]) Delete(c *gin.Context) {
 	name := c.Param("name")
 	resource := reflect.New(h.objectType).Interface().(T)
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 
 	namespacedName := types.NamespacedName{Name: name}
 	if !h.isClusterScoped {
@@ -239,7 +240,7 @@ func (h *GenericResourceHandler[T, V]) Delete(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	if err := h.K8sClient.Client.Get(ctx, namespacedName, resource); err != nil {
+	if err := cs.K8sClient.Get(ctx, namespacedName, resource); err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
@@ -261,7 +262,7 @@ func (h *GenericResourceHandler[T, V]) Delete(c *gin.Context) {
 		deleteOptions.PropagationPolicy = &propagationPolicy
 	}
 
-	if err := h.K8sClient.Client.Delete(ctx, resource, deleteOptions); err != nil {
+	if err := cs.K8sClient.Delete(ctx, resource, deleteOptions); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -269,12 +270,14 @@ func (h *GenericResourceHandler[T, V]) Delete(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "deleted successfully"})
 }
 
-func (h *GenericResourceHandler[T, V]) Search(ctx context.Context, q string, limit int64) ([]common.SearchResult, error) {
+func (h *GenericResourceHandler[T, V]) Search(c *gin.Context, q string, limit int64) ([]common.SearchResult, error) {
 	if !h.enableSearch || len(q) < 3 {
 		return nil, nil
 	}
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	ctx := c.Request.Context()
 	objectList := reflect.New(h.listType).Interface().(V)
-	if err := h.K8sClient.Client.List(ctx, objectList); err != nil {
+	if err := cs.K8sClient.List(ctx, objectList); err != nil {
 		klog.Errorf("failed to list %s: %v", h.name, err)
 		return nil, err
 	}

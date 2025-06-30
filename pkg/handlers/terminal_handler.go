@@ -5,23 +5,24 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/kube"
 	"golang.org/x/net/websocket"
 	"k8s.io/klog/v2"
 )
 
 type TerminalHandler struct {
-	k8sClient *kube.K8sClient
 }
 
-func NewTerminalHandler(client *kube.K8sClient) *TerminalHandler {
-	return &TerminalHandler{
-		k8sClient: client,
-	}
+func NewTerminalHandler() *TerminalHandler {
+	return &TerminalHandler{}
 }
 
 // HandleTerminalWebSocket handles WebSocket connections for terminal sessions
 func (h *TerminalHandler) HandleTerminalWebSocket(c *gin.Context) {
+	// Get cluster info from context
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+
 	// Get path parameters
 	namespace := c.Param("namespace")
 	podName := c.Param("podName")
@@ -35,7 +36,7 @@ func (h *TerminalHandler) HandleTerminalWebSocket(c *gin.Context) {
 	websocket.Handler(func(ws *websocket.Conn) {
 		ctx, cancel := context.WithCancel(c.Request.Context())
 		defer cancel()
-		session := kube.NewTerminalSession(h.k8sClient, ws, namespace, podName, container)
+		session := kube.NewTerminalSession(cs.K8sClient, ws, namespace, podName, container)
 		defer session.Close()
 
 		if err := session.Start(ctx, "exec"); err != nil {

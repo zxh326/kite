@@ -9,23 +9,23 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zxh326/kite/pkg/kube"
+	"github.com/zxh326/kite/pkg/cluster"
 	corev1 "k8s.io/api/core/v1"
 )
 
 type LogsHandler struct {
-	k8sClient *kube.K8sClient
 }
 
-func NewLogsHandler(client *kube.K8sClient) *LogsHandler {
-	return &LogsHandler{
-		k8sClient: client,
-	}
+func NewLogsHandler() *LogsHandler {
+	return &LogsHandler{}
 }
 
 // GetPodLogs handles fetching logs for a specific pod/container
 func (h *LogsHandler) GetPodLogs(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Get cluster info from context
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 
 	// Get path parameters
 	namespace := c.Param("namespace")
@@ -73,7 +73,7 @@ func (h *LogsHandler) GetPodLogs(c *gin.Context) {
 	}
 
 	// Get log stream
-	req := h.k8sClient.ClientSet.CoreV1().Pods(namespace).GetLogs(podName, logOptions)
+	req := cs.K8sClient.ClientSet.CoreV1().Pods(namespace).GetLogs(podName, logOptions)
 	podLogs, err := req.Stream(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to get pod logs: %v", err)})
