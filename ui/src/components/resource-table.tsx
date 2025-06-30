@@ -16,7 +16,7 @@ import {
 import { Box, Database, Plus, RotateCcw, Search, XCircle } from 'lucide-react'
 
 import { ResourceType } from '@/types/api'
-import { usePaginatedResources } from '@/lib/api'
+import { useResources } from '@/lib/api'
 import { debounce } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -48,7 +48,6 @@ export interface ResourceTableProps<T> {
   searchQueryFilter?: (item: T, query: string) => boolean // Custom filter function
   showCreateButton?: boolean // If true, show create button
   onCreateClick?: () => void // Callback for create button click
-  pageSize?: number
 }
 
 export function ResourceTable<T>({
@@ -59,7 +58,6 @@ export function ResourceTable<T>({
   searchQueryFilter,
   showCreateButton = false,
   onCreateClick,
-  pageSize = 20,
 }: ResourceTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -67,29 +65,20 @@ export function ResourceTable<T>({
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('')
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
-    pageSize: pageSize, // Initialize with props pageSize
+    pageSize: 20,
   })
 
   const [selectedNamespace, setSelectedNamespace] = useState<
     string | undefined
   >()
-  const {
-    items: data,
-    isLoading,
-    isError,
-    error,
-    refetch,
-    page,
-    setPage,
-    pageSize: backendPageSize,
-    setPageSize,
-    totalPages,
-    totalCount,
-  } = usePaginatedResources(
+  const { isLoading, data, isError, error, refetch } = useResources(
     resourceType ?? (resourceName.toLowerCase() as ResourceType),
     selectedNamespace,
-    pageSize // Use pageSize from props as initial page size
+    {
+      refreshInterval: 5000, // Refresh every 5 seconds
+    }
   )
+
   // Set initial namespace when namespaces are loaded
   useEffect(() => {
     if (!clusterScope && !selectedNamespace && setSelectedNamespace) {
@@ -121,13 +110,6 @@ export function ResourceTable<T>({
     setPagination((prev) => ({ ...prev, pageIndex: 0 }))
   }, [columnFilters, debouncedSearchQuery])
 
-  // Sync backend page size with frontend pagination state
-  useEffect(() => {
-    if (backendPageSize && backendPageSize !== pagination.pageSize) {
-      setPagination((prev) => ({ ...prev, pageSize: backendPageSize }))
-    }
-  }, [backendPageSize, pagination.pageSize])
-
   // Handle namespace change
   const handleNamespaceChange = useCallback(
     (value: string) => {
@@ -136,13 +118,12 @@ export function ResourceTable<T>({
         setSelectedNamespace(value)
         // Reset pagination and search when changing namespace
         setPagination({ pageIndex: 0, pageSize: pagination.pageSize })
-        setPage(1) // Reset backend page to 1
         setSearchQuery('')
         // Reset debounced search immediately to prevent filter mismatch
         setDebouncedSearchQuery('')
       }
     },
-    [setSelectedNamespace, pagination.pageSize, setPage]
+    [setSelectedNamespace, pagination.pageSize]
   )
 
   // Add namespace column when showing all namespaces
@@ -230,7 +211,11 @@ export function ResourceTable<T>({
     autoResetPageIndex: false,
   })
 
-  // Calculate filtered row count for frontend filtering display
+  // Calculate total and filtered row counts
+  const totalRowCount = useMemo(
+    () => (data as T[] | undefined)?.length || 0,
+    [data]
+  )
   const filteredRowCount = useMemo(() => {
     if (!data || (data as T[]).length === 0) return 0
     // Force re-computation when filters change
@@ -528,7 +513,7 @@ export function ResourceTable<T>({
           <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
             {hasActiveFilters ? (
               <>
-                Showing {filteredRowCount} of {totalCount} row(s)
+                Showing {filteredRowCount} of {totalRowCount} row(s)
                 {debouncedSearchQuery && (
                   <span className="ml-1">
                     (filtered by "{debouncedSearchQuery}")
@@ -536,49 +521,20 @@ export function ResourceTable<T>({
                 )}
               </>
             ) : (
-              `${totalCount} row(s) total.`
+              `${totalRowCount} row(s) total.`
             )}
-          </div>
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-medium">Rows per page</p>
-            <Select
-              value={`${backendPageSize}`}
-              onValueChange={(value) => {
-                const newPageSize = Number(value)
-                setPageSize(newPageSize)
-                // Also update TanStack Table pagination state to keep them in sync
-                setPagination((prev) => ({
-                  ...prev,
-                  pageSize: newPageSize,
-                  pageIndex: 0, // Reset to first page when changing page size
-                }))
-              }}
-            >
-              <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue placeholder={backendPageSize} />
-              </SelectTrigger>
-              <SelectContent side="top">
-                {[10, 20, 30, 40, 50].map((pageSize) => (
-                  <SelectItem key={pageSize} value={`${pageSize}`}>
-                    {pageSize}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
           <div className="flex w-full items-center gap-8 lg:w-fit">
             <div className="flex w-fit items-center justify-center text-sm font-medium">
-              <span className="ml-2">
-                Page {page} of {totalPages}
-              </span>
+              Page {pagination.pageIndex + 1} of {table.getPageCount() || 1}
             </div>
             <div className="ml-auto flex items-center gap-2 lg:ml-0">
               <Button
                 variant="outline"
                 className="size-8"
                 size="icon"
-                onClick={() => setPage(page - 1)}
-                disabled={page <= 1}
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
               >
                 <span className="sr-only">Go to previous page</span>←
               </Button>
@@ -586,8 +542,8 @@ export function ResourceTable<T>({
                 variant="outline"
                 className="size-8"
                 size="icon"
-                onClick={() => setPage(page + 1)}
-                disabled={page >= totalPages}
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
               >
                 <span className="sr-only">Go to next page</span>→
               </Button>
