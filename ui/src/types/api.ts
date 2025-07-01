@@ -186,6 +186,11 @@ export interface PodMetrics {
   metadata: {
     name: string
     namespace: string
+    labels?: Record<string, string>
+    annotations?: Record<string, string>
+    creationTimestamp?: string
+    uid?: string
+    resourceVersion?: string
   }
   containers: {
     name: string // container name
