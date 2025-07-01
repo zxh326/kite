@@ -5,6 +5,7 @@ import { Pod } from 'kubernetes-types/core/v1'
 import { Link } from 'react-router-dom'
 
 import { PodMetrics } from '@/types/api'
+import { fetchResource } from '@/lib/api'
 import { getPodStatus } from '@/lib/k8s'
 import { formatDate, formatMemory, formatPodMetrics } from '@/lib/utils'
 
@@ -37,7 +38,6 @@ export function PodTable(props: {
         pod.metadata?.name || '',
       ],
       queryFn: async () => {
-        const { fetchResource } = await import('@/lib/api')
         return fetchResource<PodMetrics>(
           'podmetrics',
           pod.metadata?.name || '',

@@ -60,6 +60,10 @@ export const ClusterProvider: React.FC<{ children: React.ReactNode }> = ({
         localStorage.setItem('current-cluster', clusters[0].name)
       }
     }
+    if (clusters.length === 1) {
+      setCurrentCluster(clusters[0].name)
+      localStorage.setItem('current-cluster', clusters[0].name)
+    }
   }, [clusters, currentCluster])
 
   const setCurrentCluster = (clusterName: string) => {
