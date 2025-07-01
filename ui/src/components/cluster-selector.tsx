@@ -71,7 +71,7 @@ export function ClusterSelector() {
         <Button
           variant="ghost"
           size="sm"
-          className="flex items-center gap-2 h-8 px-3 max-w-64"
+          className="flex items-center gap-2 h-8 px-3 max-w-full focus-visible:ring-0 focus-visible:border-transparent"
           disabled={isSwitching}
         >
           <IconServer className="h-4 w-4" />
