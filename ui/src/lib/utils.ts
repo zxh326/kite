@@ -1,6 +1,8 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
+import { PodMetrics } from '@/types/api'
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -135,4 +137,30 @@ export function formatMemory(memory: string | number): string {
   }
 
   return memory
+}
+
+export function formatPodMetrics(metric: PodMetrics): {
+  cpu: number
+  memory: number
+} {
+  let cpu = 0
+  let memory = 0
+  metric.containers.forEach((container) => {
+    const cpuUsage = parseInt(container.usage.cpu, 10) || 0
+    if (container.usage.cpu.endsWith('n')) {
+      cpu += cpuUsage / 1e9 // nanocores to millicores
+    } else if (container.usage.cpu.endsWith('m')) {
+      cpu += cpuUsage
+    }
+    const memoryUsage = parseInt(container.usage.memory, 10) || 0
+    if (container.usage.memory.endsWith('Ki')) {
+      memory += memoryUsage * 1024
+    } else if (container.usage.memory.endsWith('Mi')) {
+      memory += memoryUsage * 1024 * 1024
+    } else if (container.usage.memory.endsWith('Gi')) {
+      memory += memoryUsage * 1024 * 1024 * 1024
+    }
+  })
+
+  return { cpu, memory }
 }

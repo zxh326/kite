@@ -173,25 +173,27 @@ export interface ResourcesTypeMap {
     metadata?: listMetadataType
   }
   podmetrics: {
-    items: {
-      metadata: {
-        name: string
-        namespace: string
-      }
-      containers: {
-        name: string // container name
-        usage: {
-          cpu: string // 214572390n
-          memory: string // 2956516Ki
-        }
-      }[]
-    }[]
+    items: PodMetrics[]
     metadata?: listMetadataType
   }
   replicasets: {
     items: ReplicaSet[]
     metadata?: listMetadataType
   }
+}
+
+export interface PodMetrics {
+  metadata: {
+    name: string
+    namespace: string
+  }
+  containers: {
+    name: string // container name
+    usage: {
+      cpu: string // 214572390n
+      memory: string // 2956516Ki
+    }
+  }[]
 }
 
 export interface ResourceTypeMap {
@@ -214,16 +216,7 @@ export interface ResourceTypeMap {
   persistentvolumes: PersistentVolume
   storageclasses: StorageClass
   replicasets: ReplicaSet
-  podmetrics: {
-    metadata: {
-      name: string
-      namespace: string
-      labels?: Record<string, string>
-      annotations?: Record<string, string>
-      uid?: string
-      creationTimestamp?: string
-    }
-  }
+  podmetrics: PodMetrics
 }
 
 export interface RecentEvent {
