@@ -36,6 +36,11 @@ build: frontend backend ## Build both frontend and backend
 	@echo "✅ Build completed successfully!"
 	@echo "🚀 Run './$(BINARY_NAME)' to start the server"
 
+cross-compile: frontend ## Cross-compile for multiple architectures
+	@echo "🔄 Cross-compiling for multiple architectures..."
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o $(BINARY_NAME)-amd64 .
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o $(BINARY_NAME)-arm64 .
+
 frontend: ## Build frontend only
 	@echo "📦 Building frontend..."
 	cd $(UI_DIR) && npm run build
