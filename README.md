@@ -128,6 +128,23 @@ docker run --rm -p 8080:8080 -v ~/.kube/config:/home/nonroot/.kube/config ghcr.i
 
 ### Deploy in Kubernetes
 
+#### Using Helm (Recommended)
+
+1. **Add Helm repository**
+
+   ```bash
+   helm repo add kite https://zxh326.github.io/kite
+   helm repo update
+   ```
+
+2. **Install with default values**
+
+   ```bash
+   helm install kite kite/kite -n kube-system
+   ```
+
+#### Using kubectl
+
 1. **Apply deployment manifests**
 
    ```bash

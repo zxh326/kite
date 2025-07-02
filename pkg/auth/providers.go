@@ -66,14 +66,19 @@ type GitHubProvider struct {
 }
 
 func NewGitHubProvider() *GitHubProvider {
-	return &GitHubProvider{
+	ghp := &GitHubProvider{
 		Config: OAuthConfig{
 			ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
 			ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
-			RedirectURL:  os.Getenv("GITHUB_REDIRECT_URL"),
+			RedirectURL:  os.Getenv("OAUTH_REDIRECT"),
 			Scopes:       []string{"openid", "profile", "email"},
 		},
 	}
+	if ghp.Config.RedirectURL == "" {
+		// for compatibility
+		ghp.Config.RedirectURL = os.Getenv("GITHUB_REDIRECT_URL")
+	}
+	return ghp
 }
 
 func (g *GitHubProvider) GetProviderName() string {
@@ -176,11 +181,12 @@ type GenericProvider struct {
 
 func NewGenericProvider(name string) *GenericProvider {
 	prefix := strings.ToUpper(name)
-	return &GenericProvider{
+	// FIXME: get config from well-known endpoint
+	gp := &GenericProvider{
 		Config: OAuthConfig{
 			ClientID:     os.Getenv(prefix + "_CLIENT_ID"),
 			ClientSecret: os.Getenv(prefix + "_CLIENT_SECRET"),
-			RedirectURL:  os.Getenv(prefix + "_REDIRECT_URL"),
+			RedirectURL:  os.Getenv("OAUTH_REDIRECT"),
 			Scopes:       strings.Split(os.Getenv(prefix+"_SCOPES"), ","),
 		},
 		AuthURL:     os.Getenv(prefix + "_AUTH_URL"),
@@ -188,6 +194,11 @@ func NewGenericProvider(name string) *GenericProvider {
 		UserInfoURL: os.Getenv(prefix + "_USERINFO_URL"),
 		Name:        name,
 	}
+	if gp.Config.RedirectURL == "" {
+		// for compatibility
+		gp.Config.RedirectURL = os.Getenv(prefix + "_REDIRECT_URL")
+	}
+	return gp
 }
 
 func (g *GenericProvider) GetProviderName() string {

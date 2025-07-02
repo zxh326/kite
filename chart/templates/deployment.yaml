@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kite.fullname" . }}
+  labels:
+    {{- include "kite.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kite.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "kite.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kite.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: {{ include "kite.fullname" . }}-secret
+          env:
+          {{- if .Values.multiCluster.defaultPrometheusUrl }}
+            - name: PROMETHEUS_URL
+              value: "{{ .Values.multiCluster.defaultPrometheusUrl }}"
+          {{- end }}
+          {{- range $cluster, $url := .Values.multiCluster.prometheus }}
+            - name: {{ printf "%s_PROMETHEUS_URL" (upper (replace "-" "_" $cluster)) }}
+              value: "{{ $url }}"
+          {{- end }}
+          {{- if .Values.oauth.enabled }}
+            - name: OAUTH_ENABLED
+              value: "{{ .Values.oauth.enabled }}"
+            - name: OAUTH_ALLOW_USERS
+              value: "{{ .Values.oauth.allowUsers }}"
+            - name: OAUTH_REDIRECT
+              value: "{{ .Values.oauth.redirect }}"
+            - name: OAUTH_PROVIDERS
+              value: "{{ join "," (keys .Values.oauth.providers) }}"
+          {{- end }}
+          {{- with .Values.extraEnvs }}
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+          {{- if .Values.multiCluster.enabled }}
+            - name: kubeconfig
+              mountPath: /home/nonroot/.kube
+          {{- end }}
+          {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+      {{- if .Values.multiCluster.enabled }}
+        - name: kubeconfig
+        {{- if .Values.multiCluster.kubeconfig.existingSecret }}
+          secret:
+            secretName: {{ .Values.multiCluster.kubeconfig.existingSecret }}
+            items:
+              - key: {{ .Values.multiCluster.kubeconfig.secretKey | default "kubeconfig" }}
+                path: {{ .Values.multiCluster.kubeconfig.secretKey | default "config" }}
+        {{- else if .Values.multiCluster.kubeconfig.fromContent }}
+          secret:
+            secretName: {{ include "kite.fullname" . }}-kubeconfig
+            items:
+              - key: kubeconfig
+                path: config
+        {{- end }}
+      {{- end }}
+      {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

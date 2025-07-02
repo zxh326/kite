@@ -35,3 +35,5 @@ static
 bin
 
 deploy-dev
+
+values-*.yaml
