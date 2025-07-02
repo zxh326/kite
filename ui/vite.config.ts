@@ -24,8 +24,7 @@ export default defineConfig({
     proxy: {
       '/api/': {
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api/'),
-        target: 'https://kite-demo.zzde.me',
+        target: 'http://localhost:8080',
       },
     },
   },

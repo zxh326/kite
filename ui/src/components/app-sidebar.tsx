@@ -24,9 +24,11 @@ import { ChevronDown } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
+import { useCluster } from '@/hooks/use-cluster'
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -37,12 +39,15 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 
+import { ClusterSelector } from './cluster-selector'
 import { Collapsible, CollapsibleTrigger } from './ui/collapsible'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation()
   const location = useLocation()
   const { isMobile, setOpenMobile } = useSidebar()
+  const { clusters, isLoading } = useCluster()
+  const shouldShowClusterSelector = !isLoading && clusters.length > 1
 
   const menus = {
     [t('nav.workloads')]: [
@@ -227,7 +232,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </Collapsible>
         ))}
       </SidebarContent>
-      {/* <SidebarFooter>TODO</SidebarFooter> */}
+      {shouldShowClusterSelector && (
+        <SidebarFooter>
+          <div className="flex items-center gap-2 rounded-md px-2 py-1.5 bg-muted/60 border border-border/80">
+            <ClusterSelector />
+          </div>
+        </SidebarFooter>
+      )}
     </Sidebar>
   )
 }

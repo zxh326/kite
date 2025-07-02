@@ -4,20 +4,17 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zxh326/kite/pkg/kube"
+	"github.com/zxh326/kite/pkg/cluster"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/klog/v2"
 )
 
 type ResourceApplyHandler struct {
-	K8sClient *kube.K8sClient
 }
 
-func NewResourceApplyHandler(k8sClient *kube.K8sClient) *ResourceApplyHandler {
-	return &ResourceApplyHandler{
-		K8sClient: k8sClient,
-	}
+func NewResourceApplyHandler() *ResourceApplyHandler {
+	return &ResourceApplyHandler{}
 }
 
 type ApplyResourceRequest struct {
@@ -26,6 +23,8 @@ type ApplyResourceRequest struct {
 
 // ApplyResource applies a YAML resource to the cluster
 func (h *ResourceApplyHandler) ApplyResource(c *gin.Context) {
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+
 	var req ApplyResourceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -46,7 +45,7 @@ func (h *ResourceApplyHandler) ApplyResource(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	// Try to create the resource
-	if err := h.K8sClient.Client.Create(ctx, obj); err != nil {
+	if err := cs.K8sClient.Create(ctx, obj); err != nil {
 		klog.Errorf("Failed to create resource: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create resource: " + err.Error()})
 		return

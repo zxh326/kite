@@ -1,11 +1,13 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { IconLoader } from '@tabler/icons-react'
+import { useQueries } from '@tanstack/react-query'
 import { Pod } from 'kubernetes-types/core/v1'
 import { Link } from 'react-router-dom'
 
-import { useResources } from '@/lib/api'
+import { PodMetrics } from '@/types/api'
+import { fetchResource } from '@/lib/api'
 import { getPodStatus } from '@/lib/k8s'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatMemory, formatPodMetrics } from '@/lib/utils'
 
 import { PodStatusIcon } from './pod-status-icon'
 import { Column, SimpleTable } from './simple-table'
@@ -20,42 +22,45 @@ export function PodTable(props: {
 }) {
   const { pods, isLoading } = props
 
-  const namespace = pods?.[0]?.metadata?.namespace || ''
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 20
+  const paginatedPods = useMemo(() => {
+    if (!pods) return []
+    const start = (currentPage - 1) * pageSize
+    return pods.slice(start, start + pageSize)
+  }, [pods, currentPage])
 
-  // Fetch current metrics for all pods
-  const { data: metricsData } = useResources('podmetrics', namespace, {
-    refreshInterval: 5000,
-    disable: !pods || pods.length === 0,
-    labelSelector: props.labelSelector,
+  const metricsQueries = useQueries({
+    queries: paginatedPods.map((pod) => ({
+      queryKey: [
+        'podmetrics',
+        pod.metadata?.namespace || '',
+        pod.metadata?.name || '',
+      ],
+      queryFn: async () => {
+        return fetchResource<PodMetrics>(
+          'podmetrics',
+          pod.metadata?.name || '',
+          pod.metadata?.namespace || ''
+        )
+      },
+      enabled: !!pod.metadata?.name && !!pod.metadata?.namespace,
+      staleTime: 5000,
+      refetchInterval: 10000,
+    })),
   })
 
-  // Create a map for quick metrics lookup
   const metricsMap = useMemo(() => {
     const map = new Map<string, { cpu: number; memory: number }>()
-    metricsData?.forEach((metric) => {
-      let cpu = 0
-      let memory = 0
-      metric.containers.forEach((container) => {
-        const cpuUsage = parseInt(container.usage.cpu, 10) || 0
-        if (container.usage.cpu.endsWith('n')) {
-          cpu += cpuUsage / 1e9 // Convert from nanocores to millicores
-        } else if (container.usage.cpu.endsWith('m')) {
-          cpu += cpuUsage
-        }
-
-        const memoryUsage = parseInt(container.usage.memory, 10) || 0
-        if (container.usage.memory.endsWith('Ki')) {
-          memory += memoryUsage / 1024 // Convert from KiB to MB
-        } else if (container.usage.memory.endsWith('Mi')) {
-          memory += memoryUsage
-        } else if (container.usage.memory.endsWith('Gi')) {
-          memory += memoryUsage * 1024 // Convert from GiB to MB
-        }
-      })
-      map.set(metric.metadata.name, { cpu, memory })
+    metricsQueries.forEach((query, idx) => {
+      const pod = paginatedPods[idx]
+      if (!pod) return
+      const metric = query.data as PodMetrics
+      if (!metric || !Array.isArray(metric.containers)) return
+      map.set(pod.metadata?.name || '', formatPodMetrics(metric))
     })
     return map
-  }, [metricsData])
+  }, [metricsQueries, paginatedPods])
 
   // Pod table columns
   const podColumns = useMemo(
@@ -121,23 +126,11 @@ export function PodTable(props: {
         },
         cell: (value: unknown) => {
           const memoryValue = value as number
-          if (memoryValue === 0)
-            return <span className="text-muted-foreground">-</span>
-
-          // Format memory value appropriately
-          if (memoryValue < 1024) {
-            return (
-              <span className="text-muted-foreground text-sm">
-                {memoryValue.toFixed(1)} MB
-              </span>
-            )
-          } else {
-            return (
-              <span className="text-muted-foreground text-sm">
-                {(memoryValue / 1024).toFixed(2)} GB
-              </span>
-            )
-          }
+          return (
+            <span className="text-muted-foreground text-sm">
+              {formatMemory(memoryValue)}
+            </span>
+          )
         },
       },
       {
@@ -196,8 +189,10 @@ export function PodTable(props: {
           emptyMessage="No pods found"
           pagination={{
             enabled: true,
-            pageSize: 20,
+            pageSize,
             showPageInfo: true,
+            currentPage,
+            onPageChange: setCurrentPage,
           }}
         />
       </CardContent>

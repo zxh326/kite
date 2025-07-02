@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/websocket"
 
+	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
 	"github.com/zxh326/kite/pkg/kube"
 	"github.com/zxh326/kite/pkg/utils"
@@ -20,17 +21,16 @@ import (
 )
 
 type NodeTerminalHandler struct {
-	k8sClient *kube.K8sClient
 }
 
-func NewNodeTerminalHandler(client *kube.K8sClient) *NodeTerminalHandler {
-	return &NodeTerminalHandler{
-		k8sClient: client,
-	}
+func NewNodeTerminalHandler() *NodeTerminalHandler {
+	return &NodeTerminalHandler{}
 }
 
 // HandleNodeTerminalWebSocket handles WebSocket connections for node terminal access
 func (h *NodeTerminalHandler) HandleNodeTerminalWebSocket(c *gin.Context) {
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+
 	nodeName := c.Param("nodeName")
 	if nodeName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Node name is required"})
@@ -41,7 +41,7 @@ func (h *NodeTerminalHandler) HandleNodeTerminalWebSocket(c *gin.Context) {
 		defer func() {
 			_ = conn.Close()
 		}()
-		node, err := h.k8sClient.ClientSet.CoreV1().Nodes().Get(context.TODO(), nodeName, metav1.GetOptions{})
+		node, err := cs.K8sClient.ClientSet.CoreV1().Nodes().Get(context.TODO(), nodeName, metav1.GetOptions{})
 		if err != nil {
 			log.Printf("Failed to get node %s: %v", nodeName, err)
 			h.sendErrorMessage(conn, fmt.Sprintf("Failed to get node %s: %v", nodeName, err))
@@ -55,7 +55,7 @@ func (h *NodeTerminalHandler) HandleNodeTerminalWebSocket(c *gin.Context) {
 		ctx, cancel := context.WithCancel(c.Request.Context())
 		defer cancel()
 
-		nodeAgentName, err := h.createNodeAgent(ctx, nodeName)
+		nodeAgentName, err := h.createNodeAgent(ctx, cs, nodeName)
 		if err != nil {
 			log.Printf("Failed to create node agent pod: %v", err)
 			h.sendErrorMessage(conn, fmt.Sprintf("Failed to create node agent pod: %v", err))
@@ -65,25 +65,25 @@ func (h *NodeTerminalHandler) HandleNodeTerminalWebSocket(c *gin.Context) {
 		// Ensure cleanup of the node agent pod
 		defer func() {
 			klog.Infof("Cleaning up node agent pod %s", nodeAgentName)
-			if err := h.cleanupNodeAgentPod(nodeAgentName); err != nil {
+			if err := h.cleanupNodeAgentPod(cs, nodeAgentName); err != nil {
 				log.Printf("Failed to cleanup node agent pod %s: %v", nodeAgentName, err)
 			}
 		}()
 
-		if err := h.waitForPodReady(ctx, conn, nodeAgentName); err != nil {
+		if err := h.waitForPodReady(ctx, cs, conn, nodeAgentName); err != nil {
 			log.Printf("Failed to wait for pod ready: %v", err)
 			h.sendErrorMessage(conn, fmt.Sprintf("Failed to wait for pod ready: %v", err))
 			return
 		}
 
-		session := kube.NewTerminalSession(h.k8sClient, conn, "kube-system", nodeAgentName, common.NodeTerminalPodName)
+		session := kube.NewTerminalSession(cs.K8sClient, conn, "kube-system", nodeAgentName, common.NodeTerminalPodName)
 		if err := session.Start(ctx, "attach"); err != nil {
 			klog.Errorf("Terminal session error: %v", err)
 		}
 	}).ServeHTTP(c.Writer, c.Request)
 }
 
-func (h *NodeTerminalHandler) createNodeAgent(ctx context.Context, nodeName string) (string, error) {
+func (h *NodeTerminalHandler) createNodeAgent(ctx context.Context, cs *cluster.ClientSet, nodeName string) (string, error) {
 	podName := fmt.Sprintf("%s-%s-%s", common.NodeTerminalPodName, nodeName, utils.RandomString(5))
 
 	// Define the kite node agent pod spec
@@ -129,9 +129,9 @@ func (h *NodeTerminalHandler) createNodeAgent(ctx context.Context, nodeName stri
 
 	object := &corev1.Pod{}
 	namespacedName := types.NamespacedName{Name: podName, Namespace: "kube-system"}
-	if err := h.k8sClient.Client.Get(ctx, namespacedName, object); err == nil {
+	if err := cs.K8sClient.Get(ctx, namespacedName, object); err == nil {
 		if utils.IsPodErrorOrSuccess(object) {
-			if err := h.k8sClient.Client.Delete(ctx, object); err != nil {
+			if err := cs.K8sClient.Delete(ctx, object); err != nil {
 				return "", fmt.Errorf("failed to delete existing kite node agent pod: %w", err)
 			}
 		} else {
@@ -140,7 +140,7 @@ func (h *NodeTerminalHandler) createNodeAgent(ctx context.Context, nodeName stri
 	}
 
 	// Create the pod
-	err := h.k8sClient.Client.Create(ctx, pod)
+	err := cs.K8sClient.Create(ctx, pod)
 	if err != nil {
 		return "", fmt.Errorf("failed to create kite node agent pod: %w", err)
 	}
@@ -149,7 +149,7 @@ func (h *NodeTerminalHandler) createNodeAgent(ctx context.Context, nodeName stri
 }
 
 // waitForPodReady waits for the kite node agent pod to be ready
-func (h *NodeTerminalHandler) waitForPodReady(ctx context.Context, conn *websocket.Conn, podName string) error {
+func (h *NodeTerminalHandler) waitForPodReady(ctx context.Context, cs *cluster.ClientSet, conn *websocket.Conn, podName string) error {
 	timeout := time.After(60 * time.Second)
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
@@ -166,7 +166,7 @@ func (h *NodeTerminalHandler) waitForPodReady(ctx context.Context, conn *websock
 			h.sendErrorMessage(conn, utils.GetPodErrorMessage(pod))
 			return fmt.Errorf("timeout waiting for pod %s to be ready", podName)
 		case <-ticker.C:
-			pod, err = h.k8sClient.ClientSet.CoreV1().Pods("kube-system").Get(
+			pod, err = cs.K8sClient.ClientSet.CoreV1().Pods("kube-system").Get(
 				context.TODO(),
 				podName,
 				metav1.GetOptions{},
@@ -183,8 +183,8 @@ func (h *NodeTerminalHandler) waitForPodReady(ctx context.Context, conn *websock
 	}
 }
 
-func (h *NodeTerminalHandler) cleanupNodeAgentPod(podName string) error {
-	return h.k8sClient.ClientSet.CoreV1().Pods("kube-system").Delete(
+func (h *NodeTerminalHandler) cleanupNodeAgentPod(cs *cluster.ClientSet, podName string) error {
+	return cs.K8sClient.ClientSet.CoreV1().Pods("kube-system").Delete(
 		context.TODO(),
 		podName,
 		metav1.DeleteOptions{},

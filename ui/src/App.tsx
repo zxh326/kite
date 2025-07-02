@@ -1,5 +1,6 @@
 import './App.css'
 
+import { useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 
 import { AppSidebar } from './components/app-sidebar'
@@ -13,7 +14,33 @@ import { SiteHeader } from './components/site-header'
 import { ThemeProvider } from './components/theme-provider'
 import { SidebarInset, SidebarProvider } from './components/ui/sidebar'
 import { Toaster } from './components/ui/sonner'
+import { ClusterProvider } from './contexts/cluster-context'
+import { useCluster } from './hooks/use-cluster'
+import { apiClient } from './lib/api-client'
 import { QueryProvider } from './lib/query-provider'
+
+function ClusterAwareApp() {
+  const { currentCluster, isLoading } = useCluster()
+
+  useEffect(() => {
+    apiClient.setClusterProvider(() => {
+      return currentCluster || localStorage.getItem('current-cluster')
+    })
+  }, [currentCluster])
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="flex items-center space-x-2">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
+          <span>Loading clusters...</span>
+        </div>
+      </div>
+    )
+  }
+
+  return <AppContent />
+}
 
 function AppContent() {
   const { isOpen, closeSearch } = useGlobalSearch()
@@ -49,9 +76,11 @@ function App() {
         storageKey="vite-ui-color-theme"
       >
         <QueryProvider>
-          <GlobalSearchProvider>
-            <AppContent />
-          </GlobalSearchProvider>
+          <ClusterProvider>
+            <GlobalSearchProvider>
+              <ClusterAwareApp />
+            </GlobalSearchProvider>
+          </ClusterProvider>
         </QueryProvider>
       </ColorThemeProvider>
     </ThemeProvider>

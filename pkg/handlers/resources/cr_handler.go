@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/kube"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -17,18 +18,17 @@ import (
 
 // CRHandler handles API operations for Custom Resources based on CRD name
 type CRHandler struct {
-	K8sClient *kube.K8sClient
 }
 
 // NewCRHandler creates a new CRHandler
-func NewCRHandler(client *kube.K8sClient) *CRHandler {
-	return &CRHandler{K8sClient: client}
+func NewCRHandler() *CRHandler {
+	return &CRHandler{}
 }
 
 // getCRDByName retrieves the CRD definition by name
-func (h *CRHandler) getCRDByName(ctx context.Context, crdName string) (*apiextensionsv1.CustomResourceDefinition, error) {
+func (h *CRHandler) getCRDByName(ctx context.Context, client *kube.K8sClient, crdName string) (*apiextensionsv1.CustomResourceDefinition, error) {
 	var crd apiextensionsv1.CustomResourceDefinition
-	if err := h.K8sClient.Client.Get(ctx, types.NamespacedName{Name: crdName}, &crd); err != nil {
+	if err := client.Get(ctx, types.NamespacedName{Name: crdName}, &crd); err != nil {
 		return nil, err
 	}
 	return &crd, nil
@@ -58,11 +58,12 @@ func (h *CRHandler) List(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "CRD name is required"})
 		return
 	}
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 
 	ctx := c.Request.Context()
 
 	// Get the CRD definition
-	crd, err := h.getCRDByName(ctx, crdName)
+	crd, err := h.getCRDByName(ctx, cs.K8sClient, crdName)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "CustomResourceDefinition not found"})
@@ -93,7 +94,7 @@ func (h *CRHandler) List(c *gin.Context) {
 		}
 	}
 
-	if err := h.K8sClient.Client.List(ctx, crList, opts); err != nil {
+	if err := cs.K8sClient.List(ctx, crList, opts); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -110,10 +111,11 @@ func (h *CRHandler) Get(c *gin.Context) {
 		return
 	}
 
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 	ctx := c.Request.Context()
 
 	// Get the CRD definition
-	crd, err := h.getCRDByName(ctx, crdName)
+	crd, err := h.getCRDByName(ctx, cs.K8sClient, crdName)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "CustomResourceDefinition not found"})
@@ -152,7 +154,7 @@ func (h *CRHandler) Get(c *gin.Context) {
 		namespacedName = types.NamespacedName{Name: name}
 	}
 
-	if err := h.K8sClient.Client.Get(ctx, namespacedName, cr); err != nil {
+	if err := cs.K8sClient.Get(ctx, namespacedName, cr); err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Custom resource not found"})
 			return
@@ -170,11 +172,11 @@ func (h *CRHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "CRD name is required"})
 		return
 	}
-
 	ctx := c.Request.Context()
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 
 	// Get the CRD definition
-	crd, err := h.getCRDByName(ctx, crdName)
+	crd, err := h.getCRDByName(ctx, cs.K8sClient, crdName)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "CustomResourceDefinition not found"})
@@ -215,7 +217,7 @@ func (h *CRHandler) Create(c *gin.Context) {
 		cr.SetNamespace(namespace)
 	}
 
-	if err := h.K8sClient.Client.Create(ctx, &cr); err != nil {
+	if err := cs.K8sClient.Create(ctx, &cr); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -232,10 +234,11 @@ func (h *CRHandler) Update(c *gin.Context) {
 		return
 	}
 
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 	ctx := c.Request.Context()
 
 	// Get the CRD definition
-	crd, err := h.getCRDByName(ctx, crdName)
+	crd, err := h.getCRDByName(ctx, cs.K8sClient, crdName)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "CustomResourceDefinition not found"})
@@ -272,7 +275,7 @@ func (h *CRHandler) Update(c *gin.Context) {
 		namespacedName = types.NamespacedName{Name: name}
 	}
 
-	if err := h.K8sClient.Client.Get(ctx, namespacedName, existingCR); err != nil {
+	if err := cs.K8sClient.Get(ctx, namespacedName, existingCR); err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Custom resource not found"})
 			return
@@ -298,7 +301,7 @@ func (h *CRHandler) Update(c *gin.Context) {
 		updatedCR.SetNamespace(existingCR.GetNamespace())
 	}
 
-	if err := h.K8sClient.Client.Update(ctx, &updatedCR); err != nil {
+	if err := cs.K8sClient.Update(ctx, &updatedCR); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -316,9 +319,9 @@ func (h *CRHandler) Delete(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 	// Get the CRD definition
-	crd, err := h.getCRDByName(ctx, crdName)
+	crd, err := h.getCRDByName(ctx, cs.K8sClient, crdName)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "CustomResourceDefinition not found"})
@@ -358,7 +361,7 @@ func (h *CRHandler) Delete(c *gin.Context) {
 	cr.SetName(name)
 
 	// First check if the resource exists
-	if err := h.K8sClient.Client.Get(ctx, namespacedName, cr); err != nil {
+	if err := cs.K8sClient.Get(ctx, namespacedName, cr); err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Custom resource not found"})
 			return
@@ -368,7 +371,7 @@ func (h *CRHandler) Delete(c *gin.Context) {
 	}
 
 	// Delete the custom resource
-	if err := h.K8sClient.Client.Delete(ctx, cr, &client.DeleteOptions{
+	if err := cs.K8sClient.Delete(ctx, cr, &client.DeleteOptions{
 		PropagationPolicy: &[]metav1.DeletionPropagation{metav1.DeletePropagationForeground}[0],
 	}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

@@ -4,6 +4,7 @@ import { Service } from 'kubernetes-types/core/v1'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
+import { getServiceExternalIP } from '@/lib/k8s'
 import { formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { ResourceTable } from '@/components/resource-table'
@@ -44,9 +45,7 @@ export function ServiceListPage() {
       columnHelper.accessor('status.loadBalancer.ingress', {
         header: t('services.externalIP'),
         cell: ({ row }) => {
-          const ingress = row.original.status?.loadBalancer?.ingress || []
-          if (ingress.length === 0) return '-'
-          return ingress.map((i) => i.ip || i.hostname).join(', ')
+          return getServiceExternalIP(row.original)
         },
       }),
       columnHelper.accessor('spec.ports', {

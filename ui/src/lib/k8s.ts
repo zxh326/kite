@@ -1,5 +1,5 @@
 import { Deployment } from 'kubernetes-types/apps/v1'
-import { Pod } from 'kubernetes-types/core/v1'
+import { Pod, Service } from 'kubernetes-types/core/v1'
 import { ObjectMeta } from 'kubernetes-types/meta/v1'
 
 import { DeploymentStatusType } from '@/types/k8s'
@@ -307,5 +307,29 @@ export function getOwnerInfo(metadata?: ObjectMeta) {
       path: `/crds/${ownerRef.kind.toLowerCase()}s.${group}/${metadata.namespace}/${ownerRef.name}`,
       controller: ownerRef.controller || false,
     }
+  }
+}
+
+// @see https://github.com/kubernetes/kubernetes/blob/bd44685eadc64c8cd46a8259f027f57ba9724a85/pkg/printers/internalversion/printers.go#L1317-L1347
+export function getServiceExternalIP(service: Service): string {
+  switch (service.spec?.type) {
+    case 'LoadBalancer':
+      if (service.status?.loadBalancer?.ingress) {
+        const ingress = service.status.loadBalancer.ingress
+        if (ingress.length > 0) {
+          return ingress.map((i) => i.ip || i.hostname).join(', ')
+        }
+      }
+      return '<pending>'
+    case 'ExternalName':
+      return service.spec.externalName || '-'
+    case 'NodePort':
+    case 'ClusterIP':
+      if (service.spec.externalIPs && service.spec.externalIPs.length > 0) {
+        return service.spec.externalIPs.join(', ')
+      }
+      return '-'
+    default:
+      return '-'
   }
 }

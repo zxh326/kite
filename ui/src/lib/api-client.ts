@@ -3,9 +3,15 @@ class ApiClient {
   private baseUrl: string = ''
   private isRefreshing = false
   private refreshPromise: Promise<void> | null = null
+  private getCurrentCluster: (() => string | null) | null = null
 
   constructor(baseUrl: string = '') {
     this.baseUrl = baseUrl
+  }
+
+  // Set cluster provider function
+  setClusterProvider(provider: () => string | null) {
+    this.getCurrentCluster = provider
   }
 
   private async refreshToken(): Promise<void> {
@@ -37,12 +43,20 @@ class ApiClient {
   ): Promise<T> {
     const fullUrl = this.baseUrl + url
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    }
+
+    // Add cluster header if available
+    const currentCluster = this.getCurrentCluster?.()
+    if (currentCluster) {
+      headers['x-cluster-name'] = currentCluster
+    }
+
     const defaultOptions: RequestInit = {
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
       ...options,
     }
 

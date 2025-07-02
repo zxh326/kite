@@ -2,6 +2,7 @@ package utils
 
 import (
 	"regexp"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/util/rand"
 )
@@ -17,4 +18,13 @@ func InjectAnalytics(htmlContent string) string {
 
 func RandomString(length int) string {
 	return rand.String(length)
+}
+
+func ToEnvName(input string) string {
+	s := input
+	s = strings.ReplaceAll(s, "-", "_")
+	s = strings.ReplaceAll(s, ".", "_")
+	s = strings.ReplaceAll(s, "/", "_")
+	s = strings.ToUpper(s)
+	return s
 }

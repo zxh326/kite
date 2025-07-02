@@ -42,6 +42,21 @@ follow their docs to setup.
 
 Set the `PROMETHEUS_URL` environment variable when running Kite
 
+### Multiple Clusters
+
+If you have multiple clusters, you can specify the Prometheus URL for each cluster in your Kite configuration. Use the `$CLUSTER_PROMETHEUS_URLS` environment variable to define a mapping of cluster names to Prometheus URLs.
+
+NOTE:
+
+Special characters need to be converted to `_`, for example, `-` is converted to `_`, and then capitalized.
+
+Example:
+
+```bash
+# cluster name: arn:aws-cn:eks:cn-north-1:123456:cluster/kite
+export ARN_AWS_CN_EKS_CN_NORTH_1_123456_CLUSTER_KITE_PROMETHEUS_URL=http://localhost:9090
+```
+
 ---
 
 Once configured, your Kite dashboard will display comprehensive cluster monitoring and metrics data.

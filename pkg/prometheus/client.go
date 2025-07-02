@@ -57,6 +57,9 @@ type PodCurrentMetrics struct {
 }
 
 func NewClient(prometheusURL string) (*Client, error) {
+	if prometheusURL == "" {
+		return nil, fmt.Errorf("prometheus URL cannot be empty")
+	}
 	client, err := api.NewClient(api.Config{
 		Address: prometheusURL,
 	})
@@ -96,19 +99,27 @@ func (c *Client) GetResourceUsageHistory(ctx context.Context, instance string, d
 		`container!="POD"`, // Exclude the "POD" container
 		`container!=""`,    // Exclude empty containers
 	}
+	cpuConditions := []string{
+		`resource="cpu"`,
+	}
+	memoryConditions := []string{
+		`resource="memory"`,
+	}
 	if instance != "" {
 		conditions = append(conditions, fmt.Sprintf(`instance="%s"`, instance))
+		cpuConditions = append(cpuConditions, fmt.Sprintf(`node="%s"`, instance))
+		memoryConditions = append(memoryConditions, fmt.Sprintf(`node="%s"`, instance))
 	}
 
 	// Query CPU usage percentage - using container CPU usage
-	cpuQuery := fmt.Sprintf(`sum(rate(container_cpu_usage_seconds_total{%s}[1m])) / sum(kube_node_status_allocatable{resource="cpu"}) * 100`, strings.Join(conditions, ","))
+	cpuQuery := fmt.Sprintf(`sum(rate(container_cpu_usage_seconds_total{%s}[1m])) / sum(kube_node_status_allocatable{%s}) * 100`, strings.Join(conditions, ","), strings.Join(cpuConditions, ","))
 	cpuData, err := c.queryRange(ctx, cpuQuery, start, now, step)
 	if err != nil {
 		return nil, fmt.Errorf("error querying CPU usage: %w", err)
 	}
 
 	// Query Memory usage percentage - using container memory usage
-	memoryQuery := fmt.Sprintf(`sum(container_memory_usage_bytes{%s}) / sum(kube_node_status_allocatable{resource="memory"}) * 100`, strings.Join(conditions, ","))
+	memoryQuery := fmt.Sprintf(`sum(container_memory_usage_bytes{%s}) / sum(kube_node_status_allocatable{%s}) * 100`, strings.Join(conditions, ","), strings.Join(memoryConditions, ","))
 	memoryData, err := c.queryRange(ctx, memoryQuery, start, now, step)
 	if err != nil {
 		return nil, fmt.Errorf("error querying Memory usage: %w", err)
