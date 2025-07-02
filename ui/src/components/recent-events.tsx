@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { IconAlertTriangle, IconInfoCircle, IconX } from '@tabler/icons-react'
 import { formatDistanceToNow } from 'date-fns'
+import { useTranslation } from 'react-i18next'
 
 import { useResources } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/card'
 
 export function RecentEvents() {
+  const { t } = useTranslation()
   const { data, isLoading } = useResources('events', undefined, {
     limit: 20,
   })
@@ -78,7 +80,7 @@ export function RecentEvents() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Recent Events</CardTitle>
+          <CardTitle>{t('overview.recentEvents')}</CardTitle>
           <CardDescription>Latest cluster events</CardDescription>
         </CardHeader>
         <CardContent>
@@ -93,7 +95,7 @@ export function RecentEvents() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Events</CardTitle>
+        <CardTitle>{t('overview.recentEvents')}</CardTitle>
         <CardDescription>Latest cluster events</CardDescription>
       </CardHeader>
       <CardContent>

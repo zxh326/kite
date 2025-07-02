@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Service } from 'kubernetes-types/core/v1'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
 import { getServiceExternalIP } from '@/lib/k8s'
@@ -9,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { ResourceTable } from '@/components/resource-table'
 
 export function ServiceListPage() {
+  const { t } = useTranslation()
   // Define column helper outside of any hooks
   const columnHelper = createColumnHelper<Service>()
 
@@ -16,7 +18,7 @@ export function ServiceListPage() {
   const columns = useMemo(
     () => [
       columnHelper.accessor('metadata.name', {
-        header: 'Name',
+        header: t('common.name'),
         cell: ({ row }) => (
           <div className="font-medium text-blue-500 hover:underline">
             <Link
@@ -30,24 +32,24 @@ export function ServiceListPage() {
         ),
       }),
       columnHelper.accessor('spec.type', {
-        header: 'Type',
+        header: t('services.type'),
         cell: ({ getValue }) => {
           const type = getValue() || 'ClusterIP'
           return <Badge variant="outline">{type}</Badge>
         },
       }),
       columnHelper.accessor('spec.clusterIP', {
-        header: 'Cluster IP',
+        header: t('services.clusterIP'),
         cell: ({ getValue }) => getValue() || '-',
       }),
       columnHelper.accessor('status.loadBalancer.ingress', {
-        header: 'External IP',
+        header: t('services.externalIP'),
         cell: ({ row }) => {
           return getServiceExternalIP(row.original)
         },
       }),
       columnHelper.accessor('spec.ports', {
-        header: 'Ports',
+        header: t('services.ports'),
         cell: ({ getValue }) => {
           const ports = getValue() || []
           if (ports.length === 0) return '-'
@@ -63,7 +65,7 @@ export function ServiceListPage() {
         },
       }),
       columnHelper.accessor('metadata.creationTimestamp', {
-        header: 'Created',
+        header: t('common.created'),
         cell: ({ getValue }) => {
           const dateStr = formatDate(getValue() || '')
 
@@ -73,7 +75,7 @@ export function ServiceListPage() {
         },
       }),
     ],
-    [columnHelper]
+    [columnHelper, t]
   )
 
   // Custom filter for service search
