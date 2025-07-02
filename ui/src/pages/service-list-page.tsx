@@ -1,8 +1,8 @@
 import { useCallback, useMemo } from 'react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Service } from 'kubernetes-types/core/v1'
-import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 
 import { getServiceExternalIP } from '@/lib/k8s'
 import { formatDate } from '@/lib/utils'

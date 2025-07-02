@@ -1,8 +1,8 @@
 import { FormEvent, useState } from 'react'
 import Logo from '@/assets/icon.svg'
 import { useAuth } from '@/contexts/auth-context'
-import { Navigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Navigate, useSearchParams } from 'react-router-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -132,7 +132,7 @@ export function LoginPage() {
       <div className="absolute top-6 right-6 z-10">
         <LanguageToggle />
       </div>
-      
+
       <div className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
@@ -145,7 +145,9 @@ export function LoginPage() {
 
           <Card className="bg-white shadow-sm border border-gray-200">
             <CardHeader className="text-center">
-              <CardTitle className="text-xl text-gray-900">{t('login.signIn')}</CardTitle>
+              <CardTitle className="text-xl text-gray-900">
+                {t('login.signIn')}
+              </CardTitle>
               <CardDescription className="text-gray-600">
                 {t('login.subtitle')}
               </CardDescription>
@@ -278,8 +280,10 @@ export function LoginPage() {
                         ) : (
                           <div className="flex items-center space-x-2">
                             <span>
-                              {t('login.signInWith', { 
-                                provider: provider.charAt(0).toUpperCase() + provider.slice(1) 
+                              {t('login.signInWith', {
+                                provider:
+                                  provider.charAt(0).toUpperCase() +
+                                  provider.slice(1),
                               })}
                             </span>
                           </div>

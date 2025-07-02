@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from 'react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Deployment } from 'kubernetes-types/apps/v1'
-import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { getDeploymentStatus } from '@/lib/k8s'
 import { formatDate } from '@/lib/utils'

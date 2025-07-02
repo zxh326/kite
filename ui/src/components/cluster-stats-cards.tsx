@@ -26,7 +26,7 @@ export function ClusterStatsCards({
   isLoading,
 }: ClusterStatsCardsProps) {
   const { t } = useTranslation()
-  
+
   if (isLoading || !stats) {
     return (
       <div className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">

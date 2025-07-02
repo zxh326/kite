@@ -1,8 +1,8 @@
 import { useCallback, useMemo } from 'react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Namespace } from 'kubernetes-types/core/v1'
-import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 
 import { getAge } from '@/lib/utils'
 import { ResourceTable } from '@/components/resource-table'

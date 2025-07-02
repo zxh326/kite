@@ -21,8 +21,8 @@ import {
   IconTopologyBus,
 } from '@tabler/icons-react'
 import { ChevronDown } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Link, useLocation } from 'react-router-dom'
 
 import { useCluster } from '@/hooks/use-cluster'
 import {
