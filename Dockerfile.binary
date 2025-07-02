@@ -1,0 +1,10 @@
+FROM gcr.io/distroless/static:nonroot
+ARG TARGETARCH
+
+WORKDIR /app
+
+COPY kite-$TARGETARCH ./kite
+
+EXPOSE 8080
+
+CMD ["./kite"]
