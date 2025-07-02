@@ -23,6 +23,7 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'zxh326' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
