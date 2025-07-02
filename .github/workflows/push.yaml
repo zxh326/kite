@@ -60,7 +60,7 @@ jobs:
         run: make deps
 
       - name: Build
-        run: make build
+        run: make cross-compile
 
       - name: Build and push image
         uses: docker/build-push-action@v6
