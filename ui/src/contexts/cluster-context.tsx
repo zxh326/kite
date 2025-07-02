@@ -60,9 +60,10 @@ export const ClusterProvider: React.FC<{ children: React.ReactNode }> = ({
         localStorage.setItem('current-cluster', clusters[0].name)
       }
     }
-    if (clusters.length === 1) {
-      setCurrentCluster(clusters[0].name)
-      localStorage.setItem('current-cluster', clusters[0].name)
+    if (currentCluster && !clusters.some((c) => c.name === currentCluster)) {
+      // If current cluster is not in the list, reset it
+      setCurrentClusterState(null)
+      localStorage.removeItem('current-cluster')
     }
   }, [clusters, currentCluster])
 
