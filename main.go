@@ -105,6 +105,8 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 		resourceApplyHandler := handlers.NewResourceApplyHandler()
 		api.POST("/resources/apply", resourceApplyHandler.ApplyResource)
 
+		api.GET("/image/tags", handlers.GetImageTags)
+
 		resources.RegisterRoutes(api)
 	}
 }
