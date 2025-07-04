@@ -35,13 +35,7 @@ func GetImageRegistryAndRepo(image string) (string, string) {
 	if len(parts) == 1 {
 		return "", "library/" + parts[0]
 	}
-	if len(parts) == 2 {
-		if strings.Contains(parts[0], ".") || strings.Contains(parts[0], ":") {
-			return parts[0], strings.Join(parts[1:], "/")
-		}
-		return "", strings.Join(parts, "/")
-	}
-	if len(parts) >= 3 {
+	if len(parts) > 1 {
 		if strings.Contains(parts[0], ".") || strings.Contains(parts[0], ":") {
 			return parts[0], strings.Join(parts[1:], "/")
 		}

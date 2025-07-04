@@ -68,7 +68,6 @@ _Secure authentication with GitHub and custom OAuth providers_
 
 - 🌓 **Multi-Theme Support** - Dark/light/color themes with system preference detection
 - 🔍 **Advanced Search** - Global search with across all resources
-- 🏘️ **Multi-Cluster Management** - Seamlessly switch between multiple Kubernetes clusters
 
 ### 🏘️ **Multi-Cluster Management**
 
@@ -84,6 +83,7 @@ _Secure authentication with GitHub and custom OAuth providers_
 - 🔗 **Resource Relationships** - Visualize connections between related resources (e.g., Deployment → Pods)
 - ⚙️ **Resource Operations** - Create, update, delete, scale, and restart resources directly from the UI
 - 🔄 **Custom Resources** - Full support for CRDs (Custom Resource Definitions)
+- 🏷️ **Quick Image Tag Selector** - Easily select and change container image tags based on Docker and container registry APIs
 
 ### 📈 **Monitoring & Observability**
 
