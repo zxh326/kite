@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   clusterScopeResources,
   DeploymentRelatedResource,
+  ImageTagInfo,
   OverviewData,
   PodMetrics,
   ResourcesTypeMap,
@@ -1026,4 +1027,22 @@ export const useLogsStream = (
     refetch,
     stopStreaming,
   }
+}
+
+export async function getImageTags(image: string): Promise<ImageTagInfo[]> {
+  if (!image) return []
+  const resp = await apiClient.get<ImageTagInfo[]>(
+    `/image/tags?image=${encodeURIComponent(image)}`
+  )
+  return resp
+}
+
+export function useImageTags(image: string, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['image-tags', image],
+    queryFn: () => getImageTags(image),
+    enabled: !!image && (options?.enabled ?? true),
+    staleTime: 60 * 1000, // 1 min
+    placeholderData: (prev) => prev,
+  })
 }

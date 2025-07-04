@@ -30,6 +30,7 @@ import { Separator } from '@/components/ui/separator'
 import { NamespaceSelector } from '../selector/namespace-selector'
 import { SimpleYamlEditor } from '../simple-yaml-editor'
 import { EnvironmentEditor } from './environment-editor'
+import { ImageEditor } from './image-editor'
 
 interface DeploymentCreateDialogProps {
   open: boolean
@@ -509,23 +510,17 @@ export function DeploymentCreateDialog({
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor={`image-${containerIndex}`}>
-                        Container Image *
-                      </Label>
-                      <Input
-                        id={`image-${containerIndex}`}
-                        value={containerConfig.image}
-                        onChange={(e) =>
+                      <ImageEditor
+                        container={containerConfig.container}
+                        onUpdate={(updates) =>
                           updateContainer(containerIndex, {
-                            image: e.target.value,
+                            image: updates.image,
                             container: {
                               ...containerConfig.container,
-                              image: e.target.value,
+                              ...updates,
                             },
                           })
                         }
-                        placeholder="nginx:latest"
-                        required
                       />
                     </div>
                     <div className="space-y-2">

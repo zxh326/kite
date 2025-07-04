@@ -300,3 +300,8 @@ export interface PodCurrentMetrics {
   cpu: number // CPU cores
   memory: number // Memory in MB
 }
+
+export interface ImageTagInfo {
+  name: string
+  timestamp?: string
+}
