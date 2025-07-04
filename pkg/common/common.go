@@ -23,8 +23,9 @@ var (
 
 	NodeTerminalImage = "busybox:latest"
 
-	WebhookUsername = "kite-webhook"
-	WebhookPassword = "kite-webhook-password"
+	WebhookUsername = os.Getenv("WEBHOOK_USERNAME")
+	WebhookPassword = os.Getenv("WEBHOOK_PASSWORD")
+	WebhookEnabled  = WebhookUsername != "" && WebhookPassword != ""
 
 	KiteUsername         = os.Getenv("KITE_USERNAME")
 	KitePassword         = os.Getenv("KITE_PASSWORD")
@@ -67,15 +68,6 @@ func LoadEnvs() {
 
 	if nodeTerminalImage := os.Getenv("NODE_TERMINAL_IMAGE"); nodeTerminalImage != "" {
 		NodeTerminalImage = nodeTerminalImage
-	}
-
-	if webhookUsername := os.Getenv("WEBHOOK_USERNAME"); webhookUsername != "" {
-		WebhookUsername = webhookUsername
-	}
-	if webhookPassword := os.Getenv("WEBHOOK_PASSWORD"); webhookPassword != "" {
-		WebhookPassword = webhookPassword
-	} else {
-		klog.Warning("WEBHOOK_PASSWORD is not set, using default password")
 	}
 	if readonly := os.Getenv("READONLY"); readonly == "true" {
 		Readonly = true
