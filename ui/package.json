@@ -42,7 +42,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
-    "i18next": "^25.2.1",
+    "i18next": "^25.3.0",
     "i18next-browser-languagedetector": "^8.2.0",
     "js-yaml": "^4.1.0",
     "kubernetes-types": "^1.30.0",
