@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Deployment } from 'kubernetes-types/apps/v1'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { getDeploymentStatus } from '@/lib/k8s'
@@ -11,6 +12,7 @@ import { DeploymentCreateDialog } from '@/components/editors/deployment-create-d
 import { ResourceTable } from '@/components/resource-table'
 
 export function DeploymentListPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
@@ -21,7 +23,7 @@ export function DeploymentListPage() {
   const columns = useMemo(
     () => [
       columnHelper.accessor('metadata.name', {
-        header: 'Name',
+        header: t('common.name'),
         cell: ({ row }) => (
           <div className="font-medium text-blue-500 hover:underline">
             <Link
@@ -36,7 +38,7 @@ export function DeploymentListPage() {
       }),
       columnHelper.accessor((row) => row.status, {
         id: 'ready',
-        header: 'Ready',
+        header: t('deployments.ready'),
         cell: ({ row }) => {
           const status = row.original.status
           const ready = status?.readyReplicas || 0
@@ -49,7 +51,7 @@ export function DeploymentListPage() {
         },
       }),
       columnHelper.accessor('status.conditions', {
-        header: 'Status',
+        header: t('common.status'),
         cell: ({ row }) => {
           const status = getDeploymentStatus(row.original)
           return (
@@ -61,7 +63,7 @@ export function DeploymentListPage() {
         },
       }),
       columnHelper.accessor('metadata.creationTimestamp', {
-        header: 'Created',
+        header: t('common.created'),
         cell: ({ getValue }) => {
           const dateStr = formatDate(getValue() || '')
 
@@ -71,7 +73,7 @@ export function DeploymentListPage() {
         },
       }),
     ],
-    [columnHelper]
+    [columnHelper, t]
   )
 
   // Custom filter for deployment search

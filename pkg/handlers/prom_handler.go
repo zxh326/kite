@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"sort"
@@ -9,54 +8,50 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zxh326/kite/pkg/kube"
+	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/prometheus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metricsv1beta1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
 type PromHandler struct {
-	prometheusClient       *prometheus.Client
-	k8sClient              *kube.K8sClient
 	metricsServerCache     map[string][]prometheus.UsageDataPoint
 	metricsServerCacheLock sync.Mutex
 }
 
-func NewPromHandler(prometheusClient *prometheus.Client, k8sClient *kube.K8sClient) *PromHandler {
+func NewPromHandler() *PromHandler {
 	h := &PromHandler{
-		prometheusClient:   prometheusClient,
-		k8sClient:          k8sClient,
 		metricsServerCache: make(map[string][]prometheus.UsageDataPoint),
 	}
-	if k8sClient.MetricsClient != nil {
-		go func() {
-			for {
-				time.Sleep(time.Minute)
-				h.metricsServerCacheLock.Lock()
-				cutoff := time.Now().Add(-30 * time.Minute)
-				for key, points := range h.metricsServerCache {
-					var filtered []prometheus.UsageDataPoint
-					for _, pt := range points {
-						if pt.Timestamp.After(cutoff) {
-							filtered = append(filtered, pt)
-						}
-					}
-					if len(filtered) > 0 {
-						h.metricsServerCache[key] = filtered
-					} else {
-						delete(h.metricsServerCache, key)
+	go func() {
+		for {
+			time.Sleep(time.Minute)
+			h.metricsServerCacheLock.Lock()
+			cutoff := time.Now().Add(-30 * time.Minute)
+			for key, points := range h.metricsServerCache {
+				var filtered []prometheus.UsageDataPoint
+				for _, pt := range points {
+					if pt.Timestamp.After(cutoff) {
+						filtered = append(filtered, pt)
 					}
 				}
-				h.metricsServerCacheLock.Unlock()
+				if len(filtered) > 0 {
+					h.metricsServerCache[key] = filtered
+				} else {
+					delete(h.metricsServerCache, key)
+				}
 			}
-		}()
-	}
+			h.metricsServerCacheLock.Unlock()
+		}
+	}()
+
 	return h
 }
 
 func (h *PromHandler) GetResourceUsageHistory(c *gin.Context) {
 	ctx := c.Request.Context()
 
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 	// Get query parameter for time range
 	duration := c.DefaultQuery("duration", "1h")
 
@@ -73,13 +68,13 @@ func (h *PromHandler) GetResourceUsageHistory(c *gin.Context) {
 	}
 
 	// Get resource usage history if Prometheus is available
-	if h.prometheusClient == nil {
+	if cs.PromClient == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Prometheus client not available"})
 		return
 	}
 
 	instance := c.Query("instance")
-	resourceUsageHistory, err := h.prometheusClient.GetResourceUsageHistory(ctx, instance, duration)
+	resourceUsageHistory, err := cs.PromClient.GetResourceUsageHistory(ctx, instance, duration)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to get resource usage history: %v", err)})
 		return
@@ -91,7 +86,7 @@ func (h *PromHandler) GetResourceUsageHistory(c *gin.Context) {
 // GetPodMetrics handles pod-specific metrics requests
 func (h *PromHandler) GetPodMetrics(c *gin.Context) {
 	ctx := c.Request.Context()
-
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 	// Get path parameters
 	namespace := c.Param("namespace")
 	podName := c.Param("podName")
@@ -120,8 +115,8 @@ func (h *PromHandler) GetPodMetrics(c *gin.Context) {
 	// Try Prometheus first
 	var podMetrics *prometheus.PodMetrics
 	var err error
-	if h.prometheusClient != nil {
-		podMetrics, err = h.prometheusClient.GetPodMetrics(ctx, namespace, podName, container, duration)
+	if cs.PromClient != nil {
+		podMetrics, err = cs.PromClient.GetPodMetrics(ctx, namespace, podName, container, duration)
 		if err == nil && podMetrics != nil {
 			podMetrics.Fallback = false
 			c.JSON(http.StatusOK, podMetrics)
@@ -130,7 +125,7 @@ func (h *PromHandler) GetPodMetrics(c *gin.Context) {
 	}
 
 	// Fallback: metrics-server
-	podMetrics, err = h.fetchPodMetricsFromMetricsServer(ctx, namespace, podName, container, labelSelector)
+	podMetrics, err = h.fetchPodMetricsFromMetricsServer(c, namespace, podName, container, labelSelector)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to get pod metrics from both Prometheus and metrics-server: %v", err)})
 		return
@@ -139,8 +134,10 @@ func (h *PromHandler) GetPodMetrics(c *gin.Context) {
 	c.JSON(http.StatusOK, podMetrics)
 }
 
-func (h *PromHandler) fetchPodMetricsFromMetricsServer(ctx context.Context, namespace, podName, container, labelSelector string) (*prometheus.PodMetrics, error) {
-	if h.k8sClient.MetricsClient == nil {
+func (h *PromHandler) fetchPodMetricsFromMetricsServer(c *gin.Context, namespace, podName, container, labelSelector string) (*prometheus.PodMetrics, error) {
+	ctx := c.Request.Context()
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	if cs.K8sClient.MetricsClient == nil {
 		return nil, fmt.Errorf("metrics client not available")
 	}
 	h.metricsServerCacheLock.Lock()
@@ -175,7 +172,7 @@ func (h *PromHandler) fetchPodMetricsFromMetricsServer(ctx context.Context, name
 
 	if labelSelector != "" {
 		listOpts := metav1.ListOptions{LabelSelector: labelSelector}
-		podMetricsList, err := h.k8sClient.MetricsClient.MetricsV1beta1().PodMetricses(namespace).List(ctx, listOpts)
+		podMetricsList, err := cs.K8sClient.MetricsClient.MetricsV1beta1().PodMetricses(namespace).List(ctx, listOpts)
 		if err != nil {
 			return nil, err
 		}
@@ -194,7 +191,7 @@ func (h *PromHandler) fetchPodMetricsFromMetricsServer(ctx context.Context, name
 	}
 
 	// single pod
-	podMetrics, err := h.k8sClient.MetricsClient.MetricsV1beta1().PodMetricses(namespace).Get(ctx, podName, metav1.GetOptions{})
+	podMetrics, err := cs.K8sClient.MetricsClient.MetricsV1beta1().PodMetricses(namespace).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

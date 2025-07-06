@@ -13,7 +13,7 @@ _A modern, intuitive Kubernetes dashboard_
 
 </div>
 
-Kite is a lightweight, modern Kubernetes dashboard that provides an intuitive interface for managing and monitoring your Kubernetes clusters. It offers real-time metrics, comprehensive resource management, and a beautiful user experience.
+Kite is a lightweight, modern Kubernetes dashboard that provides an intuitive interface for managing and monitoring your Kubernetes clusters. It offers real-time metrics, comprehensive resource management, multi-cluster support, and a beautiful user experience.
 
 ---
 
@@ -69,6 +69,12 @@ _Secure authentication with GitHub and custom OAuth providers_
 - 🌓 **Multi-Theme Support** - Dark/light/color themes with system preference detection
 - 🔍 **Advanced Search** - Global search with across all resources
 
+### 🏘️ **Multi-Cluster Management**
+
+- 🔄 **Seamless Cluster Switching** - Switch between multiple Kubernetes clusters with a single click
+- 📊 **Per-Cluster Monitoring** - Independent Prometheus configuration for each cluster
+- ⚙️ **Kubeconfig Integration** - Automatic discovery of clusters from your kubeconfig file
+
 ### 🔍 **Comprehensive Resource Management**
 
 - 📋 **Full Resource Coverage** - Pods, Deployments, Services, ConfigMaps, Secrets, PVs, PVCs, and more
@@ -77,6 +83,7 @@ _Secure authentication with GitHub and custom OAuth providers_
 - 🔗 **Resource Relationships** - Visualize connections between related resources (e.g., Deployment → Pods)
 - ⚙️ **Resource Operations** - Create, update, delete, scale, and restart resources directly from the UI
 - 🔄 **Custom Resources** - Full support for CRDs (Custom Resource Definitions)
+- 🏷️ **Quick Image Tag Selector** - Easily select and change container image tags based on Docker and container registry APIs
 
 ### 📈 **Monitoring & Observability**
 
@@ -96,17 +103,18 @@ _Secure authentication with GitHub and custom OAuth providers_
 
 ### Environment Variables
 
-| Variable            | Description                                                                                       | Default                       | Required |
-| ------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------- | -------- |
-| `PORT`              | Server port                                                                                       | `8080`                        | No       |
-| `KUBECONFIG`        | Kubernetes config path                                                                            | `inCluster or ~/.kube/config` | No       |
-| `ENABLE_ANALYTICS`  | Enable anonymous usage analytics                                                                  | `false`                       | No       |
-| `PROMETHEUS_URL`    | Prometheus server URL [Prometheus Setup Guide](docs/PROMETHEUS_SETUP.md)                          | `-`                           | No       |
-| `JWT_SECRET`        | JWT secret for signing tokens. default is random string                                           | `random string`               | Yes\*    |
-| `OAUTH_ENABLED`     | Enable OAuth authentication. [OAuth Setup Guide](docs/OAUTH_SETUP.md).                            | `false`                       | No       |
-| `OAUTH_ALLOW_USERS` | Comma-separated list of users allowed to access the dashboard,support wildcard (\*) for all users | `-`                           | OAuth\*  |
-| `KITE_USERNAME`     | Username for basic authentication. If set, enables password auth.                                 | `-`                           | No       |
-| `KITE_PASSWORD`     | Password for basic authentication. If set, enables password auth.                                 | `-`                           | No       |
+| Variable                   | Description                                                                                       | Default                       | Required |
+| -------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------- | -------- |
+| `PORT`                     | Server port                                                                                       | `8080`                        | No       |
+| `KUBECONFIG`               | Kubernetes config path for multi-cluster access                                                   | `inCluster or ~/.kube/config` | No       |
+| `ENABLE_ANALYTICS`         | Enable anonymous usage analytics                                                                  | `false`                       | No       |
+| `PROMETHEUS_URL`           | Default Prometheus server URL [Prometheus Setup Guide](docs/PROMETHEUS_SETUP.md)                  | `-`                           | No       |
+| `<CLUSTER>_PROMETHEUS_URL` | Cluster-specific Prometheus URL (see Multi-Cluster section below)                                 | `-`                           | No       |
+| `JWT_SECRET`               | JWT secret for signing tokens. default is random string                                           | `random string`               | Yes\*    |
+| `OAUTH_ENABLED`            | Enable OAuth authentication. [OAuth Setup Guide](docs/OAUTH_SETUP.md).                            | `false`                       | No       |
+| `OAUTH_ALLOW_USERS`        | Comma-separated list of users allowed to access the dashboard,support wildcard (\*) for all users | `-`                           | OAuth\*  |
+| `KITE_USERNAME`            | Username for basic authentication. If set, enables password auth.                                 | `-`                           | No       |
+| `KITE_PASSWORD`            | Password for basic authentication. If set, enables password auth.                                 | `-`                           | No       |
 
 \*Required only when OAuth is enabled
 
@@ -119,6 +127,23 @@ docker run --rm -p 8080:8080 -v ~/.kube/config:/home/nonroot/.kube/config ghcr.i
 ```
 
 ### Deploy in Kubernetes
+
+#### Using Helm (Recommended)
+
+1. **Add Helm repository**
+
+   ```bash
+   helm repo add kite https://zxh326.github.io/kite
+   helm repo update
+   ```
+
+2. **Install with default values**
+
+   ```bash
+   helm install kite kite/kite -n kube-system
+   ```
+
+#### Using kubectl
 
 1. **Apply deployment manifests**
 

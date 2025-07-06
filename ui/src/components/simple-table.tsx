@@ -24,6 +24,8 @@ interface SimpleTableProps<T> {
     enabled: boolean
     pageSize?: number
     showPageInfo?: boolean
+    currentPage?: number
+    onPageChange?: (page: number) => void
   }
 }
 
@@ -33,7 +35,15 @@ export function SimpleTable<T>({
   emptyMessage = 'No data available',
   pagination,
 }: SimpleTableProps<T>) {
-  const [currentPage, setCurrentPage] = useState(1)
+  const isControlled =
+    pagination &&
+    typeof pagination.currentPage === 'number' &&
+    typeof pagination.onPageChange === 'function'
+  const [uncontrolledPage, setUncontrolledPage] = useState(1)
+  const currentPage = isControlled ? pagination!.currentPage! : uncontrolledPage
+  const setCurrentPage = isControlled
+    ? pagination!.onPageChange!
+    : setUncontrolledPage
 
   const paginationConfig = useMemo(
     () => ({
@@ -69,11 +79,19 @@ export function SimpleTable<T>({
   }, [data, currentPage, paginationConfig])
 
   const handlePreviousPage = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 1))
+    if (isControlled) {
+      setCurrentPage(Math.max(currentPage - 1, 1))
+    } else {
+      setUncontrolledPage(Math.max(currentPage - 1, 1))
+    }
   }
 
   const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+    if (isControlled) {
+      setCurrentPage(Math.min(currentPage + 1, totalPages))
+    } else {
+      setUncontrolledPage(Math.min(currentPage + 1, totalPages))
+    }
   }
 
   const handlePageChange = (page: number) => {

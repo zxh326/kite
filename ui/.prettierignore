@@ -6,3 +6,4 @@ package-lock.yaml
 components.json
 index.html
 src/components/ui
+*.yaml

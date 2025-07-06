@@ -82,7 +82,9 @@ export function ResourceTable<T>({
   // Set initial namespace when namespaces are loaded
   useEffect(() => {
     if (!clusterScope && !selectedNamespace && setSelectedNamespace) {
-      const storedNamespace = localStorage.getItem('selectedNamespace')
+      const storedNamespace = localStorage.getItem(
+        localStorage.getItem('current-cluster') + 'selectedNamespace'
+      )
       if (storedNamespace) {
         setSelectedNamespace(storedNamespace)
       } else {
@@ -114,7 +116,10 @@ export function ResourceTable<T>({
   const handleNamespaceChange = useCallback(
     (value: string) => {
       if (setSelectedNamespace) {
-        localStorage.setItem('selectedNamespace', value)
+        localStorage.setItem(
+          localStorage.getItem('current-cluster') + 'selectedNamespace',
+          value
+        )
         setSelectedNamespace(value)
         // Reset pagination and search when changing namespace
         setPagination({ pageIndex: 0, pageSize: pagination.pageSize })

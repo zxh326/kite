@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kite Helm Repository</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        line-height: 1.6;
+        margin: 0;
+        padding: 2rem;
+        background: #f5f5f5;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #eee;
+      }
+
+      .code {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        padding: 1rem;
+        font-family: "Monaco", "Consolas", monospace;
+        font-size: 0.9rem;
+        overflow-x: auto;
+        margin: 1rem 0;
+      }
+
+      .step {
+        margin: 1.5rem 0;
+        padding: 1rem;
+        border-left: 3px solid #007acc;
+        background: #f8f9fa;
+      }
+
+      a {
+        color: #007acc;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🪁 Kite Helm Repository</h1>
+        <p>Modern Kubernetes Dashboard</p>
+      </div>
+
+      <h2>Quick Start</h2>
+
+      <div class="step">
+        <h3>1. Add Repository</h3>
+        <div class="code">
+          helm repo add kite https://zxh326.github.io/kite<br />helm repo update
+        </div>
+      </div>
+
+      <div class="step">
+        <h3>2. Install Chart</h3>
+        <div class="code">helm install kite kite/kite -n kube-system</div>
+      </div>
+      <h2>Available Versions</h2>
+      <div class="code">helm helm search repo kite</div>
+      or view the <a href="./index.yaml">Repository Index</a>.
+    </div>
+  </body>
+</html>

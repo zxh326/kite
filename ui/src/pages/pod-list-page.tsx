@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Pod } from 'kubernetes-types/core/v1'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
 import { getPodStatus } from '@/lib/k8s'
@@ -10,6 +11,7 @@ import { PodStatusIcon } from '@/components/pod-status-icon'
 import { ResourceTable } from '@/components/resource-table'
 
 export function PodListPage() {
+  const { t } = useTranslation()
   // Define column helper outside of any hooks
   const columnHelper = createColumnHelper<Pod>()
 
@@ -17,7 +19,7 @@ export function PodListPage() {
   const columns = useMemo(
     () => [
       columnHelper.accessor('metadata.name', {
-        header: 'Name',
+        header: t('common.name'),
         cell: ({ row }) => (
           <div className="font-medium text-blue-500 hover:underline">
             <Link
@@ -30,11 +32,11 @@ export function PodListPage() {
           </div>
         ),
       }),
-      columnHelper.accessor((row) => row.status!.containerStatuses, {
+      columnHelper.accessor((row) => row.status?.containerStatuses, {
         id: 'containers',
-        header: 'Ready',
+        header: t('pods.ready'),
         cell: ({ row }) => {
-          const containerStatuses = row.original.status!.containerStatuses || []
+          const containerStatuses = row.original.status?.containerStatuses || []
           return (
             <div>
               {containerStatuses.filter((s) => s.ready).length} /{' '}
@@ -43,8 +45,8 @@ export function PodListPage() {
           )
         },
       }),
-      columnHelper.accessor('status.phase', {
-        header: 'Status',
+      columnHelper.accessor((row) => row.status?.phase, {
+        header: t('common.status'),
         enableColumnFilter: true,
         cell: ({ row }) => {
           const status = getPodStatus(row.original)
@@ -56,17 +58,20 @@ export function PodListPage() {
           )
         },
       }),
-      columnHelper.accessor('status.podIP', {
+      columnHelper.accessor((row) => row.status?.podIP, {
+        id: 'podIP',
         header: 'IP',
         cell: ({ getValue }) => getValue() || '-',
       }),
-      columnHelper.accessor('spec.nodeName', {
-        header: 'Node',
+      columnHelper.accessor((row) => row.spec?.nodeName, {
+        id: 'nodeName',
+        header: t('pods.node'),
         enableColumnFilter: true,
         cell: ({ getValue }) => getValue() || '-',
       }),
-      columnHelper.accessor('metadata.creationTimestamp', {
-        header: 'Created',
+      columnHelper.accessor((row) => row.metadata?.creationTimestamp, {
+        id: 'creationTimestamp',
+        header: t('common.created'),
         cell: ({ getValue }) => {
           const dateStr = formatDate(getValue() || '')
 
@@ -76,15 +81,15 @@ export function PodListPage() {
         },
       }),
     ],
-    [columnHelper]
+    [columnHelper, t]
   )
 
   // Custom filter for pod search
   const podSearchFilter = useCallback((pod: Pod, query: string) => {
     return (
-      pod.metadata!.name!.toLowerCase().includes(query) ||
-      (pod.spec!.nodeName?.toLowerCase() || '').includes(query) ||
-      (pod.status!.podIP?.toLowerCase() || '').includes(query)
+      pod.metadata?.name?.toLowerCase().includes(query) ||
+      (pod.spec?.nodeName?.toLowerCase() || '').includes(query) ||
+      (pod.status?.podIP?.toLowerCase() || '').includes(query)
     )
   }, [])
 

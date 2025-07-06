@@ -1,0 +1,106 @@
+name: Release Helm Chart
+
+on:
+  push:
+    branches:
+      - main
+      - helm-chart
+    paths:
+      - "chart/**"
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'zxh326' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "3.12.1"
+
+      - name: Add Helm repos
+        run: |
+          helm repo add stable https://charts.helm.sh/stable
+          helm repo update
+
+      - name: Lint Helm Chart
+        run: |
+          helm lint chart/
+
+      - name: Package Helm Chart
+        run: |
+          mkdir -p .cr-release-packages
+          helm package chart/ --destination .cr-release-packages
+
+      - name: Upload Chart to Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: .cr-release-packages/*.tgz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Generate Helm Repository Index
+        run: |
+          mkdir -p gh-pages
+
+          # Copy existing index.yaml if it exists from gh-pages branch
+          if git show-branch origin/gh-pages 2>/dev/null; then
+            git checkout origin/gh-pages -- index.yaml 2>/dev/null || true
+            if [ -f index.yaml ]; then
+              mv index.yaml gh-pages/
+            fi
+          fi
+
+          # Copy packaged charts
+          cp .cr-release-packages/*.tgz gh-pages/ 2>/dev/null || true
+
+          # Generate/update repository index
+          helm repo index gh-pages --url https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+
+          # Copy the HTML page as index.html
+          cp .github/helm-repository.html gh-pages/index.html
+
+          # List contents for debugging
+          ls -la gh-pages/
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: gh-pages
+
+  deploy:
+    needs: release
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

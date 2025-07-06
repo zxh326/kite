@@ -15,7 +15,6 @@ const (
 
 var (
 	Port            = "8080"
-	PrometheusURL   = ""
 	JwtSecret       = ""
 	OAuthEnabled    = false
 	OAuthProviders  = ""
@@ -24,8 +23,9 @@ var (
 
 	NodeTerminalImage = "busybox:latest"
 
-	WebhookUsername = "kite-webhook"
-	WebhookPassword = "kite-webhook-password"
+	WebhookUsername = os.Getenv("WEBHOOK_USERNAME")
+	WebhookPassword = os.Getenv("WEBHOOK_PASSWORD")
+	WebhookEnabled  = WebhookUsername != "" && WebhookPassword != ""
 
 	KiteUsername         = os.Getenv("KITE_USERNAME")
 	KitePassword         = os.Getenv("KITE_PASSWORD")
@@ -35,11 +35,6 @@ var (
 )
 
 func LoadEnvs() {
-	if url := os.Getenv("PROMETHEUS_URL"); url != "" {
-		PrometheusURL = url
-	} else {
-		klog.Warning("PROMETHEUS_URL is not set, some features may not work as expected")
-	}
 	if secret := os.Getenv("JWT_SECRET"); secret != "" {
 		JwtSecret = secret
 	} else {
@@ -73,15 +68,6 @@ func LoadEnvs() {
 
 	if nodeTerminalImage := os.Getenv("NODE_TERMINAL_IMAGE"); nodeTerminalImage != "" {
 		NodeTerminalImage = nodeTerminalImage
-	}
-
-	if webhookUsername := os.Getenv("WEBHOOK_USERNAME"); webhookUsername != "" {
-		WebhookUsername = webhookUsername
-	}
-	if webhookPassword := os.Getenv("WEBHOOK_PASSWORD"); webhookPassword != "" {
-		WebhookPassword = webhookPassword
-	} else {
-		klog.Warning("WEBHOOK_PASSWORD is not set, using default password")
 	}
 	if readonly := os.Getenv("READONLY"); readonly == "true" {
 		Readonly = true

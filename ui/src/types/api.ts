@@ -22,6 +22,13 @@ import {
 import { Ingress } from 'kubernetes-types/networking/v1'
 import { StorageClass } from 'kubernetes-types/storage/v1'
 
+// Cluster types
+export interface Cluster {
+  name: string
+  version: string
+  isDefault: boolean
+}
+
 export interface CustomResource {
   apiVersion: string
   kind: string
@@ -166,25 +173,32 @@ export interface ResourcesTypeMap {
     metadata?: listMetadataType
   }
   podmetrics: {
-    items: {
-      metadata: {
-        name: string
-        namespace: string
-      }
-      containers: {
-        name: string // container name
-        usage: {
-          cpu: string // 214572390n
-          memory: string // 2956516Ki
-        }
-      }[]
-    }[]
+    items: PodMetrics[]
     metadata?: listMetadataType
   }
   replicasets: {
     items: ReplicaSet[]
     metadata?: listMetadataType
   }
+}
+
+export interface PodMetrics {
+  metadata: {
+    name: string
+    namespace: string
+    labels?: Record<string, string>
+    annotations?: Record<string, string>
+    creationTimestamp?: string
+    uid?: string
+    resourceVersion?: string
+  }
+  containers: {
+    name: string // container name
+    usage: {
+      cpu: string // 214572390n
+      memory: string // 2956516Ki
+    }
+  }[]
 }
 
 export interface ResourceTypeMap {
@@ -207,16 +221,7 @@ export interface ResourceTypeMap {
   persistentvolumes: PersistentVolume
   storageclasses: StorageClass
   replicasets: ReplicaSet
-  podmetrics: {
-    metadata: {
-      name: string
-      namespace: string
-      labels?: Record<string, string>
-      annotations?: Record<string, string>
-      uid?: string
-      creationTimestamp?: string
-    }
-  }
+  podmetrics: PodMetrics
 }
 
 export interface RecentEvent {
@@ -294,4 +299,9 @@ export interface PodCurrentMetrics {
   namespace: string
   cpu: number // CPU cores
   memory: number // Memory in MB
+}
+
+export interface ImageTagInfo {
+  name: string
+  timestamp?: string
 }

@@ -16,12 +16,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/auth"
+	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
 	"github.com/zxh326/kite/pkg/handlers"
 	"github.com/zxh326/kite/pkg/handlers/resources"
-	"github.com/zxh326/kite/pkg/kube"
 	"github.com/zxh326/kite/pkg/middleware"
-	"github.com/zxh326/kite/pkg/prometheus"
 	"github.com/zxh326/kite/pkg/utils"
 	"k8s.io/klog/v2"
 )
@@ -60,7 +59,7 @@ func setupStatic(r *gin.Engine) {
 	})
 }
 
-func setupAPIRouter(r *gin.Engine, k8sClient *kube.K8sClient, promClient *prometheus.Client) {
+func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 	r.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
@@ -82,41 +81,46 @@ func setupAPIRouter(r *gin.Engine, k8sClient *kube.K8sClient, promClient *promet
 
 	// API routes group (protected)
 	api := r.Group("/api/v1")
-	api.Use(authHandler.RequireAuth(), middleware.ReadonlyMiddleware())
+	api.Use(authHandler.RequireAuth(), middleware.ClusterMiddleware(cm), middleware.ReadonlyMiddleware())
 	{
-		overviewHandler := handlers.NewOverviewHandler(k8sClient, promClient)
-		api.GET("/overview", overviewHandler.GetOverview)
+		api.GET("/overview", handlers.GetOverview)
+		api.GET("/clusters", cm.GetClusters)
 
-		promHandler := handlers.NewPromHandler(promClient, k8sClient)
+		promHandler := handlers.NewPromHandler()
 		api.GET("/prometheus/resource-usage-history", promHandler.GetResourceUsageHistory)
-
 		api.GET("/prometheus/pods/:namespace/:podName/metrics", promHandler.GetPodMetrics)
 
-		logsHandler := handlers.NewLogsHandler(k8sClient)
+		logsHandler := handlers.NewLogsHandler()
 		api.GET("/logs/:namespace/:podName", logsHandler.GetPodLogs)
 
-		terminalHandler := handlers.NewTerminalHandler(k8sClient)
+		terminalHandler := handlers.NewTerminalHandler()
 		api.GET("/terminal/:namespace/:podName/ws", terminalHandler.HandleTerminalWebSocket)
 
-		nodeTerminalHandler := handlers.NewNodeTerminalHandler(k8sClient)
+		nodeTerminalHandler := handlers.NewNodeTerminalHandler()
 		api.GET("/node-terminal/:nodeName/ws", nodeTerminalHandler.HandleNodeTerminalWebSocket)
 
-		searchHandler := handlers.NewSearchHandler(k8sClient)
+		searchHandler := handlers.NewSearchHandler()
 		api.GET("/search", searchHandler.GlobalSearch)
 
-		resourceApplyHandler := handlers.NewResourceApplyHandler(k8sClient)
+		resourceApplyHandler := handlers.NewResourceApplyHandler()
 		api.POST("/resources/apply", resourceApplyHandler.ApplyResource)
 
-		resources.RegisterRoutes(api, k8sClient)
+		api.GET("/image/tags", handlers.GetImageTags)
+
+		resources.RegisterRoutes(api)
 	}
 }
 
-func setupWebhookRouter(r *gin.Engine, k8sClient *kube.K8sClient) {
+func setupWebhookRouter(r *gin.Engine, cm *cluster.ClusterManager) {
+	if !common.WebhookEnabled {
+		klog.Info("Webhook is not enabled, skipping webhook routes setup")
+		return
+	}
 	webhookGroup := r.Group("/api/v1/webhooks", gin.BasicAuth(gin.Accounts{
 		common.WebhookUsername: common.WebhookPassword,
-	}))
+	}), middleware.ClusterMiddleware(cm))
 	{
-		webhookHandler := handlers.NewWebhookHandler(k8sClient)
+		webhookHandler := handlers.NewWebhookHandler(cm)
 		webhookGroup.POST("/events", webhookHandler.HandleWebhook)
 	}
 }
@@ -135,24 +139,14 @@ func main() {
 	r.Use(middleware.Logger())
 	r.Use(middleware.CORS())
 
-	k8sClient, err := kube.NewK8sClient()
+	cm, err := cluster.NewClusterManager()
 	if err != nil {
-		log.Fatalf("Failed to create K8s client: %v", err)
-	}
-
-	// Try to initialize Prometheus client
-	var promClient *prometheus.Client
-	if common.PrometheusURL != "" {
-		promClient, err = prometheus.NewClient(common.PrometheusURL)
-		if err != nil {
-			klog.Errorf("Failed to create Prometheus client: %v", err)
-			promClient = nil
-		}
+		log.Fatalf("Failed to create ClusterManager: %v", err)
 	}
 
 	// Setup router
-	setupAPIRouter(r, k8sClient, promClient)
-	setupWebhookRouter(r, k8sClient)
+	setupAPIRouter(r, cm)
+	setupWebhookRouter(r, cm)
 	setupStatic(r)
 
 	srv := &http.Server{

@@ -1,12 +1,10 @@
 package resources
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/common"
-	"github.com/zxh326/kite/pkg/kube"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -27,48 +25,50 @@ type resourceHandler interface {
 
 	IsClusterScoped() bool
 	Searchable() bool
-	Search(ctx context.Context, query string, limit int64) ([]common.SearchResult, error)
+	Search(c *gin.Context, query string, limit int64) ([]common.SearchResult, error)
 
-	GetResource(ctx context.Context, namespace, name string) (interface{}, error)
+	GetResource(c *gin.Context, namespace, name string) (interface{}, error)
 
 	registerCustomRoutes(group *gin.RouterGroup)
 }
 
 type Restartable interface {
-	Restart(ctx context.Context, namespace, name string) error
+	Restart(c *gin.Context, namespace, name string) error
 }
 
 var handlers = map[string]resourceHandler{}
 
-func RegisterRoutes(group *gin.RouterGroup, k8sClient *kube.K8sClient) {
+func RegisterRoutes(group *gin.RouterGroup) {
+	// Note: All handlers now get the k8s client from gin context instead of being passed it during initialization
+	// We pass nil as the k8sClient parameter since handlers will get it from context
 	handlers = map[string]resourceHandler{
-		"pods":                   NewGenericResourceHandler[*corev1.Pod, *corev1.PodList](k8sClient, "pods", false, true),
-		"namespaces":             NewGenericResourceHandler[*corev1.Namespace, *corev1.NamespaceList](k8sClient, "namespaces", true, false),
-		"nodes":                  NewNodeHandler(k8sClient),
-		"services":               NewGenericResourceHandler[*corev1.Service, *corev1.ServiceList](k8sClient, "services", false, true),
-		"endpoints":              NewGenericResourceHandler[*corev1.Endpoints, *corev1.EndpointsList](k8sClient, "endpoints", false, false),
-		"endpointslices":         NewGenericResourceHandler[*discoveryv1.EndpointSlice, *discoveryv1.EndpointSliceList](k8sClient, "endpointslices", false, false),
-		"configmaps":             NewGenericResourceHandler[*corev1.ConfigMap, *corev1.ConfigMapList](k8sClient, "configmaps", false, true),
-		"secrets":                NewGenericResourceHandler[*corev1.Secret, *corev1.SecretList](k8sClient, "secrets", false, true),
-		"persistentvolumes":      NewGenericResourceHandler[*corev1.PersistentVolume, *corev1.PersistentVolumeList](k8sClient, "persistentvolumes", true, true),
-		"persistentvolumeclaims": NewGenericResourceHandler[*corev1.PersistentVolumeClaim, *corev1.PersistentVolumeClaimList](k8sClient, "persistentvolumeclaims", false, true),
-		"serviceaccounts":        NewGenericResourceHandler[*corev1.ServiceAccount, *corev1.ServiceAccountList](k8sClient, "serviceaccounts", false, false),
-		"crds":                   NewGenericResourceHandler[*apiextensionsv1.CustomResourceDefinition, *apiextensionsv1.CustomResourceDefinitionList](k8sClient, "crds", true, false),
-		"events":                 NewEventHandler(k8sClient),
-		"deployments":            NewDeploymentHandler(k8sClient),
-		"replicasets":            NewGenericResourceHandler[*appsv1.ReplicaSet, *appsv1.ReplicaSetList](k8sClient, "replicasets", false, false),
-		"statefulsets":           NewGenericResourceHandler[*appsv1.StatefulSet, *appsv1.StatefulSetList](k8sClient, "statefulsets", false, false),
-		"daemonsets":             NewGenericResourceHandler[*appsv1.DaemonSet, *appsv1.DaemonSetList](k8sClient, "daemonsets", false, true),
-		"jobs":                   NewGenericResourceHandler[*batchv1.Job, *batchv1.JobList](k8sClient, "jobs", false, false),
-		"cronjobs":               NewGenericResourceHandler[*batchv1.CronJob, *batchv1.CronJobList](k8sClient, "cronjobs", false, false),
-		"ingresses":              NewGenericResourceHandler[*networkingv1.Ingress, *networkingv1.IngressList](k8sClient, "ingresses", false, false),
-		"storageclasses":         NewGenericResourceHandler[*storagev1.StorageClass, *storagev1.StorageClassList](k8sClient, "storageclasses", true, false),
-		"roles":                  NewGenericResourceHandler[*rbacv1.Role, *rbacv1.RoleList](k8sClient, "roles", false, false),
-		"rolebindings":           NewGenericResourceHandler[*rbacv1.RoleBinding, *rbacv1.RoleBindingList](k8sClient, "rolebindings", false, false),
-		"clusterroles":           NewGenericResourceHandler[*rbacv1.ClusterRole, *rbacv1.ClusterRoleList](k8sClient, "clusterroles", true, false),
-		"clusterrolebindings":    NewGenericResourceHandler[*rbacv1.ClusterRoleBinding, *rbacv1.ClusterRoleBindingList](k8sClient, "clusterrolebindings", true, false),
-		"podmetrics":             NewGenericResourceHandler[*metricsv1.PodMetrics, *metricsv1.PodMetricsList](k8sClient, "metrics.k8s.io", false, false),
-		"nodemetrics":            NewGenericResourceHandler[*metricsv1.NodeMetrics, *metricsv1.NodeMetricsList](k8sClient, "metrics.k8s.io", false, false),
+		"pods":                   NewGenericResourceHandler[*corev1.Pod, *corev1.PodList]("pods", false, true),
+		"namespaces":             NewGenericResourceHandler[*corev1.Namespace, *corev1.NamespaceList]("namespaces", true, false),
+		"nodes":                  NewNodeHandler(),
+		"services":               NewGenericResourceHandler[*corev1.Service, *corev1.ServiceList]("services", false, true),
+		"endpoints":              NewGenericResourceHandler[*corev1.Endpoints, *corev1.EndpointsList]("endpoints", false, false),
+		"endpointslices":         NewGenericResourceHandler[*discoveryv1.EndpointSlice, *discoveryv1.EndpointSliceList]("endpointslices", false, false),
+		"configmaps":             NewGenericResourceHandler[*corev1.ConfigMap, *corev1.ConfigMapList]("configmaps", false, true),
+		"secrets":                NewGenericResourceHandler[*corev1.Secret, *corev1.SecretList]("secrets", false, true),
+		"persistentvolumes":      NewGenericResourceHandler[*corev1.PersistentVolume, *corev1.PersistentVolumeList]("persistentvolumes", true, true),
+		"persistentvolumeclaims": NewGenericResourceHandler[*corev1.PersistentVolumeClaim, *corev1.PersistentVolumeClaimList]("persistentvolumeclaims", false, true),
+		"serviceaccounts":        NewGenericResourceHandler[*corev1.ServiceAccount, *corev1.ServiceAccountList]("serviceaccounts", false, false),
+		"crds":                   NewGenericResourceHandler[*apiextensionsv1.CustomResourceDefinition, *apiextensionsv1.CustomResourceDefinitionList]("crds", true, false),
+		"events":                 NewEventHandler(),
+		"deployments":            NewDeploymentHandler(),
+		"replicasets":            NewGenericResourceHandler[*appsv1.ReplicaSet, *appsv1.ReplicaSetList]("replicasets", false, false),
+		"statefulsets":           NewGenericResourceHandler[*appsv1.StatefulSet, *appsv1.StatefulSetList]("statefulsets", false, false),
+		"daemonsets":             NewGenericResourceHandler[*appsv1.DaemonSet, *appsv1.DaemonSetList]("daemonsets", false, true),
+		"jobs":                   NewGenericResourceHandler[*batchv1.Job, *batchv1.JobList]("jobs", false, false),
+		"cronjobs":               NewGenericResourceHandler[*batchv1.CronJob, *batchv1.CronJobList]("cronjobs", false, false),
+		"ingresses":              NewGenericResourceHandler[*networkingv1.Ingress, *networkingv1.IngressList]("ingresses", false, false),
+		"storageclasses":         NewGenericResourceHandler[*storagev1.StorageClass, *storagev1.StorageClassList]("storageclasses", true, false),
+		"roles":                  NewGenericResourceHandler[*rbacv1.Role, *rbacv1.RoleList]("roles", false, false),
+		"rolebindings":           NewGenericResourceHandler[*rbacv1.RoleBinding, *rbacv1.RoleBindingList]("rolebindings", false, false),
+		"clusterroles":           NewGenericResourceHandler[*rbacv1.ClusterRole, *rbacv1.ClusterRoleList]("clusterroles", true, false),
+		"clusterrolebindings":    NewGenericResourceHandler[*rbacv1.ClusterRoleBinding, *rbacv1.ClusterRoleBindingList]("clusterrolebindings", true, false),
+		"podmetrics":             NewGenericResourceHandler[*metricsv1.PodMetrics, *metricsv1.PodMetricsList]("metrics.k8s.io", false, false),
+		"nodemetrics":            NewGenericResourceHandler[*metricsv1.NodeMetrics, *metricsv1.NodeMetricsList]("metrics.k8s.io", false, false),
 	}
 
 	for name, handler := range handlers {
@@ -85,7 +85,7 @@ func RegisterRoutes(group *gin.RouterGroup, k8sClient *kube.K8sClient) {
 		}
 	}
 
-	crHandler := NewCRHandler(k8sClient)
+	crHandler := NewCRHandler()
 	otherGroup := group.Group("/:crd")
 	{
 		otherGroup.GET("", crHandler.List)
@@ -119,18 +119,18 @@ func registerNamespaceScopeRoutes(group *gin.RouterGroup, handler resourceHandle
 	group.DELETE("/:namespace/:name", handler.Delete)
 }
 
-var SearchFuncs = map[string]func(ctx context.Context, query string, limit int64) ([]common.SearchResult, error){}
+var SearchFuncs = map[string]func(c *gin.Context, query string, limit int64) ([]common.SearchResult, error){}
 
-func RegisterSearchFunc(resourceType string, searchFunc func(ctx context.Context, query string, limit int64) ([]common.SearchResult, error)) {
+func RegisterSearchFunc(resourceType string, searchFunc func(c *gin.Context, query string, limit int64) ([]common.SearchResult, error)) {
 	SearchFuncs[resourceType] = searchFunc
 }
 
-func GetResource(ctx context.Context, resource, namespace, name string) (interface{}, error) {
+func GetResource(c *gin.Context, resource, namespace, name string) (interface{}, error) {
 	handler, exists := handlers[resource]
 	if !exists {
 		return nil, fmt.Errorf("resource handler for %s not found", resource)
 	}
-	return handler.GetResource(ctx, namespace, name)
+	return handler.GetResource(c, namespace, name)
 }
 
 func GetHandler(resource string) (resourceHandler, error) {

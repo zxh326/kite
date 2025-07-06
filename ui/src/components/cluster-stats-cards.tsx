@@ -6,6 +6,7 @@ import {
   IconNetwork,
   IconServer,
 } from '@tabler/icons-react'
+import { useTranslation } from 'react-i18next'
 
 import { OverviewData } from '@/types/api'
 import {
@@ -24,6 +25,8 @@ export function ClusterStatsCards({
   stats,
   isLoading,
 }: ClusterStatsCardsProps) {
+  const { t } = useTranslation()
+
   if (isLoading || !stats) {
     return (
       <div className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
@@ -41,34 +44,34 @@ export function ClusterStatsCards({
 
   const statsConfig = [
     {
-      label: 'Nodes',
+      label: t('nav.nodes'),
       value: stats.totalNodes,
       subValue: stats.readyNodes,
       icon: IconServer,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: 'text-blue-600 dark:text-blue-400',
+      bgColor: 'bg-blue-50 dark:bg-blue-950/50',
     },
     {
-      label: 'Pods',
+      label: t('nav.pods'),
       value: stats.totalPods,
       subValue: stats.runningPods,
       icon: IconBox,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      color: 'text-green-600 dark:text-green-400',
+      bgColor: 'bg-green-50 dark:bg-green-950/50',
     },
     {
-      label: 'Namespaces',
+      label: t('nav.namespaces'),
       value: stats.totalNamespaces,
       icon: IconFolders,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      color: 'text-purple-600 dark:text-purple-400',
+      bgColor: 'bg-purple-50 dark:bg-purple-950/50',
     },
     {
-      label: 'Services',
+      label: t('nav.services'),
       value: stats.totalServices,
       icon: IconNetwork,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
+      color: 'text-orange-600 dark:text-orange-400',
+      bgColor: 'bg-orange-50 dark:bg-orange-950/50',
     },
   ]
 

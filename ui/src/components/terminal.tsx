@@ -245,10 +245,11 @@ export function Terminal({
       // In development, use the backend server port directly
       const isDev = process.env.NODE_ENV === 'development'
       const host = isDev ? 'localhost:8080' : window.location.host
+      const currentCluster = localStorage.getItem('current-cluster')
       const wsUrl =
         type == 'pod'
-          ? `${protocol}//${host}/api/v1/terminal/${namespace}/${selectedPod}/ws?container=${selectedContainer}`
-          : `${protocol}//${host}/api/v1/node-terminal/${namespace}/ws`
+          ? `${protocol}//${host}/api/v1/terminal/${namespace}/${selectedPod}/ws?container=${selectedContainer}&x-cluster-name=${currentCluster}`
+          : `${protocol}//${host}/api/v1/node-terminal/${namespace}/ws?x-cluster-name=${currentCluster}`
 
       const websocket = new WebSocket(wsUrl)
       wsRef.current = websocket

@@ -2,19 +2,19 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
 	"github.com/zxh326/kite/pkg/handlers/resources"
-	"github.com/zxh326/kite/pkg/kube"
 	"k8s.io/klog/v2"
 )
 
 type WebhookHandler struct {
-	k8sClient *kube.K8sClient
+	cm *cluster.ClusterManager
 }
 
-func NewWebhookHandler(k8sClient *kube.K8sClient) *WebhookHandler {
+func NewWebhookHandler(cm *cluster.ClusterManager) *WebhookHandler {
 	return &WebhookHandler{
-		k8sClient: k8sClient,
+		cm: cm,
 	}
 }
 
@@ -37,8 +37,7 @@ func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
 			return
 		}
 		if restartable, ok := handler.(resources.Restartable); ok {
-			ctx := c.Request.Context()
-			if err := restartable.Restart(ctx, body.Namespace, body.Name); err != nil {
+			if err := restartable.Restart(c, body.Namespace, body.Name); err != nil {
 				c.JSON(500, gin.H{
 					"error": "Failed to restart resource: " + err.Error(),
 				})

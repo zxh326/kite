@@ -1,0 +1,9 @@
+dist
+node_modules
+.vscode
+package-lock.json
+package-lock.yaml
+components.json
+index.html
+src/components/ui
+**/*.yaml

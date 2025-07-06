@@ -31,13 +31,19 @@ func Logger() gin.HandlerFunc {
 				}
 			}
 
-			return fmt.Sprintf("%s - %s \"%s %s\" %d %s %s\n",
+			cluster := "-"
+			if clusterName, exists := param.Keys[ClusterNameKey]; exists {
+				cluster = clusterName.(string)
+			}
+
+			return fmt.Sprintf("%s - %s \"%s %s\" %d %s %s %s\n",
 				param.ClientIP,
 				param.TimeStamp.Format("2006-01-02 15:04:05"),
 				param.Method,
 				param.Path,
 				param.StatusCode,
 				param.Latency,
+				cluster,
 				name,
 			)
 		},

@@ -1,12 +1,11 @@
 package resources
 
 import (
-	"context"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zxh326/kite/pkg/kube"
+	"github.com/zxh326/kite/pkg/cluster"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -19,10 +18,9 @@ type DeploymentHandler struct {
 	*GenericResourceHandler[*appsv1.Deployment, *appsv1.DeploymentList]
 }
 
-func NewDeploymentHandler(client *kube.K8sClient) *DeploymentHandler {
+func NewDeploymentHandler() *DeploymentHandler {
 	return &DeploymentHandler{
 		GenericResourceHandler: NewGenericResourceHandler[*appsv1.Deployment, *appsv1.DeploymentList](
-			client,
 			"deployments",
 			false, // Deployments are namespaced resources
 			true,
@@ -30,24 +28,24 @@ func NewDeploymentHandler(client *kube.K8sClient) *DeploymentHandler {
 	}
 }
 
-func (h *DeploymentHandler) Restart(ctx context.Context, namespace, name string) error {
+func (h *DeploymentHandler) Restart(c *gin.Context, namespace, name string) error {
 	var deployment appsv1.Deployment
-	if err := h.K8sClient.Client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, &deployment); err != nil {
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	if err := cs.K8sClient.Get(c.Request.Context(), types.NamespacedName{Namespace: namespace, Name: name}, &deployment); err != nil {
 		return err
 	}
 	if deployment.Spec.Template.Annotations == nil {
 		deployment.Spec.Template.Annotations = make(map[string]string)
 	}
 	deployment.Spec.Template.Annotations["kite.kubernetes.io/restartedAt"] = time.Now().Format(time.RFC3339)
-	return h.K8sClient.Client.Update(ctx, &deployment)
+	return cs.K8sClient.Update(c.Request.Context(), &deployment)
 }
 
 func (h *DeploymentHandler) RestartDeployment(c *gin.Context) {
 	namespace := c.Param("namespace")
 	name := c.Param("name")
-	ctx := c.Request.Context()
 
-	if err := h.Restart(ctx, namespace, name); err != nil {
+	if err := h.Restart(c, namespace, name); err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Deployment not found"})
 			return
@@ -67,10 +65,11 @@ func (h *DeploymentHandler) ListDeploymentRelatedResources(c *gin.Context) {
 	namespace := c.Param("namespace")
 	name := c.Param("name")
 	ctx := c.Request.Context()
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 
 	// First, get the deployment to access its labels
 	var deployment appsv1.Deployment
-	if err := h.K8sClient.Client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, &deployment); err != nil {
+	if err := cs.K8sClient.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, &deployment); err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Deployment not found"})
 			return
@@ -93,7 +92,7 @@ func (h *DeploymentHandler) ListDeploymentRelatedResources(c *gin.Context) {
 	serviceListOpts := &client.ListOptions{
 		Namespace: namespace,
 	}
-	if err := h.K8sClient.Client.List(ctx, &serviceList, serviceListOpts); err != nil {
+	if err := cs.K8sClient.List(ctx, &serviceList, serviceListOpts); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list services: " + err.Error()})
 		return
 	}
@@ -123,6 +122,7 @@ func (h *DeploymentHandler) ScaleDeployment(c *gin.Context) {
 	namespace := c.Param("namespace")
 	name := c.Param("name")
 	ctx := c.Request.Context()
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 
 	// Parse the request body to get the desired replica count
 	var scaleRequest struct {
@@ -141,7 +141,7 @@ func (h *DeploymentHandler) ScaleDeployment(c *gin.Context) {
 
 	// Get the current deployment
 	var deployment appsv1.Deployment
-	if err := h.K8sClient.Client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, &deployment); err != nil {
+	if err := cs.K8sClient.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, &deployment); err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Deployment not found"})
 			return
@@ -154,7 +154,7 @@ func (h *DeploymentHandler) ScaleDeployment(c *gin.Context) {
 	deployment.Spec.Replicas = scaleRequest.Replicas
 
 	// Update the deployment
-	if err := h.K8sClient.Client.Update(ctx, &deployment); err != nil {
+	if err := cs.K8sClient.Update(ctx, &deployment); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scale deployment: " + err.Error()})
 		return
 	}

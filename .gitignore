@@ -5,6 +5,7 @@
 *.so
 *.dylib
 kite
+kite-*
 
 # Test binary, built with `go test -c`
 *.test
@@ -35,3 +36,5 @@ static
 bin
 
 deploy-dev
+
+values-*.yaml

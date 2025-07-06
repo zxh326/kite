@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react'
 import Logo from '@/assets/icon.svg'
 import { useAuth } from '@/contexts/auth-context'
+import { useTranslation } from 'react-i18next'
 import { Navigate, useSearchParams } from 'react-router-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -14,8 +15,10 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { LanguageToggle } from '@/components/language-toggle'
 
 export function LoginPage() {
+  const { t } = useTranslation()
   const { user, login, loginWithPassword, providers, isLoading } = useAuth()
   const [searchParams] = useSearchParams()
   const [loginLoading, setLoginLoading] = useState<string | null>(null)
@@ -25,9 +28,8 @@ export function LoginPage() {
 
   const error = searchParams.get('error')
 
-  // If user is already logged in, redirect to dashboard
   if (user && !isLoading) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/" replace />
   }
 
   const handleLogin = async (provider: string = 'github') => {
@@ -48,9 +50,9 @@ export function LoginPage() {
       await loginWithPassword(username, password)
     } catch (err) {
       if (err instanceof Error) {
-        setPasswordError(err.message || 'Invalid username or password')
+        setPasswordError(err.message || t('login.errors.invalidCredentials'))
       } else {
-        setPasswordError('An unknown error occurred')
+        setPasswordError(t('login.errors.unknownError'))
       }
     } finally {
       setLoginLoading(null)
@@ -68,53 +70,49 @@ export function LoginPage() {
     switch (reason) {
       case 'insufficient_permissions':
         return {
-          title: 'Access Denied',
+          title: t('login.errors.accessDenied'),
           message: user
-            ? `Access denied for user "${user}". Please contact your administrator to verify your permissions.`
-            : 'Insufficient permissions to access this application.',
-          details:
-            'Your account does not have the required permissions to access this Kubernetes dashboard.',
+            ? t('login.errors.insufficientPermissionsUser', { user })
+            : t('login.errors.insufficientPermissions'),
+          details: t('login.errors.insufficientPermissionsDetails'),
         }
       case 'token_exchange_failed':
         return {
-          title: 'Authentication Failed',
-          message: `Failed to complete authentication with ${provider}.`,
-          details:
-            'There was an issue exchanging the authorization code for an access token. Please try again.',
+          title: t('login.errors.authenticationFailed'),
+          message: t('login.errors.tokenExchangeFailed', { provider }),
+          details: t('login.errors.tokenExchangeDetails'),
         }
       case 'user_info_failed':
         return {
-          title: 'Profile Access Failed',
-          message: `Unable to retrieve your profile information from ${provider}.`,
-          details:
-            'The authentication succeeded, but we could not access your profile. Please try again.',
+          title: t('login.errors.profileAccessFailed'),
+          message: t('login.errors.userInfoFailed', { provider }),
+          details: t('login.errors.userInfoDetails'),
         }
       case 'jwt_generation_failed':
         return {
-          title: 'Session Creation Failed',
+          title: t('login.errors.sessionCreationFailed'),
           message: user
-            ? `Failed to create a session for user "${user}".`
-            : 'Unable to create your authentication session.',
-          details:
-            'Please try logging in again. If the problem persists, contact support.',
+            ? t('login.errors.jwtGenerationFailedUser', { user })
+            : t('login.errors.jwtGenerationFailed'),
+          details: t('login.errors.jwtGenerationDetails'),
         }
       case 'callback_failed':
         return {
-          title: 'OAuth Callback Failed',
-          message: 'The OAuth authentication process failed.',
-          details: 'Please try again or contact support if the issue persists.',
+          title: t('login.errors.oauthCallbackFailed'),
+          message: t('login.errors.callbackFailed'),
+          details: t('login.errors.contactSupport'),
         }
       case 'callback_error':
         return {
-          title: 'Authentication Error',
-          message: 'An error occurred during authentication.',
-          details: 'Please try again or contact support if the issue persists.',
+          title: t('login.errors.authenticationError'),
+          message: t('login.errors.callbackError'),
+          details: t('login.errors.contactSupport'),
         }
       default:
         return {
-          title: 'Authentication Error',
-          message: 'An unexpected error occurred during authentication.',
-          details: 'Please try again or contact support if the issue persists.',
+          title: t('login.errors.authenticationError'),
+          message: t('login.errors.generalError'),
+          details: t('login.errors.contactSupport'),
         }
     }
   }
@@ -129,6 +127,11 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Language Toggle - Top Right */}
+      <div className="absolute top-6 right-6 z-10">
+        <LanguageToggle />
+      </div>
+
       <div className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
@@ -136,14 +139,16 @@ export function LoginPage() {
               <img src={Logo} className="h-10 w-10 dark:invert" />{' '}
               <h1 className="text-2xl font-bold text-gray-900">Kite</h1>
             </div>
-            <p className="text-gray-600">Kubernetes Dashboard</p>
+            <p className="text-gray-600">{t('login.kubernetesDashboard')}</p>
           </div>
 
           <Card className="bg-white shadow-sm border border-gray-200">
             <CardHeader className="text-center">
-              <CardTitle className="text-xl text-gray-900">Sign In</CardTitle>
+              <CardTitle className="text-xl text-gray-900">
+                {t('login.signIn')}
+              </CardTitle>
               <CardDescription className="text-gray-600">
-                Access your Kubernetes dashboard
+                {t('login.subtitle')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -177,11 +182,10 @@ export function LoginPage() {
                         }}
                         className="w-full"
                       >
-                        Try Again with Different Account
+                        {t('login.tryAgainDifferentAccount')}
                       </Button>
                       <p className="text-xs text-gray-500">
-                        You can try logging in with a different account that has
-                        the required permissions.
+                        {t('login.tryAgainHint')}
                       </p>
                     </div>
                   )}
@@ -190,10 +194,9 @@ export function LoginPage() {
 
               {providers.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-600">No login methods configured</p>
+                  <p className="text-gray-600">{t('login.noLoginMethods')}</p>
                   <p className="text-sm text-gray-500 mt-2">
-                    Please configure authentication providers in your
-                    environment
+                    {t('login.configureAuth')}
                   </p>
                 </div>
               ) : (
@@ -201,22 +204,22 @@ export function LoginPage() {
                   {providers.includes('password') && (
                     <form onSubmit={handlePasswordLogin} className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="username">Username</Label>
+                        <Label htmlFor="username">{t('login.username')}</Label>
                         <Input
                           id="username"
                           type="text"
-                          placeholder="Enter your username"
+                          placeholder={t('login.enterUsername')}
                           value={username}
                           onChange={(e) => setUsername(e.target.value)}
                           required
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
+                        <Label htmlFor="password">{t('login.password')}</Label>
                         <Input
                           id="password"
                           type="password"
-                          placeholder="Enter your password"
+                          placeholder={t('login.enterPassword')}
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
@@ -235,10 +238,10 @@ export function LoginPage() {
                         {loginLoading === 'password' ? (
                           <div className="flex items-center space-x-2">
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            <span>Signing in...</span>
+                            <span>{t('login.signingIn')}</span>
                           </div>
                         ) : (
-                          'Sign In with Password'
+                          t('login.signInWithPassword')
                         )}
                       </Button>
                     </form>
@@ -252,7 +255,7 @@ export function LoginPage() {
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
                           <span className="bg-white px-2 text-muted-foreground">
-                            Or continue with
+                            {t('login.orContinueWith')}
                           </span>
                         </div>
                       </div>
@@ -271,14 +274,16 @@ export function LoginPage() {
                         {loginLoading === provider ? (
                           <div className="flex items-center space-x-2">
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            <span>Signing in...</span>
+                            <span>{t('login.signingIn')}</span>
                           </div>
                         ) : (
                           <div className="flex items-center space-x-2">
                             <span>
-                              Sign in with{' '}
-                              {provider.charAt(0).toUpperCase() +
-                                provider.slice(1)}
+                              {t('login.signInWith', {
+                                provider:
+                                  provider.charAt(0).toUpperCase() +
+                                  provider.slice(1),
+                              })}
                             </span>
                           </div>
                         )}
@@ -296,8 +301,7 @@ export function LoginPage() {
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
             <p className="text-sm text-gray-500">
-              © {new Date().getFullYear()} Kite. Built for Kubernetes
-              enthusiasts.
+              {t('login.footer', { year: new Date().getFullYear() })}
             </p>
             <div className="flex space-x-6 text-sm text-gray-500">
               <a
@@ -305,7 +309,7 @@ export function LoginPage() {
                 target="_blank"
                 className="hover:text-gray-700 transition-colors"
               >
-                Documentation
+                {t('login.documentation')}
               </a>
               <a
                 href="https://github.com/zxh326/kite"

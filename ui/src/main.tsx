@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
 
 import './index.css'
+import './i18n'
 
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 
