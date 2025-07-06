@@ -36,11 +36,10 @@ export function PodListPage() {
         id: 'containers',
         header: t('pods.ready'),
         cell: ({ row }) => {
-          const containerStatuses = row.original.status?.containerStatuses || []
+          const status = getPodStatus(row.original)
           return (
             <div>
-              {containerStatuses.filter((s) => s.ready).length} /{' '}
-              {containerStatuses.length}
+              {status.readyContainers} / {status.totalContainers}
             </div>
           )
         },
@@ -52,9 +51,21 @@ export function PodListPage() {
           const status = getPodStatus(row.original)
           return (
             <Badge variant="outline" className="text-muted-foreground px-1.5">
-              <PodStatusIcon status={status} />
-              {status}
+              <PodStatusIcon status={status.reason} />
+              {status.reason}
             </Badge>
+          )
+        },
+      }),
+      columnHelper.accessor((row) => row.status, {
+        id: 'restarts',
+        header: t('pods.restarts'),
+        cell: ({ row }) => {
+          const status = getPodStatus(row.original)
+          return (
+            <span className="text-muted-foreground text-sm">
+              {status.restartString}
+            </span>
           )
         },
       }),
@@ -73,8 +84,7 @@ export function PodListPage() {
         id: 'creationTimestamp',
         header: t('common.created'),
         cell: ({ getValue }) => {
-          const dateStr = formatDate(getValue() || '')
-
+          const dateStr = formatDate(getValue() || '', true)
           return (
             <span className="text-muted-foreground text-sm">{dateStr}</span>
           )

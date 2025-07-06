@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
-import { Container, Pod } from 'kubernetes-types/core/v1'
+import { Pod } from 'kubernetes-types/core/v1'
 
+import { SimpleContainer } from '@/types/k8s'
 import { usePodMetrics } from '@/lib/api'
 import {
   Select,
@@ -22,7 +23,7 @@ interface PodMonitoringProps {
   podName?: string
   defaultQueryName?: string
   pods?: Pod[]
-  containers: Container[]
+  containers: SimpleContainer
   labelSelector?: string
 }
 
@@ -117,10 +118,7 @@ export function PodMonitoring({
 
         <div className="space-y-2">
           <ContainerSelector
-            containers={containers.map((c) => ({
-              name: c.name,
-              image: c.image || '',
-            }))}
+            containers={containers}
             selectedContainer={selectedContainer}
             onContainerChange={setSelectedContainer}
           />

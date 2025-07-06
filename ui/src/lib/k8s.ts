@@ -1,24 +1,38 @@
 import { Deployment } from 'kubernetes-types/apps/v1'
-import { Pod, Service } from 'kubernetes-types/core/v1'
+import { Container, Pod, Service } from 'kubernetes-types/core/v1'
 import { ObjectMeta } from 'kubernetes-types/meta/v1'
 
-import { DeploymentStatusType } from '@/types/k8s'
+import { DeploymentStatusType, PodStatus, SimpleContainer } from '@/types/k8s'
+
+import { getAge } from './utils'
 
 // This function retrieves the status of a Pod in Kubernetes.
 // @see https://github.com/kubernetes/kubernetes/blob/master/pkg/printers/internalversion/printers.go#L881
-export function getPodStatus(pod: Pod): string {
-  if (!pod.status || !pod.status.phase) {
-    return 'Unknown'
+export function getPodStatus(pod?: Pod): PodStatus {
+  if (!pod || !pod.status) {
+    return {
+      readyContainers: 0,
+      totalContainers: 0,
+      reason: 'Unknown',
+      restartString: '0',
+    }
   }
+  let restarts = 0
+  let restartableInitContainerRestarts = 0
+  let totalContainers = pod.spec?.containers?.length || 0
+  let readyContainers = 0
+  let lastRestartDate = new Date(0)
+  let lastRestartableInitContainerRestartDate = new Date(0)
 
-  const podPhase = pod.status.phase
+  const podPhase = pod.status?.phase || 'Unknown'
   let reason = podPhase
 
-  if (pod.status.reason && pod.status.reason !== '') {
+  if (pod.status?.reason && pod.status.reason !== '') {
     reason = pod.status.reason
   }
 
-  if (pod.status.conditions) {
+  // If the Pod carries {type:PodScheduled, reason:SchedulingGated}, set reason to 'SchedulingGated'.
+  if (pod.status?.conditions) {
     for (const condition of pod.status.conditions) {
       if (
         condition.type === 'PodScheduled' &&
@@ -29,9 +43,6 @@ export function getPodStatus(pod: Pod): string {
     }
   }
 
-  let lastRestartDate = new Date(0)
-  let lastRestartableInitContainerRestartDate = new Date(0)
-
   const initContainers = new Map<
     string,
     { name: string; restartPolicy?: string }
@@ -39,15 +50,18 @@ export function getPodStatus(pod: Pod): string {
   if (pod.spec?.initContainers) {
     for (const container of pod.spec.initContainers) {
       initContainers.set(container.name, container)
+      if (isRestartableInitContainer(container)) {
+        totalContainers++
+      }
     }
   }
 
   let initializing = false
 
-  // Process init container statuses
-  if (pod.status.initContainerStatuses) {
+  if (pod.status?.initContainerStatuses) {
     for (let i = 0; i < pod.status.initContainerStatuses.length; i++) {
       const container = pod.status.initContainerStatuses[i]
+      restarts += container.restartCount || 0
 
       if (container.lastState?.terminated?.finishedAt) {
         const terminatedDate = new Date(
@@ -59,25 +73,28 @@ export function getPodStatus(pod: Pod): string {
       }
 
       const initContainer = initContainers.get(container.name)
-      const isRestartableInitContainer =
-        initContainer?.restartPolicy === 'Always'
-
-      if (
-        isRestartableInitContainer &&
-        container.lastState?.terminated?.finishedAt
-      ) {
-        const terminatedDate = new Date(
-          container.lastState.terminated.finishedAt
-        )
-        if (lastRestartableInitContainerRestartDate < terminatedDate) {
-          lastRestartableInitContainerRestartDate = terminatedDate
+      if (initContainer && isRestartableInitContainer(initContainer)) {
+        restartableInitContainerRestarts += container.restartCount || 0
+        if (container.lastState?.terminated?.finishedAt) {
+          const terminatedDate = new Date(
+            container.lastState.terminated.finishedAt
+          )
+          if (lastRestartableInitContainerRestartDate < terminatedDate) {
+            lastRestartableInitContainerRestartDate = terminatedDate
+          }
         }
       }
 
       if (container.state?.terminated?.exitCode === 0) {
         continue
-      } else if (isRestartableInitContainer && container.started) {
-        // For restartable init containers that are started, continue processing
+      } else if (
+        initContainer &&
+        isRestartableInitContainer(initContainer) &&
+        container.started
+      ) {
+        if (container.ready) {
+          readyContainers++
+        }
         continue
       } else if (container.state?.terminated) {
         // initialization is failed
@@ -105,22 +122,16 @@ export function getPodStatus(pod: Pod): string {
     }
   }
 
-  // Check if pod is initialized
-  const isPodInitialized =
-    pod.status.conditions?.some(
-      (condition) =>
-        condition.type === 'Initialized' && condition.status === 'True'
-    ) ?? false
-
-  if (!initializing || isPodInitialized) {
+  if (!initializing || isPodInitializedConditionTrue(pod.status)) {
+    restarts = restartableInitContainerRestarts
     lastRestartDate = lastRestartableInitContainerRestartDate
     let hasRunning = false
 
-    // Process main container statuses (reverse order)
-    if (pod.status.containerStatuses) {
+    if (pod.status?.containerStatuses) {
       for (let i = pod.status.containerStatuses.length - 1; i >= 0; i--) {
         const container = pod.status.containerStatuses[i]
 
+        restarts += container.restartCount || 0
         if (container.lastState?.terminated?.finishedAt) {
           const terminatedDate = new Date(
             container.lastState.terminated.finishedAt
@@ -145,18 +156,13 @@ export function getPodStatus(pod: Pod): string {
           }
         } else if (container.ready && container.state?.running) {
           hasRunning = true
+          readyContainers++
         }
       }
     }
 
-    // change pod status back to "Running" if there is at least one container still reporting as "Running" status
     if (reason === 'Completed' && hasRunning) {
-      const hasPodReadyCondition =
-        pod.status.conditions?.some(
-          (condition) => condition.type === 'Ready'
-        ) ?? false
-
-      if (hasPodReadyCondition) {
+      if (hasPodReadyCondition(pod.status?.conditions)) {
         reason = 'Running'
       } else {
         reason = 'NotReady'
@@ -164,16 +170,23 @@ export function getPodStatus(pod: Pod): string {
     }
   }
 
-  // Handle pod deletion and unreachable states
-  if (pod.metadata?.deletionTimestamp) {
-    if (pod.status.reason === 'NodeLost') {
-      reason = 'Unknown'
-    } else if (!isPodPhaseTerminal(podPhase)) {
-      reason = 'Terminating'
-    }
+  if (pod.metadata?.deletionTimestamp && pod.status?.reason === 'NodeLost') {
+    reason = 'Unknown'
+  } else if (pod.metadata?.deletionTimestamp && !isPodPhaseTerminal(podPhase)) {
+    reason = 'Terminating'
   }
 
-  return reason
+  let restartsStr = restarts.toString()
+  if (restarts !== 0 && lastRestartDate.getTime() > 0) {
+    restartsStr = `${restarts} (${getAge(lastRestartDate.toString())})`
+  }
+
+  return {
+    readyContainers,
+    totalContainers,
+    reason,
+    restartString: restartsStr,
+  }
 }
 
 // Helper function to check if pod phase is terminal
@@ -332,4 +345,43 @@ export function getServiceExternalIP(service: Service): string {
     default:
       return '-'
   }
+}
+
+// Helper function to check if pod has ready condition
+function hasPodReadyCondition(conditions?: Array<{ type?: string }>): boolean {
+  return conditions?.some((condition) => condition.type === 'Ready') ?? false
+}
+
+// Helper function to check if pod is initialized
+function isPodInitializedConditionTrue(status: Pod['status']): boolean {
+  return (
+    status?.conditions?.some(
+      (condition) =>
+        condition.type === 'Initialized' && condition.status === 'True'
+    ) ?? false
+  )
+}
+
+// Helper function to check if container is restartable init container
+function isRestartableInitContainer(container: {
+  restartPolicy?: string
+}): boolean {
+  return container.restartPolicy === 'Always'
+}
+
+export function toSimpleContainer(
+  initContainers?: Container[],
+  containers?: Container[]
+): SimpleContainer {
+  return [
+    ...(initContainers || []).map((container) => ({
+      name: container.name,
+      image: container.image || '',
+      init: true,
+    })),
+    ...(containers || []).map((container) => ({
+      name: container.name,
+      image: container.image || '',
+    })),
+  ]
 }
