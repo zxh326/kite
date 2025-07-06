@@ -471,11 +471,12 @@ export const fetchResourceUsageHistory = (
 
 export const useResourceUsageHistory = (
   duration: string,
-  options?: { staleTime?: number; instance?: string }
+  options?: { staleTime?: number; instance?: string; enabled?: boolean }
 ) => {
   return useQuery({
     queryKey: ['resource-usage-history', duration, options?.instance],
     queryFn: () => fetchResourceUsageHistory(duration, options?.instance),
+    enabled: options?.enabled,
     staleTime: options?.staleTime || 10000, // 10 seconds cache
     refetchInterval: 30000, // Auto refresh every 30 seconds for historical data
     retry: 0,

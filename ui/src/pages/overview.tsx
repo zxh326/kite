@@ -17,7 +17,9 @@ export function Overview() {
     data: resourceUsage,
     isLoading: isLoadingResourceUsage,
     error: errorResourceUsage,
-  } = useResourceUsageHistory(timeRange)
+  } = useResourceUsageHistory(timeRange, {
+    enabled: overview?.prometheusEnabled ?? false,
+  })
 
   if (error) {
     return (
