@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Check, ChevronsUpDown } from 'lucide-react'
 
+import { SimpleContainer } from '@/types/k8s'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,13 +18,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 
-interface Container {
-  name: string
-  image: string
-}
-
 interface ContainerSelectorProps {
-  containers: Container[]
+  containers: SimpleContainer
   selectedContainer?: string
   onContainerChange: (containerName?: string) => void
   placeholder?: string
@@ -39,7 +35,7 @@ export function ContainerSelector({
 }: ContainerSelectorProps) {
   const [open, setOpen] = useState(false)
 
-  const allOption = { name: 'All Containers', image: '' }
+  const allOption = { name: 'All Containers', image: '', init: false }
   const options = showAllOption ? [allOption, ...containers] : containers
 
   const selectedOption = selectedContainer
@@ -87,7 +83,14 @@ export function ContainerSelector({
                     )}
                   />
                   <div className="flex flex-col">
-                    <span className="font-medium">{container.name}</span>
+                    <span className="font-medium">
+                      {container.name}
+                      {container.init && (
+                        <span className="text-xs text-muted-foreground ml-1">
+                          (init)
+                        </span>
+                      )}
+                    </span>
                     {container.image && (
                       <span className="text-xs text-muted-foreground">
                         {container.image}

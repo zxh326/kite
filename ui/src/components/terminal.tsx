@@ -13,6 +13,7 @@ import { Pod } from 'kubernetes-types/core/v1'
 
 import '@xterm/xterm/css/xterm.css'
 
+import { SimpleContainer } from '@/types/k8s'
 import { TERMINAL_THEMES, TerminalTheme } from '@/types/themes'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -40,7 +41,7 @@ interface TerminalProps {
   namespace: string
   podName?: string
   pods?: Pod[]
-  containers?: Array<{ name: string; image: string }>
+  containers?: SimpleContainer
 }
 
 export function Terminal({

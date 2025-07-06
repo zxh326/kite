@@ -82,11 +82,24 @@ export function PodTable(props: {
       {
         header: 'Ready',
         accessor: (pod: Pod) => {
-          const containerStatuses = pod.status?.containerStatuses || []
-          const readyCount = containerStatuses.filter((s) => s.ready).length
-          return `${readyCount} / ${containerStatuses.length}`
+          const status = getPodStatus(pod)
+          return `${status.readyContainers} / ${status.totalContainers}`
         },
         cell: (value: unknown) => value as string,
+      },
+      {
+        header: 'Restart',
+        accessor: (pod: Pod) => {
+          const status = getPodStatus(pod)
+          return status.restartString || '0'
+        },
+        cell: (value: unknown) => {
+          return (
+            <span className="text-muted-foreground text-sm">
+              {value as number}
+            </span>
+          )
+        },
       },
       {
         header: 'Status',
@@ -95,8 +108,8 @@ export function PodTable(props: {
           const status = getPodStatus(value as Pod)
           return (
             <Badge variant="outline" className="text-muted-foreground px-1.5">
-              <PodStatusIcon status={status} />
-              {status}
+              <PodStatusIcon status={status.reason} />
+              {status.reason}
             </Badge>
           )
         },

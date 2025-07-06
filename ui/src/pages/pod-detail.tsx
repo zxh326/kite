@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { IconLoader, IconRefresh, IconTrash } from '@tabler/icons-react'
 import * as yaml from 'js-yaml'
 import { Pod } from 'kubernetes-types/core/v1'
@@ -6,7 +6,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { deleteResource, updateResource, useResource } from '@/lib/api'
-import { getOwnerInfo, getPodErrorMessage, getPodStatus } from '@/lib/k8s'
+import {
+  getOwnerInfo,
+  getPodErrorMessage,
+  getPodStatus,
+  toSimpleContainer,
+} from '@/lib/k8s'
 import { formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -95,6 +100,10 @@ export function PodDetail(props: { namespace: string; name: string }) {
     }
   }
 
+  const podStatus = useMemo(() => {
+    return getPodStatus(pod)
+  }, [pod])
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -168,14 +177,14 @@ export function PodDetail(props: { namespace: string; name: string }) {
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
                           <PodStatusIcon
-                            status={getPodStatus(pod)}
+                            status={podStatus?.reason}
                             className="w-4 h-4"
                           />
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Phase</p>
                           <p className="text-sm font-medium">
-                            {getPodStatus(pod)}
+                            {podStatus.reason}
                           </p>
                           <p className="text-xs text-red-500">
                             {getPodErrorMessage(pod)}
@@ -188,9 +197,8 @@ export function PodDetail(props: { namespace: string; name: string }) {
                           Ready Containers
                         </p>
                         <p className="text-sm font-medium">
-                          {pod.status?.containerStatuses?.filter((c) => c.ready)
-                            .length || 0}{' '}
-                          / {pod.spec?.containers?.length || 0}
+                          {podStatus.readyContainers} /{' '}
+                          {podStatus.totalContainers}
                         </p>
                       </div>
 
@@ -199,10 +207,7 @@ export function PodDetail(props: { namespace: string; name: string }) {
                           Restart Count
                         </p>
                         <p className="text-sm font-medium">
-                          {pod.status?.containerStatuses?.reduce(
-                            (sum, c) => sum + (c.restartCount || 0),
-                            0
-                          ) || 0}
+                          {podStatus.restartString}
                         </p>
                       </div>
 
@@ -299,6 +304,30 @@ export function PodDetail(props: { namespace: string; name: string }) {
                   </CardContent>
                 </Card>
 
+                {pod.spec?.initContainers &&
+                  pod.spec.initContainers.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>
+                          Init Containers (
+                          {pod?.spec?.initContainers?.length || 0})
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-6">
+                          <div className="space-y-4">
+                            {pod?.spec?.initContainers?.map((container) => (
+                              <ContainerTable
+                                key={container.name}
+                                container={container}
+                                init
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 <Card>
                   <CardHeader>
                     <CardTitle>
@@ -378,12 +407,10 @@ export function PodDetail(props: { namespace: string; name: string }) {
                 <LogViewer
                   namespace={namespace}
                   podName={name}
-                  containers={
-                    pod.spec?.containers?.map((container) => ({
-                      name: container.name,
-                      image: container.image || '',
-                    })) || []
-                  }
+                  containers={toSimpleContainer(
+                    pod.spec?.initContainers,
+                    pod.spec?.containers
+                  )}
                 />
               </div>
             ),
@@ -396,12 +423,10 @@ export function PodDetail(props: { namespace: string; name: string }) {
                 <Terminal
                   namespace={namespace}
                   podName={name}
-                  containers={
-                    pod.spec?.containers?.map((container) => ({
-                      name: container.name,
-                      image: container.image || '',
-                    })) || []
-                  }
+                  containers={toSimpleContainer(
+                    pod.spec?.initContainers,
+                    pod.spec?.containers
+                  )}
                 />
               </div>
             ),
@@ -442,12 +467,10 @@ export function PodDetail(props: { namespace: string; name: string }) {
                 <PodMonitoring
                   namespace={namespace}
                   podName={name}
-                  containers={
-                    pod.spec?.containers?.map((container) => ({
-                      name: container.name,
-                      image: container.image || '',
-                    })) || []
-                  }
+                  containers={toSimpleContainer(
+                    pod.spec?.initContainers,
+                    pod.spec?.containers
+                  )}
                 />
               </div>
             ),

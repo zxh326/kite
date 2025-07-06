@@ -10,8 +10,9 @@ import { Label } from './ui/label'
 export function ContainerTable(props: {
   container: Container
   onContainerUpdate?: (updatedContainer: Container) => void
+  init?: boolean
 }) {
-  const { container, onContainerUpdate } = props
+  const { container, onContainerUpdate, init } = props
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -44,6 +45,11 @@ export function ContainerTable(props: {
               </span>
             </div>
             <div className="flex items-center gap-2">
+              {init && container.restartPolicy === 'Always' && (
+                <Badge variant="secondary" className="text-xs">
+                  Sidecar
+                </Badge>
+              )}
               {container.imagePullPolicy && (
                 <Badge variant="outline" className="text-xs">
                   {container.imagePullPolicy}

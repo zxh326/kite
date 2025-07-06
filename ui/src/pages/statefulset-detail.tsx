@@ -20,6 +20,7 @@ import {
   useResource,
   useResources,
 } from '@/lib/api'
+import { toSimpleContainer } from '@/lib/k8s'
 import { formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -228,29 +229,40 @@ export function StatefulSetDetail(props: { namespace: string; name: string }) {
     }
   }
 
-  const handleContainerUpdate = async (updatedContainer: Container) => {
+  const handleContainerUpdate = async (
+    updatedContainer: Container,
+    init = false
+  ) => {
     try {
       const updatedStatefulSet = { ...statefulset } as StatefulSet
 
-      // Update the specific container in the statefulset spec
-      if (updatedStatefulSet.spec?.template?.spec?.containers) {
-        const containerIndex =
-          updatedStatefulSet.spec.template.spec.containers.findIndex(
-            (c: Container) => c.name === updatedContainer.name
-          )
-        if (containerIndex !== -1) {
-          updatedStatefulSet.spec.template.spec.containers[containerIndex] =
-            updatedContainer
-          await updateResource(
-            'statefulsets',
-            name,
-            namespace,
-            updatedStatefulSet
-          )
-          toast.success('Container updated successfully')
-          setRefreshInterval(1000)
+      if (init) {
+        if (updatedStatefulSet.spec?.template?.spec?.initContainers) {
+          const containerIndex =
+            updatedStatefulSet.spec.template.spec.initContainers.findIndex(
+              (c: Container) => c.name === updatedContainer.name
+            )
+          if (containerIndex !== -1) {
+            updatedStatefulSet.spec.template.spec.initContainers[
+              containerIndex
+            ] = updatedContainer
+          }
+        }
+      } else {
+        if (updatedStatefulSet.spec?.template?.spec?.containers) {
+          const containerIndex =
+            updatedStatefulSet.spec.template.spec.containers.findIndex(
+              (c: Container) => c.name === updatedContainer.name
+            )
+          if (containerIndex !== -1) {
+            updatedStatefulSet.spec.template.spec.containers[containerIndex] =
+              updatedContainer
+          }
         }
       }
+      await updateResource('statefulsets', name, namespace, updatedStatefulSet)
+      toast.success('Container updated successfully')
+      setRefreshInterval(1000)
     } catch (error) {
       console.error('Failed to update container:', error)
       toast.error(
@@ -524,6 +536,31 @@ export function StatefulSetDetail(props: { namespace: string; name: string }) {
                   </CardContent>
                 </Card>
 
+                {/* Init Containers */}
+                {spec?.template?.spec?.initContainers && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Init Containers</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {spec.template.spec.initContainers.map(
+                          (container: Container) => (
+                            <ContainerTable
+                              key={container.name}
+                              container={container}
+                              onContainerUpdate={(updatedContainer) =>
+                                handleContainerUpdate(updatedContainer, true)
+                              }
+                              init
+                            />
+                          )
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Containers */}
                 {spec?.template?.spec?.containers && (
                   <Card>
@@ -533,9 +570,9 @@ export function StatefulSetDetail(props: { namespace: string; name: string }) {
                     <CardContent>
                       <div className="space-y-4">
                         {spec.template.spec.containers.map(
-                          (container: Container, index: number) => (
+                          (container: Container) => (
                             <ContainerTable
-                              key={index}
+                              key={container.name}
                               container={container}
                               onContainerUpdate={handleContainerUpdate}
                             />
@@ -592,14 +629,10 @@ export function StatefulSetDetail(props: { namespace: string; name: string }) {
                       <LogViewer
                         namespace={namespace}
                         pods={relatedPods}
-                        containers={
-                          relatedPods?.[0]?.spec?.containers?.map(
-                            (container) => ({
-                              name: container.name,
-                              image: container.image || '',
-                            })
-                          ) || []
-                        }
+                        containers={toSimpleContainer(
+                          spec?.template.spec?.initContainers,
+                          spec?.template.spec?.containers
+                        )}
                       />
                     </div>
                   ),
@@ -613,14 +646,10 @@ export function StatefulSetDetail(props: { namespace: string; name: string }) {
                         <Terminal
                           namespace={namespace}
                           pods={relatedPods}
-                          containers={
-                            relatedPods[0].spec?.containers?.map(
-                              (container) => ({
-                                name: container.name,
-                                image: container.image || '',
-                              })
-                            ) || []
-                          }
+                          containers={toSimpleContainer(
+                            spec?.template.spec?.initContainers,
+                            spec?.template.spec?.containers
+                          )}
                         />
                       )}
                     </div>
@@ -673,7 +702,10 @@ export function StatefulSetDetail(props: { namespace: string; name: string }) {
               <PodMonitoring
                 namespace={namespace}
                 pods={relatedPods}
-                containers={relatedPods?.[0]?.spec?.containers || []}
+                containers={toSimpleContainer(
+                  spec?.template.spec?.initContainers,
+                  spec?.template.spec?.containers
+                )}
                 defaultQueryName={relatedPods?.[0]?.metadata?.generateName}
                 labelSelector={labelSelector}
               />
