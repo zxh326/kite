@@ -120,8 +120,8 @@ importers:
         specifier: ^15.5.3
         version: 15.5.3(i18next@25.3.0(typescript@5.8.3))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.8.3)
       react-router-dom:
-        specifier: ^7.6.1
-        version: 7.6.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        specifier: ^7.6.3
+        version: 7.6.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       recharts:
         specifier: ^2.15.3
         version: 2.15.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -2049,15 +2049,15 @@ packages:
       '@types/react':
         optional: true
 
-  react-router-dom@7.6.1:
-    resolution: {integrity: sha512-vxU7ei//UfPYQ3iZvHuO1D/5fX3/JOqhNTbRR+WjSBWxf9bIvpWK+ftjmdfJHzPOuMQKe2fiEdG+dZX6E8uUpA==}
+  react-router-dom@7.6.3:
+    resolution: {integrity: sha512-DiWJm9qdUAmiJrVWaeJdu4TKu13+iB/8IEi0EW/XgaHCjW/vWGrwzup0GVvaMteuZjKnh5bEvJP/K0MDnzawHw==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       react: '>=18'
       react-dom: '>=18'
 
-  react-router@7.6.1:
-    resolution: {integrity: sha512-hPJXXxHJZEsPFNVbtATH7+MMX43UDeOauz+EAU4cgqTn7ojdI9qQORqS8Z0qmDlL1TclO/6jLRYUEtbWidtdHQ==}
+  react-router@7.6.3:
+    resolution: {integrity: sha512-zf45LZp5skDC6I3jDLXQUu0u26jtuP4lEGbc7BbdyxenBN1vJSTA18czM2D+h5qyMBuMrD+9uB+mU37HIoKGRA==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       react: '>=18'
@@ -4049,13 +4049,13 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.1.5
 
-  react-router-dom@7.6.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+  react-router-dom@7.6.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
-      react-router: 7.6.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      react-router: 7.6.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
 
-  react-router@7.6.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+  react-router@7.6.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       cookie: 1.0.2
       react: 19.1.0
