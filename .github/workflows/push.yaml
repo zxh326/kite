@@ -11,7 +11,7 @@ on:
 env:
   IMAGE_NAME: kite
   GO_VERSION: "1.24.3"
-  NODE_VERSION: "20"
+  NODE_VERSION: "24"
 
 jobs:
   # Push image to GitHub Packages.
