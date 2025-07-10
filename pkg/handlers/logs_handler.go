@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zxh326/kite/pkg/i18n"
+	"github.com/zxh326/kite/pkg/kube"
 	"github.com/zxh326/kite/pkg/cluster"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -31,7 +33,7 @@ func (h *LogsHandler) GetPodLogs(c *gin.Context) {
 	namespace := c.Param("namespace")
 	podName := c.Param("podName")
 	if namespace == "" || podName == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "namespace and podName are required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.I18N.T("Errors.")})
 		return
 	}
 
