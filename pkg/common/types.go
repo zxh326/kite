@@ -8,6 +8,13 @@ type SearchResult struct {
 	CreatedAt    string `json:"createdAt"`
 }
 
+type RelatedResource struct {
+	Type       string `json:"type"`
+	APIVersion string `json:"apiVersion,omitempty"`
+	Name       string `json:"name"`
+	Namespace  string `json:"namespace,omitempty"`
+}
+
 type Action string
 
 const (

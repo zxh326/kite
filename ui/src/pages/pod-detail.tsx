@@ -25,6 +25,7 @@ import { LabelsAnno } from '@/components/lables-anno'
 import { LogViewer } from '@/components/log-viewer'
 import { PodMonitoring } from '@/components/pod-monitoring'
 import { PodStatusIcon } from '@/components/pod-status-icon'
+import { RelatedResourcesTable } from '@/components/related-resource-table'
 import { Terminal } from '@/components/terminal'
 import { VolumeTable } from '@/components/volume-table'
 import { YamlEditor } from '@/components/yaml-editor'
@@ -450,6 +451,17 @@ export function PodDetail(props: { namespace: string; name: string }) {
                   isLoading={isLoading}
                 />
               </div>
+            ),
+          },
+          {
+            value: 'Related',
+            label: 'Related',
+            content: (
+              <RelatedResourcesTable
+                resource={'pods'}
+                name={name}
+                namespace={namespace}
+              />
             ),
           },
           {

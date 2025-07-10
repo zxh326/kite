@@ -15,6 +15,7 @@ import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 import { EventTable } from '@/components/event-table'
 import { LabelsAnno } from '@/components/lables-anno'
+import { RelatedResourcesTable } from '@/components/related-resource-table'
 import { YamlEditor } from '@/components/yaml-editor'
 
 export function SimpleResourceDetail<T extends ResourceType>(props: {
@@ -234,6 +235,17 @@ export function SimpleResourceDetail<T extends ResourceType>(props: {
                   isSaving={isSavingYaml}
                 />
               </div>
+            ),
+          },
+          {
+            value: 'Related',
+            label: 'Related',
+            content: (
+              <RelatedResourcesTable
+                resource={resourceType}
+                name={name}
+                namespace={namespace}
+              />
             ),
           },
           {

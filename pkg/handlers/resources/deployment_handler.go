@@ -167,7 +167,6 @@ func (h *DeploymentHandler) ScaleDeployment(c *gin.Context) {
 }
 
 func (h *DeploymentHandler) registerCustomRoutes(group *gin.RouterGroup) {
-	group.GET("/:namespace/:name/related", h.ListDeploymentRelatedResources)
 	group.POST("/:namespace/:name/scale", h.ScaleDeployment)
 	group.POST("/:namespace/:name/restart", h.RestartDeployment)
 }

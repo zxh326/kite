@@ -1,7 +1,7 @@
 import './App.css'
 
 import { useEffect } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useSearchParams } from 'react-router-dom'
 
 import { AppSidebar } from './components/app-sidebar'
 import { ColorThemeProvider } from './components/color-theme-provider'
@@ -44,6 +44,12 @@ function ClusterAwareApp() {
 
 function AppContent() {
   const { isOpen, closeSearch } = useGlobalSearch()
+  const [searchParams] = useSearchParams()
+  const isIframe = searchParams.get('iframe') === 'true'
+
+  if (isIframe) {
+    return <Outlet />
+  }
 
   return (
     <>

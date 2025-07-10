@@ -11,6 +11,8 @@ const (
 	JWTExpirationSeconds = 24 * 60 * 60 // 24 hours
 
 	NodeTerminalPodName = "kite-node-terminal-agent"
+
+	KubectlAnnotation = "kubectl.kubernetes.io/last-applied-configuration"
 )
 
 var (

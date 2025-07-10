@@ -305,3 +305,10 @@ export interface ImageTagInfo {
   name: string
   timestamp?: string
 }
+
+export interface RelatedResources {
+  type: ResourceType
+  name: string
+  namespace?: string
+  apiVersion?: string
+}
