@@ -271,17 +271,7 @@ export function getDeploymentStatus(
   return 'Unknown'
 }
 
-// Get owner reference information for a pod
-export function getOwnerInfo(metadata?: ObjectMeta) {
-  if (!metadata) {
-    return null
-  }
-  const ownerRefs = metadata.ownerReferences
-  if (!ownerRefs || ownerRefs.length === 0) {
-    return null
-  }
-
-  const ownerRef = ownerRefs[0]
+export function isStandardK8sResource(kind: string): boolean {
   const standardK8sResources = [
     'pods',
     'deployments',
@@ -301,10 +291,37 @@ export function getOwnerInfo(metadata?: ObjectMeta) {
     'events',
     'storageclasses',
   ]
+  const resourcePath = kind.toLowerCase() + 's'
+  return (
+    standardK8sResources.includes(kind) ||
+    standardK8sResources.includes(resourcePath)
+  )
+}
+
+export function getCRDResourcePath(
+  kind: string,
+  apiVersion: string,
+  namespace?: string,
+  name?: string
+): string {
+  const group = apiVersion.includes('/') ? apiVersion.split('/')[0] : ''
+  return `/crds/${kind}.${group}/${namespace}/${name}`
+}
+
+// Get owner reference information for a pod
+export function getOwnerInfo(metadata?: ObjectMeta) {
+  if (!metadata) {
+    return null
+  }
+  const ownerRefs = metadata.ownerReferences
+  if (!ownerRefs || ownerRefs.length === 0) {
+    return null
+  }
+
+  const ownerRef = ownerRefs[0]
 
   const resourcePath = ownerRef.kind.toLowerCase() + 's'
-
-  if (standardK8sResources.includes(resourcePath)) {
+  if (isStandardK8sResource(ownerRef.kind)) {
     return {
       kind: ownerRef.kind,
       name: ownerRef.name,

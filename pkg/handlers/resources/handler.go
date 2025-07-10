@@ -85,6 +85,19 @@ func RegisterRoutes(group *gin.RouterGroup) {
 		}
 	}
 
+	// Register related resources route for supported resource types
+	supportedRelatedResourceTypes := []string{"pods", "deployments", "statefulsets", "daemonsets", "configmaps", "secrets", "persistentvolumeclaims"}
+	for _, resourceType := range supportedRelatedResourceTypes {
+		if handler, exists := handlers[resourceType]; exists && !handler.IsClusterScoped() {
+			g := group.Group("/" + resourceType)
+			g.GET("/:namespace/:name/related", func(c *gin.Context) {
+				// Set the resource type in the context for GetRelatedResources
+				c.Set("resource", resourceType)
+				GetRelatedResources(c)
+			})
+		}
+	}
+
 	crHandler := NewCRHandler()
 	otherGroup := group.Group("/:crd")
 	{

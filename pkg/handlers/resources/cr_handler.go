@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/cluster"
+	"github.com/zxh326/kite/pkg/common"
 	"github.com/zxh326/kite/pkg/kube"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -163,6 +164,12 @@ func (h *CRHandler) Get(c *gin.Context) {
 		return
 	}
 
+	cr.SetManagedFields(nil)
+	anno := cr.GetAnnotations()
+	if anno != nil {
+		delete(anno, common.KubectlAnnotation)
+	}
+	cr.SetAnnotations(anno)
 	c.JSON(http.StatusOK, cr)
 }
 

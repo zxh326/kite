@@ -17,7 +17,6 @@ import {
   restartDeployment,
   scaleDeployment,
   updateResource,
-  useDeploymentRelated,
   useResource,
   useResources,
 } from '@/lib/api'
@@ -42,7 +41,7 @@ import { LabelsAnno } from '@/components/lables-anno'
 import { LogViewer } from '@/components/log-viewer'
 import { PodMonitoring } from '@/components/pod-monitoring'
 import { PodTable } from '@/components/pod-table'
-import { ServiceTable } from '@/components/service-table'
+import { RelatedResourcesTable } from '@/components/related-resource-table'
 import { Terminal } from '@/components/terminal'
 import { VolumeTable } from '@/components/volume-table'
 import { YamlEditor } from '@/components/yaml-editor'
@@ -71,22 +70,20 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
     refreshInterval,
   })
 
-  // Fetch related resources
-  const { data: relatedResources, isLoading: isLoadingRelated } =
-    useDeploymentRelated(namespace, name, {
-      refreshInterval,
-    })
-
   const labelSelector = deployment?.spec?.selector.matchLabels
     ? Object.entries(deployment.spec.selector.matchLabels)
         .map(([key, value]) => `${key}=${value}`)
         .join(',')
     : undefined
-  const { data: relatedPods } = useResources('pods', namespace, {
-    labelSelector,
-    refreshInterval,
-    disable: !deployment?.spec?.selector.matchLabels,
-  })
+  const { data: relatedPods, isLoading: isLoadingPods } = useResources(
+    'pods',
+    namespace,
+    {
+      labelSelector,
+      refreshInterval,
+      disable: !deployment?.spec?.selector.matchLabels,
+    }
+  )
 
   useEffect(() => {
     if (deployment) {
@@ -660,7 +657,7 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
                   content: (
                     <PodTable
                       pods={relatedPods}
-                      isLoading={isLoadingRelated}
+                      isLoading={isLoadingPods}
                       labelSelector={labelSelector}
                     />
                   ),
@@ -702,21 +699,13 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
               ]
             : []),
           {
-            value: 'services',
-            label: (
-              <>
-                Services{' '}
-                {relatedResources?.services && (
-                  <Badge variant="secondary">
-                    {relatedResources.services.length}
-                  </Badge>
-                )}
-              </>
-            ),
+            value: 'Related',
+            label: 'Related',
             content: (
-              <ServiceTable
-                services={relatedResources?.services}
-                isLoading={isLoadingRelated}
+              <RelatedResourcesTable
+                resource={'deployments'}
+                name={name}
+                namespace={namespace}
               />
             ),
           },

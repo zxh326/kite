@@ -9,7 +9,15 @@ updates:
     directory: "/ui/"
     schedule:
       interval: "weekly"
+    groups:
+      fe-deps:
+        patterns:
+          - "*"
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      go-deps:
+        patterns:
+          - "*"

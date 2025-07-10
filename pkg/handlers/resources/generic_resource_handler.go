@@ -89,7 +89,7 @@ func (h *GenericResourceHandler[T, V]) Get(c *gin.Context) {
 	obj.SetManagedFields(nil)
 	anno := obj.GetAnnotations()
 	if anno != nil {
-		delete(anno, "kubectl.kubernetes.io/last-applied-configuration")
+		delete(anno, common.KubectlAnnotation)
 	}
 
 	c.JSON(http.StatusOK, object)
