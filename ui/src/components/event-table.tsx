@@ -44,7 +44,7 @@ export function EventTable(props: {
         header: 'Message',
         accessor: (event: Event) => event.message || '',
         cell: (value: unknown) => (
-          <div className="text-sm">{value as string}</div>
+          <div className="text-sm whitespace-pre-wrap">{value as string}</div>
         ),
       },
       {
@@ -60,7 +60,8 @@ export function EventTable(props: {
       },
       {
         header: 'First Seen',
-        accessor: (event: Event) => event.firstTimestamp || '',
+        accessor: (event: Event) =>
+          event.firstTimestamp || event.eventTime || '',
         cell: (value: unknown) => {
           return (
             <span className="text-muted-foreground text-sm">
@@ -71,7 +72,8 @@ export function EventTable(props: {
       },
       {
         header: 'Last Seen',
-        accessor: (event: Event) => event.lastTimestamp || '',
+        accessor: (event: Event) =>
+          event.lastTimestamp || event.eventTime || '',
         cell: (value: unknown) => {
           return (
             <span className="text-muted-foreground text-sm">
