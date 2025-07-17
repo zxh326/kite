@@ -8,7 +8,7 @@ import (
 	"github.com/zxh326/kite/pkg/common"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type OverviewData struct {
@@ -29,8 +29,8 @@ func GetOverview(c *gin.Context) {
 
 	// TODO: if prometheus is enabled, get data from prometheus
 	// Get nodes
-	nodes, err := cs.K8sClient.ClientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-	if err != nil {
+	nodes := &v1.NodeList{}
+	if err := cs.K8sClient.List(ctx, nodes, &client.ListOptions{}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -51,8 +51,8 @@ func GetOverview(c *gin.Context) {
 	}
 
 	// Get pods
-	pods, err := cs.K8sClient.ClientSet.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
-	if err != nil {
+	pods := &v1.PodList{}
+	if err := cs.K8sClient.List(ctx, pods, &client.ListOptions{}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -78,15 +78,15 @@ func GetOverview(c *gin.Context) {
 	}
 
 	// Get namespaces
-	namespaces, err := cs.K8sClient.ClientSet.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
-	if err != nil {
+	namespaces := &v1.NamespaceList{}
+	if err := cs.K8sClient.List(ctx, namespaces, &client.ListOptions{}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	// Get services
-	services, err := cs.K8sClient.ClientSet.CoreV1().Services("").List(ctx, metav1.ListOptions{})
-	if err != nil {
+	services := &v1.ServiceList{}
+	if err := cs.K8sClient.List(ctx, services, &client.ListOptions{}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
