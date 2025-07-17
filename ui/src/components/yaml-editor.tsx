@@ -52,6 +52,18 @@ export function YamlEditor<T extends ResourceType>({
   const editorRef = useRef<monacoEditor.IStandaloneCodeEditor | null>(null)
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Get the actual theme to use based on system preference
+  const getActualTheme = () => {
+    if (theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light'
+    }
+    return theme
+  }
+
+  const actualTheme = getActualTheme()
+
   // Update editor value when value prop changes
   useEffect(() => {
     setEditorValue(value)
@@ -124,6 +136,23 @@ export function YamlEditor<T extends ResourceType>({
 
   const effectiveReadOnly = readOnly || !isEditing
 
+  // watch for system theme changes
+  useEffect(() => {
+    if (theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+      const handleChange = () => {
+        // re-render to apply new theme
+        if (editorRef.current) {
+          const newTheme = mediaQuery.matches ? 'custom-dark' : 'custom-vs'
+          editorRef.current.updateOptions({ theme: newTheme })
+        }
+      }
+
+      mediaQuery.addEventListener('change', handleChange)
+      return () => mediaQuery.removeEventListener('change', handleChange)
+    }
+  }, [theme])
+
   return (
     <Card className={className}>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -182,7 +211,7 @@ export function YamlEditor<T extends ResourceType>({
           <div className="overflow-hidden h-[calc(100dvh-350px)]">
             <Editor
               language="yaml"
-              theme={theme === 'dark' ? 'custom-dark' : 'custom-vs'}
+              theme={actualTheme === 'dark' ? 'custom-dark' : 'custom-vs'}
               value={editorValue}
               beforeMount={(monaco) => {
                 monaco.editor.defineTheme('custom-dark', {
