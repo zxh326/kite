@@ -1,10 +1,10 @@
-import { createColumnHelper } from '@tanstack/react-table'
 import { useCallback, useMemo } from 'react'
+import { createColumnHelper } from '@tanstack/react-table'
 import { Link } from 'react-router-dom'
 
-import { ResourceTable } from '@/components/resource-table'
-import { formatDate } from '@/lib/utils'
 import { HTTPRoute } from '@/types/gateway'
+import { formatDate } from '@/lib/utils'
+import { ResourceTable } from '@/components/resource-table'
 
 export function HTTPRouteListPage() {
   // Define column helper outside of any hooks

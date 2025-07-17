@@ -1,3 +1,4 @@
+import * as React from 'react'
 import Icon from '@/assets/icon.svg'
 import { CollapsibleContent } from '@radix-ui/react-collapsible'
 import {
@@ -22,10 +23,10 @@ import {
   IconTopologyBus,
 } from '@tabler/icons-react'
 import { ChevronDown } from 'lucide-react'
-import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 
+import { useCluster } from '@/hooks/use-cluster'
 import {
   Sidebar,
   SidebarContent,
@@ -39,7 +40,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { useCluster } from '@/hooks/use-cluster'
 
 import { ClusterSelector } from './cluster-selector'
 import { Collapsible, CollapsibleTrigger } from './ui/collapsible'

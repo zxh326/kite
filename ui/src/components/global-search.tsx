@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useState } from 'react'
 import {
   IconBox,
   IconBoxMultiple,
@@ -15,9 +16,10 @@ import {
   IconStarFilled,
   IconTopologyBus,
 } from '@tabler/icons-react'
-import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { globalSearch, SearchResult } from '@/lib/api'
+import { useFavorites } from '@/hooks/use-favorites'
 import { Badge } from '@/components/ui/badge'
 import {
   Command,
@@ -34,8 +36,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useFavorites } from '@/hooks/use-favorites'
-import { globalSearch, SearchResult } from '@/lib/api'
 
 // Define resource types and their display properties
 const RESOURCE_CONFIG: Record<
