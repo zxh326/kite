@@ -14,6 +14,7 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metricsv1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
+	gatewayapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 type resourceHandler interface {
@@ -69,6 +70,8 @@ func RegisterRoutes(group *gin.RouterGroup) {
 		"clusterrolebindings":    NewGenericResourceHandler[*rbacv1.ClusterRoleBinding, *rbacv1.ClusterRoleBindingList]("clusterrolebindings", true, false),
 		"podmetrics":             NewGenericResourceHandler[*metricsv1.PodMetrics, *metricsv1.PodMetricsList]("metrics.k8s.io", false, false),
 		"nodemetrics":            NewGenericResourceHandler[*metricsv1.NodeMetrics, *metricsv1.NodeMetricsList]("metrics.k8s.io", false, false),
+		"gateways":               NewGenericResourceHandler[*gatewayapiv1.Gateway, *gatewayapiv1.GatewayList]("gateways", false, true),
+		"httproutes":             NewGenericResourceHandler[*gatewayapiv1.HTTPRoute, *gatewayapiv1.HTTPRouteList]("httproutes", false, true),
 	}
 
 	for name, handler := range handlers {

@@ -30,6 +30,8 @@
     "jobs": "任务",
     "services": "服务",
     "ingresses": "入口",
+    "gateways": "网关",
+    "httproutes": "HTTP 路由",
     "configMaps": "配置映射",
     "secrets": "密钥",
     "persistentVolumeClaims": "持久卷声明",

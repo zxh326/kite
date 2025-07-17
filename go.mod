@@ -16,6 +16,7 @@ require (
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/metrics v0.33.2
 	sigs.k8s.io/controller-runtime v0.21.0
+	sigs.k8s.io/gateway-api v1.3.0
 )
 
 require (
@@ -24,7 +25,7 @@ require (
 	github.com/bytedance/sonic/loader v0.2.4 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
