@@ -22,6 +22,7 @@ type ClientSet struct {
 	Name       string
 	Version    string // Kubernetes version
 	K8sClient  *kube.K8sClient
+	Store      kube.Store
 	PromClient *prometheus.Client
 }
 
@@ -40,6 +41,10 @@ func createCmInCluster() (*ClusterManager, error) {
 	if err != nil {
 		return nil, err
 	}
+	store, err := kube.Load(k8sClient.ClientSet)
+	if err != nil {
+		return nil, err
+	}
 	promClient, err := prometheus.NewClient(getPrometheusURL("default"))
 	if err != nil {
 		klog.Warningf("Failed to create Prometheus client, some features may not work as expected, err: %v", err)
@@ -51,6 +56,7 @@ func createCmInCluster() (*ClusterManager, error) {
 				Name:       "in-cluster",
 				K8sClient:  k8sClient,
 				PromClient: promClient,
+				Store:      store,
 			},
 		},
 		defaultContext: "default",
@@ -82,6 +88,11 @@ func createCmFromKubeconfig(kubeconfig string) (*ClusterManager, error) {
 				klog.Warningf("Failed to create k8s client for context %s: %v", contextName, err)
 				return
 			}
+			store, err := kube.Load(k8sClient.ClientSet)
+			if err != nil {
+				klog.Warningf("Failed to load store for context %s: %v", contextName, err)
+				return
+			}
 			promClient, err := prometheus.NewClient(getPrometheusURL(contextName))
 			if err != nil {
 				klog.Warningf("Failed to create Prometheus client for cluster %s, some features may not work as expected, err: %v", contextName, err)
@@ -100,6 +111,7 @@ func createCmFromKubeconfig(kubeconfig string) (*ClusterManager, error) {
 				Name:       contextName,
 				Version:    version,
 				K8sClient:  k8sClient,
+				Store:      store,
 				PromClient: promClient,
 			}
 		}(contextName)

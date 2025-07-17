@@ -14,6 +14,7 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metricsv1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type resourceHandler interface {
@@ -27,7 +28,7 @@ type resourceHandler interface {
 	Searchable() bool
 	Search(c *gin.Context, query string, limit int64) ([]common.SearchResult, error)
 
-	GetResource(c *gin.Context, namespace, name string) (interface{}, error)
+	GetResource(c *gin.Context, namespace, name string) (client.Object, error)
 
 	registerCustomRoutes(group *gin.RouterGroup)
 }

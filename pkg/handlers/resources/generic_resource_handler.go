@@ -3,6 +3,7 @@ package resources
 import (
 	"net/http"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -14,10 +15,16 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+var hotResources = []string{
+	"pods", "deployments", "statefulSets", "services", "nodes",
+}
 
 type GenericResourceHandler[T client.Object, V client.ObjectList] struct {
 	name            string
@@ -56,18 +63,38 @@ func (h *GenericResourceHandler[T, V]) Searchable() bool {
 	return h.enableSearch
 }
 
-func (h *GenericResourceHandler[T, V]) GetResource(c *gin.Context, namespace, name string) (interface{}, error) {
+func (h *GenericResourceHandler[T, V]) GetResource(c *gin.Context, namespace, name string) (client.Object, error) {
 	cs := c.MustGet("cluster").(*cluster.ClientSet)
-	object := reflect.New(h.objectType).Interface().(T)
+	object := reflect.New(h.objectType).Interface().(client.Object)
 	namespacedName := types.NamespacedName{Name: name}
 	if !h.isClusterScoped {
 		if namespace != "" && namespace != "_all" {
 			namespacedName.Namespace = namespace
 		}
 	}
-	if err := cs.K8sClient.Get(c.Request.Context(), namespacedName, object); err != nil {
+
+	// Get hot resource from store
+	var (
+		err error
+	)
+	switch h.name {
+	case "pods":
+		object, err = cs.Store.PodLister().Pods(namespacedName.Namespace).Get(namespacedName.Name)
+	case "deployments":
+		object, err = cs.Store.DeploymentLister().Deployments(namespacedName.Namespace).Get(namespacedName.Name)
+	case "statefulSets":
+		object, err = cs.Store.StatefulSetLister().StatefulSets(namespacedName.Namespace).Get(namespacedName.Name)
+	case "services":
+		object, err = cs.Store.ServiceLister().Services(namespacedName.Namespace).Get(namespacedName.Name)
+	case "nodes":
+		object, err = cs.Store.NodeLister().Get(namespacedName.Name)
+	default:
+		err = cs.K8sClient.Get(c.Request.Context(), namespacedName, object)
+	}
+	if err != nil {
 		return nil, err
 	}
+
 	return object, nil
 }
 
@@ -97,13 +124,18 @@ func (h *GenericResourceHandler[T, V]) Get(c *gin.Context) {
 
 func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 	cs := c.MustGet("cluster").(*cluster.ClientSet)
-	objectList := reflect.New(h.listType).Interface().(V)
+	objectList := reflect.New(h.listType).Interface().(client.ObjectList)
 
 	ctx := c.Request.Context()
 
-	var listOpts []client.ListOption
+	var (
+		namespace       string
+		listOpts        []client.ListOption
+		labelSelector   labels.Selector
+		fromHotResource = slices.Contains(hotResources, h.name)
+	)
 	if !h.isClusterScoped {
-		namespace := c.Param("namespace")
+		namespace = c.Param("namespace")
 		if namespace != "" && namespace != "_all" {
 			listOpts = append(listOpts, client.InNamespace(namespace))
 		}
@@ -114,6 +146,7 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid limit parameter"})
 			return
 		}
+		fromHotResource = false
 		listOpts = append(listOpts, client.Limit(limit))
 	}
 
@@ -124,8 +157,8 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 
 	// Add label selector support
 	if c.Query("labelSelector") != "" {
-		labelSelector := c.Query("labelSelector")
-		selector, err := metav1.ParseToLabelSelector(labelSelector)
+		labelSelectorQuery := c.Query("labelSelector")
+		selector, err := metav1.ParseToLabelSelector(labelSelectorQuery)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid labelSelector parameter: " + err.Error()})
 			return
@@ -135,7 +168,8 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to convert labelSelector: " + err.Error()})
 			return
 		}
-		listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: labelSelectorOption})
+		labelSelector = labelSelectorOption
+		listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: labelSelector})
 	}
 
 	if c.Query("fieldSelector") != "" {
@@ -145,22 +179,82 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid fieldSelector parameter: " + err.Error()})
 			return
 		}
+		fromHotResource = false
 		listOpts = append(listOpts, client.MatchingFieldsSelector{Selector: fieldSelectorOption})
 	}
 
-	if err := cs.K8sClient.List(ctx, objectList, listOpts...); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	var items []runtime.Object
+	if fromHotResource {
+		if namespace == "" || namespace == "_all" {
+			namespace = metav1.NamespaceAll
+		}
+		if labelSelector == nil {
+			labelSelector = labels.Everything()
+		}
+		// List hot resource from store
+		switch h.name {
+		case "pods":
+			objs, err := cs.Store.PodLister().Pods(namespace).List(labelSelector)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			for _, obj := range objs {
+				items = append(items, obj)
+			}
+		case "deployments":
+			objs, err := cs.Store.DeploymentLister().Deployments(namespace).List(labelSelector)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			for _, obj := range objs {
+				items = append(items, obj)
+			}
+		case "statefulSets":
+			objs, err := cs.Store.StatefulSetLister().StatefulSets(namespace).List(labelSelector)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			for _, obj := range objs {
+				items = append(items, obj)
+			}
+		case "services":
+			objs, err := cs.Store.ServiceLister().Services(namespace).List(labelSelector)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			for _, obj := range objs {
+				items = append(items, obj)
+			}
+		case "nodes":
+			objs, err := cs.Store.NodeLister().List(labelSelector)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			for _, obj := range objs {
+				items = append(items, obj)
+			}
+		}
+	} else {
+		err := cs.K8sClient.List(ctx, objectList, listOpts...)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		items, err = meta.ExtractList(objectList)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to extract items from list"})
+			return
+		}
 	}
 
 	// Sort by creation timestamp in descending order (newest first)
 	// Extract items using reflection and sort them directly
 
-	items, err := meta.ExtractList(objectList)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to extract items from list"})
-		return
-	}
 	sort.Slice(items, func(i, j int) bool {
 		o1, _ := meta.Accessor(items[i])
 		o2, _ := meta.Accessor(items[j])
