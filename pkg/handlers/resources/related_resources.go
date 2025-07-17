@@ -15,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	gatewayapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 func discoverServices(ctx context.Context, k8sClient *kube.K8sClient, namespace string, selector *metav1.LabelSelector) ([]common.RelatedResource, error) {
@@ -244,6 +245,8 @@ func GetRelatedResources(c *gin.Context) {
 			}
 			result = append(result, workloads...)
 		}
+	case *gatewayapiv1.HTTPRoute:
+		result = getHTTPRouteRelatedResouces(res, namespace)
 	}
 
 	if podSpec != nil && selector != nil {
@@ -287,4 +290,53 @@ func GetRelatedResources(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, result)
+}
+
+func getHTTPRouteRelatedResouces(res *gatewayapiv1.HTTPRoute, namespace string) []common.RelatedResource {
+	var result []common.RelatedResource
+	for _, parentRef := range res.Spec.ParentRefs {
+		var parentResourceType string
+		if parentRef.Kind != nil && *parentRef.Kind != "" {
+			parentResourceType = strings.ToLower(string(*parentRef.Kind)) + "s"
+		} else {
+			parentResourceType = "gateways"
+		}
+		result = append(result, common.RelatedResource{
+			Type: parentResourceType,
+			Name: string(parentRef.Name),
+			Namespace: func() string {
+				if parentRef.Namespace != nil && *parentRef.Namespace != "" {
+					return string(*parentRef.Namespace)
+				}
+				return namespace
+			}(),
+			APIVersion: gatewayapiv1.GroupVersion.String(),
+		})
+	}
+
+	for _, rule := range res.Spec.Rules {
+		for _, backend := range rule.BackendRefs {
+			var backendType, apiVersion string
+			if backend.Kind != nil && *backend.Kind != "" {
+				backendType = strings.ToLower(string(*backend.Kind)) + "s"
+			} else {
+				backendType = "services"
+			}
+			if backendType == "services" {
+				apiVersion = corev1.SchemeGroupVersion.String()
+			}
+			result = append(result, common.RelatedResource{
+				Type: backendType,
+				Name: string(backend.Name),
+				Namespace: func() string {
+					if backend.Namespace != nil && *backend.Namespace != "" {
+						return string(*backend.Namespace)
+					}
+					return namespace
+				}(),
+				APIVersion: apiVersion,
+			})
+		}
+	}
+	return result
 }
