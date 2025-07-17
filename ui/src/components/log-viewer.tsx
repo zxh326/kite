@@ -226,8 +226,8 @@ export function LogViewer({
 
   // Handle fullscreen toggle
   const toggleFullscreen = useCallback(() => {
-    setIsFullscreen(!isFullscreen)
-  }, [isFullscreen])
+    setIsFullscreen((prev) => !prev)
+  }, [])
 
   // Handle ESC key for fullscreen exit
   useEffect(() => {
