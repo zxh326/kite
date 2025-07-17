@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   IconClearAll,
   IconDownload,
+  IconMaximize,
+  IconMinimize,
   IconPalette,
   IconSearch,
   IconSettings,
@@ -67,6 +69,7 @@ export function LogViewer({
   const [autoScroll, setAutoScroll] = useState(true)
   const [follow, setFollow] = useState(true)
   const [isReconnecting, setIsReconnecting] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const [logTheme, setLogTheme] = useState<LogTheme>(() => {
     const saved = localStorage.getItem('log-viewer-theme')
     return (saved as LogTheme) || 'classic'
@@ -221,7 +224,12 @@ export function LogViewer({
     URL.revokeObjectURL(url)
   }
 
-  // Keyboard shortcuts
+  // Handle fullscreen toggle
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen(!isFullscreen)
+  }, [isFullscreen])
+
+  // Handle ESC key for fullscreen exit
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ctrl/Cmd + F to focus search
@@ -232,7 +240,9 @@ export function LogViewer({
         ) as HTMLInputElement
         searchInput?.focus()
       }
-      // ESC to clear search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        toggleFullscreen()
+      }
       if (e.key === 'Escape' && searchTerm) {
         setSearchTerm('')
       }
@@ -240,10 +250,12 @@ export function LogViewer({
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [searchTerm])
+  }, [searchTerm, isFullscreen, toggleFullscreen])
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card
+      className={`h-full flex flex-col ${isFullscreen ? 'fixed inset-0 z-50 m-0 rounded-none' : ''}`}
+    >
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -459,6 +471,12 @@ export function LogViewer({
                           ESC
                         </kbd>
                       </div>
+                      <div className="flex justify-between">
+                        <span>Toggle Fullscreen</span>
+                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs">
+                          Ctrl+Enter
+                        </kbd>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -485,6 +503,22 @@ export function LogViewer({
               <IconDownload className="h-4 w-4" />
             </Button>
 
+            {/* Fullscreen Toggle */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleFullscreen}
+              title={
+                isFullscreen ? 'Exit fullscreen (ESC)' : 'Enter fullscreen'
+              }
+            >
+              {isFullscreen ? (
+                <IconMinimize className="h-4 w-4" />
+              ) : (
+                <IconMaximize className="h-4 w-4" />
+              )}
+            </Button>
+
             {/* Close */}
             {onClose && (
               <Button variant="outline" size="sm" onClick={onClose}>
@@ -498,8 +532,10 @@ export function LogViewer({
       <CardContent className="flex-1 p-0">
         <div
           ref={logContainerRef}
-          className={`h-full overflow-auto ${LOG_THEMES[logTheme].bg} ${LOG_THEMES[logTheme].text} text-sm px-4 space-y-1`}
-          style={{ height: 'calc(100vh - 340px)' }}
+          className={`h-full overflow-auto ${LOG_THEMES[logTheme].bg} ${LOG_THEMES[logTheme].text} text-sm ${isFullscreen ? 'px-0' : 'px-4'} space-y-1`}
+          style={{
+            height: isFullscreen ? 'calc(100dvh)' : 'calc(100dvh - 340px)',
+          }}
         >
           {isLoading && !logsData && (
             <div className="text-center opacity-60">Loading logs...</div>
