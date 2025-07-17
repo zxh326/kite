@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   IconClearAll,
+  IconMaximize,
+  IconMinimize,
   IconPalette,
   IconSettings,
   IconTerminal,
@@ -63,6 +65,7 @@ export function Terminal({
     const saved = localStorage.getItem('terminal-theme')
     return (saved as TerminalTheme) || 'classic'
   })
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   const terminalRef = useRef<HTMLDivElement>(null)
   const xtermRef = useRef<XTerm | null>(null)
@@ -117,6 +120,18 @@ export function Terminal({
     const nextIndex = (currentIndex + 1) % themes.length
     handleThemeChange(themes[nextIndex])
   }, [terminalTheme, handleThemeChange])
+
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen((v) => !v)
+  }, [])
+
+  useEffect(() => {
+    if (fitAddonRef.current) {
+      setTimeout(() => {
+        fitAddonRef.current?.fit()
+      }, 0)
+    }
+  }, [isFullscreen])
 
   // Handle container selector change
   const handleContainerChange = useCallback((containerName?: string) => {
@@ -467,7 +482,9 @@ export function Terminal({
   ])
 
   return (
-    <Card className="h-[calc(100vh-220px)] flex flex-col">
+    <Card
+      className={`flex flex-col ${isFullscreen ? 'fixed inset-0 z-50 m-0 rounded-none h-[100dvh]' : 'h-[calc(100vh-220px)]'}`}
+    >
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -620,11 +637,19 @@ export function Terminal({
             <Button variant="outline" size="sm" onClick={clearTerminal}>
               <IconClearAll className="h-4 w-4" />
             </Button>
+
+            <Button variant="outline" size="sm" onClick={toggleFullscreen}>
+              {isFullscreen ? (
+                <IconMinimize className="h-4 w-4" />
+              ) : (
+                <IconMaximize className="h-4 w-4" />
+              )}
+            </Button>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 p-0 flex ">
+      <CardContent className="flex-1 p-0 flex h-full">
         <div
           ref={terminalRef}
           className="flex-1 overflow-auto h-full bg-black"
