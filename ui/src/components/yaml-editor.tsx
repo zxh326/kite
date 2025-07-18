@@ -48,21 +48,29 @@ export function YamlEditor<T extends ResourceType>({
   const [editorValue, setEditorValue] = useState(value)
   const [isValidYaml, setIsValidYaml] = useState(true)
   const [validationError, setValidationError] = useState<string>('')
-  const { theme } = useTheme()
+  const { theme, getActualTheme } = useTheme()
   const editorRef = useRef<monacoEditor.IStandaloneCodeEditor | null>(null)
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Get the actual theme to use based on system preference
-  const getActualTheme = () => {
-    if (theme === 'system') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light'
-    }
-    return theme
-  }
-
   const actualTheme = getActualTheme()
+
+  // Listen for theme changes from the theme provider
+  useEffect(() => {
+    const handleThemeChange = (event: CustomEvent) => {
+      if (editorRef.current && theme === 'system') {
+        const newTheme =
+          event.detail.theme === 'dark' ? 'custom-dark' : 'custom-vs'
+        editorRef.current.updateOptions({ theme: newTheme })
+      }
+    }
+
+    window.addEventListener('theme-changed', handleThemeChange as EventListener)
+    return () =>
+      window.removeEventListener(
+        'theme-changed',
+        handleThemeChange as EventListener
+      )
+  }, [theme])
 
   // Update editor value when value prop changes
   useEffect(() => {
@@ -135,23 +143,6 @@ export function YamlEditor<T extends ResourceType>({
   }
 
   const effectiveReadOnly = readOnly || !isEditing
-
-  // watch for system theme changes
-  useEffect(() => {
-    if (theme === 'system') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-      const handleChange = () => {
-        // re-render to apply new theme
-        if (editorRef.current) {
-          const newTheme = mediaQuery.matches ? 'custom-dark' : 'custom-vs'
-          editorRef.current.updateOptions({ theme: newTheme })
-        }
-      }
-
-      mediaQuery.addEventListener('change', handleChange)
-      return () => mediaQuery.removeEventListener('change', handleChange)
-    }
-  }, [theme])
 
   return (
     <Card className={className}>
