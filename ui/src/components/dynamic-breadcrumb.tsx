@@ -33,6 +33,8 @@ export function DynamicBreadcrumb() {
       configmaps: 'ConfigMaps',
       secrets: 'Secrets',
       ingresses: 'Ingresses',
+      gateways: 'Gateways',
+      httproutes: 'HTTPRoutes',
       jobs: 'Jobs',
       daemonsets: 'DaemonSets',
       statefulsets: 'StatefulSets',

@@ -30,6 +30,8 @@
     "jobs": "Jobs",
     "services": "Services",
     "ingresses": "Ingresses",
+    "gateways": "Gateways",
+    "httproutes": "HTTP Routes",
     "configMaps": "ConfigMaps",
     "secrets": "Secrets",
     "persistentVolumeClaims": "Persistent Volume Claims",

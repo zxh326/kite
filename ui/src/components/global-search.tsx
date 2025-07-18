@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   IconBox,
   IconBoxMultiple,
+  IconLoadBalancer,
   IconLoader,
   IconLock,
   IconMap,
   IconNetwork,
   IconPlayerPlay,
   IconRocket,
+  IconRoute,
   IconRouter,
   IconServer2,
   IconStar,
@@ -55,6 +57,8 @@ const RESOURCE_CONFIG: Record<
   nodes: { label: 'Nodes', icon: IconServer2 },
   jobs: { label: 'Jobs', icon: IconPlayerPlay },
   ingresses: { label: 'Ingresses', icon: IconRouter },
+  gateways: { label: 'Gateways', icon: IconLoadBalancer },
+  httproutes: { label: 'HTTPRoutes', icon: IconRoute },
   daemonsets: {
     label: 'DaemonSets',
     icon: IconTopologyBus,
