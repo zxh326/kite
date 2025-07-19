@@ -250,11 +250,11 @@ export function NodeDetail(props: { name: string }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">{name}</h1>
+          <h1 className="text-lg font-bold">{name}</h1>
         </div>
         <div className="flex gap-2">
           <Button

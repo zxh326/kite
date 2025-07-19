@@ -65,6 +65,10 @@ export function Terminal({
     const saved = localStorage.getItem('terminal-theme')
     return (saved as TerminalTheme) || 'classic'
   })
+  const [fontSize, setFontSize] = useState(() => {
+    const saved = localStorage.getItem('log-viewer-font-size') // 与 log viewer 共用同一个 key
+    return saved ? parseInt(saved, 10) : 14
+  })
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   const terminalRef = useRef<HTMLDivElement>(null)
@@ -113,6 +117,24 @@ export function Terminal({
     }
   }, [])
 
+  // Handle font size change and persist to localStorage
+  const handleFontSizeChange = useCallback((size: number) => {
+    setFontSize(size)
+    localStorage.setItem('log-viewer-font-size', size.toString()) // 与 log viewer 共用同一个 key
+    // Update terminal font size without recreating the instance
+    if (xtermRef.current && fitAddonRef.current) {
+      xtermRef.current.options.fontSize = size
+      // Fit terminal to maintain container size after font change
+      setTimeout(() => {
+        fitAddonRef.current?.fit()
+        // Force refresh to apply the new font size after fitting
+        if (xtermRef.current) {
+          xtermRef.current.refresh(0, xtermRef.current.rows - 1)
+        }
+      }, 0)
+    }
+  }, [])
+
   // Quick theme cycling function
   const cycleTheme = useCallback(() => {
     const themes = Object.keys(TERMINAL_THEMES) as TerminalTheme[]
@@ -124,6 +146,33 @@ export function Terminal({
   const toggleFullscreen = useCallback(() => {
     setIsFullscreen((v) => !v)
   }, [])
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + T to cycle theme
+      if ((e.ctrlKey || e.metaKey) && e.key === 't') {
+        e.preventDefault()
+        cycleTheme()
+      }
+      // Font size shortcuts
+      if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
+        e.preventDefault()
+        handleFontSizeChange(Math.min(24, fontSize + 1))
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === '-' || e.key === '_')) {
+        e.preventDefault()
+        handleFontSizeChange(Math.max(10, fontSize - 1))
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+        e.preventDefault()
+        handleFontSizeChange(14) // Reset to default font size
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [cycleTheme, fontSize, handleFontSizeChange])
 
   useEffect(() => {
     if (fitAddonRef.current) {
@@ -168,9 +217,14 @@ export function Terminal({
       (localStorage.getItem('terminal-theme') as TerminalTheme) || 'classic'
     const currentTheme = TERMINAL_THEMES[storedTheme]
 
+    // Get current font size from localStorage
+    const storedFontSize = localStorage.getItem('log-viewer-font-size')
+    const currentFontSize = storedFontSize ? parseInt(storedFontSize, 10) : 14
+
     // Create new terminal instance
     const terminal = new XTerm({
       fontFamily: '"Maple Mono", Monaco, Menlo, "Ubuntu Mono", monospace',
+      fontSize: currentFontSize,
       theme: {
         background: currentTheme.background,
         foreground: currentTheme.foreground,
@@ -483,7 +537,7 @@ export function Terminal({
 
   return (
     <Card
-      className={`flex flex-col ${isFullscreen ? 'fixed inset-0 z-50 m-0 rounded-none h-[100dvh]' : 'h-[calc(100vh-220px)]'}`}
+      className={`flex flex-col py-4 gap-0 ${isFullscreen ? 'fixed inset-0 z-50 m-0 rounded-none h-[100dvh]' : 'h-[calc(100dvh-180px)]'}`}
     >
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -580,11 +634,12 @@ export function Terminal({
 
                     {/* Theme Preview */}
                     <div
-                      className="p-3 rounded text-xs space-y-1"
+                      className="p-3 rounded space-y-1"
                       style={{
                         backgroundColor:
                           TERMINAL_THEMES[terminalTheme].background,
                         color: TERMINAL_THEMES[terminalTheme].foreground,
+                        fontSize: `${fontSize}px`,
                       }}
                     >
                       <div>
@@ -615,6 +670,36 @@ export function Terminal({
                     </div>
                   </div>
 
+                  {/* Font Size Selector */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="font-size">Font Size</Label>
+                      <Select
+                        value={fontSize.toString()}
+                        onValueChange={(value) =>
+                          handleFontSizeChange(Number(value))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10px</SelectItem>
+                          <SelectItem value="11">11px</SelectItem>
+                          <SelectItem value="12">12px</SelectItem>
+                          <SelectItem value="13">13px</SelectItem>
+                          <SelectItem value="14">14px</SelectItem>
+                          <SelectItem value="15">15px</SelectItem>
+                          <SelectItem value="16">16px</SelectItem>
+                          <SelectItem value="18">18px</SelectItem>
+                          <SelectItem value="20">20px</SelectItem>
+                          <SelectItem value="22">22px</SelectItem>
+                          <SelectItem value="24">24px</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
                   {/* Keyboard Shortcuts */}
                   <div className="space-y-2 pt-2 border-t">
                     <Label className="text-xs font-medium text-muted-foreground">
@@ -625,6 +710,24 @@ export function Terminal({
                         <span>Cycle Theme</span>
                         <kbd className="px-1 py-0.5 bg-muted rounded text-xs">
                           Ctrl+T
+                        </kbd>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Increase Font Size</span>
+                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs">
+                          Ctrl++
+                        </kbd>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Decrease Font Size</span>
+                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs">
+                          Ctrl+-
+                        </kbd>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Reset Font Size</span>
+                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs">
+                          Ctrl+0
                         </kbd>
                       </div>
                     </div>

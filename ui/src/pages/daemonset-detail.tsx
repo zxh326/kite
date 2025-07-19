@@ -272,11 +272,11 @@ export function DaemonSetDetail(props: { namespace: string; name: string }) {
   const isPending = currentReplicas < desiredReplicas
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{metadata?.name}</h1>
+          <h1 className="text-lg font-bold">{metadata?.name}</h1>
           <p className="text-muted-foreground">
             Namespace: <span className="font-medium">{namespace}</span>
           </p>
