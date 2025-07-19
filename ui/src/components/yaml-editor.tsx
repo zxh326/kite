@@ -179,7 +179,7 @@ export function YamlEditor<T extends ResourceType>({
               <p className="text-sm text-destructive">{validationError}</p>
             </div>
           )}
-          <div className="overflow-hidden h-[calc(100dvh-350px)]">
+          <div className="overflow-hidden h-[calc(100dvh-300px)]">
             <Editor
               language="yaml"
               theme={theme === 'dark' ? 'custom-dark' : 'custom-vs'}

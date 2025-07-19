@@ -280,11 +280,11 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
   const totalReplicas = status?.replicas || 0
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{name}</h1>
+          <h1 className="text-lg font-bold">{name}</h1>
           <p className="text-muted-foreground">
             Namespace: <span className="font-medium">{namespace}</span>
           </p>

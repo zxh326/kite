@@ -124,11 +124,11 @@ export function SimpleResourceDetail<T extends ResourceType>(props: {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">{name}</h1>
+          <h1 className="text-lg font-bold">{name}</h1>
           {namespace && (
             <p className="text-muted-foreground">
               Namespace: <span className="font-medium">{namespace}</span>
