@@ -10,14 +10,14 @@ type ThemeProviderProps = {
 
 type ThemeProviderState = {
   theme: Theme
+  actualTheme: Omit<Theme, 'system'>
   setTheme: (theme: Theme) => void
-  getActualTheme: () => 'dark' | 'light'
 }
 
 const initialState: ThemeProviderState = {
   theme: 'system',
   setTheme: () => null,
-  getActualTheme: () => 'light',
+  actualTheme: 'light',
 }
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
@@ -31,24 +31,13 @@ export function ThemeProvider({
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   )
-
-  useEffect(() => {
-    const root = window.document.documentElement
-
-    root.classList.remove('light', 'dark')
-
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
-        .matches
+  const [actualTheme, setActualTheme] = useState<Omit<Theme, 'system'>>(
+    theme === 'system'
+      ? window.matchMedia('(prefers-color-scheme: dark)').matches
         ? 'dark'
         : 'light'
-
-      root.classList.add(systemTheme)
-      return
-    }
-
-    root.classList.add(theme)
-  }, [theme])
+      : theme
+  )
 
   // Watch for system theme changes when theme is 'system'
   useEffect(() => {
@@ -60,29 +49,17 @@ export function ThemeProvider({
 
         const systemTheme = mediaQuery.matches ? 'dark' : 'light'
         root.classList.add(systemTheme)
-
-        // Trigger a custom event for components that need to know about theme changes
-        window.dispatchEvent(
-          new CustomEvent('theme-changed', {
-            detail: { theme: systemTheme },
-          })
-        )
+        setActualTheme(systemTheme)
       }
 
       mediaQuery.addEventListener('change', handleChange)
       return () => mediaQuery.removeEventListener('change', handleChange)
     }
+    const root = window.document.documentElement
+    root.classList.remove('light', 'dark')
+    setActualTheme(theme)
+    root.classList.add(theme)
   }, [theme])
-
-  // Get the actual theme to use based on system preference
-  const getActualTheme = (): 'dark' | 'light' => {
-    if (theme === 'system') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light'
-    }
-    return theme
-  }
 
   const value = {
     theme,
@@ -90,7 +67,7 @@ export function ThemeProvider({
       localStorage.setItem(storageKey, theme)
       setTheme(theme)
     },
-    getActualTheme,
+    actualTheme,
   }
 
   return (

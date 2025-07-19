@@ -48,29 +48,9 @@ export function YamlEditor<T extends ResourceType>({
   const [editorValue, setEditorValue] = useState(value)
   const [isValidYaml, setIsValidYaml] = useState(true)
   const [validationError, setValidationError] = useState<string>('')
-  const { theme, getActualTheme } = useTheme()
+  const { actualTheme } = useTheme()
   const editorRef = useRef<monacoEditor.IStandaloneCodeEditor | null>(null)
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-
-  const actualTheme = getActualTheme()
-
-  // Listen for theme changes from the theme provider
-  useEffect(() => {
-    const handleThemeChange = (event: CustomEvent) => {
-      if (editorRef.current && theme === 'system') {
-        const newTheme =
-          event.detail.theme === 'dark' ? 'custom-dark' : 'custom-vs'
-        editorRef.current.updateOptions({ theme: newTheme })
-      }
-    }
-
-    window.addEventListener('theme-changed', handleThemeChange as EventListener)
-    return () =>
-      window.removeEventListener(
-        'theme-changed',
-        handleThemeChange as EventListener
-      )
-  }, [theme])
 
   // Update editor value when value prop changes
   useEffect(() => {
