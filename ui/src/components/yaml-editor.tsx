@@ -48,7 +48,7 @@ export function YamlEditor<T extends ResourceType>({
   const [editorValue, setEditorValue] = useState(value)
   const [isValidYaml, setIsValidYaml] = useState(true)
   const [validationError, setValidationError] = useState<string>('')
-  const { theme } = useTheme()
+  const { actualTheme } = useTheme()
   const editorRef = useRef<monacoEditor.IStandaloneCodeEditor | null>(null)
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -182,7 +182,7 @@ export function YamlEditor<T extends ResourceType>({
           <div className="overflow-hidden h-[calc(100dvh-300px)]">
             <Editor
               language="yaml"
-              theme={theme === 'dark' ? 'custom-dark' : 'custom-vs'}
+              theme={actualTheme === 'dark' ? 'custom-dark' : 'custom-vs'}
               value={editorValue}
               beforeMount={(monaco) => {
                 monaco.editor.defineTheme('custom-dark', {
