@@ -74,6 +74,7 @@ export function ImageEditor({ container, onUpdate }: ImageEditorProps) {
           ref={inputRef}
           value={container.image || ''}
           onFocus={handleInputFocus}
+          onBlur={() => setShowTagDropdown(false)}
           onChange={(e) => updateImage(e.target.value)}
           placeholder="nginx:latest"
           autoComplete="off"
