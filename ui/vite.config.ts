@@ -31,9 +31,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      // this is workaround for Tabler Icons issue
-      // @see https://github.com/tabler/tabler-icons/issues/1233#issuecomment-2744963177
-      '@tabler/icons-react': '@tabler/icons-react/dist/esm/icons/index.mjs',
     },
   },
   worker: {
