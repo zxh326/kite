@@ -21,6 +21,7 @@ import (
 	"github.com/zxh326/kite/pkg/handlers"
 	"github.com/zxh326/kite/pkg/handlers/resources"
 	"github.com/zxh326/kite/pkg/middleware"
+	"github.com/zxh326/kite/pkg/rbac"
 	"github.com/zxh326/kite/pkg/utils"
 	"k8s.io/klog/v2"
 )
@@ -81,7 +82,7 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 
 	// API routes group (protected)
 	api := r.Group("/api/v1")
-	api.Use(authHandler.RequireAuth(), middleware.ClusterMiddleware(cm), middleware.ReadonlyMiddleware())
+	api.Use(authHandler.RequireAuth(), middleware.ClusterMiddleware(cm))
 	{
 		api.GET("/overview", handlers.GetOverview)
 		api.GET("/clusters", cm.GetClusters)
@@ -107,6 +108,7 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 
 		api.GET("/image/tags", handlers.GetImageTags)
 
+		api.Use(middleware.RBACMiddleware())
 		resources.RegisterRoutes(api)
 	}
 }
@@ -133,6 +135,7 @@ func main() {
 	}()
 
 	common.LoadEnvs()
+	rbac.InitRBAC(common.RolesConfigPath)
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(gin.Recovery())
