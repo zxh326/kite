@@ -54,3 +54,24 @@ type ClusterInfo struct {
 	Version   string `json:"version"`
 	IsDefault bool   `json:"isDefault"`
 }
+
+// User represents a generic user from any OAuth provider
+type User struct {
+	ID         string   `json:"id,omitempty"`
+	Username   string   `json:"username,omitempty"`
+	Name       string   `json:"name,omitempty"`
+	AvatarURL  string   `json:"avatar_url,omitempty"`
+	Provider   string   `json:"provider,omitempty"`
+	OIDCGroups []string `json:"oidc_groups,omitempty"` // Optional OIDC groups for RBAC
+	Roles      []Role   `json:"roles,omitempty"`       // Optional role for RBAC
+}
+
+func (u *User) Key() string {
+	if u.Username != "" {
+		return u.Username
+	}
+	if u.Name != "" {
+		return u.Name
+	}
+	return u.ID
+}

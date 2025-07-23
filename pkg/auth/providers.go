@@ -20,7 +20,7 @@ import (
 type OAuthProvider interface {
 	GetAuthURL(state string) string
 	ExchangeCodeForToken(code string) (*TokenResponse, error)
-	GetUserInfo(accessToken string) (*User, error)
+	GetUserInfo(accessToken string) (*common.User, error)
 	RefreshToken(refreshToken string) (*TokenResponse, error)
 	GetProviderName() string
 }
@@ -31,15 +31,6 @@ type OAuthConfig struct {
 	ClientSecret string
 	RedirectURL  string
 	Scopes       []string
-}
-
-// User represents a generic user from any OAuth provider
-type User struct {
-	ID        string `json:"id"`
-	Username  string `json:"username"`
-	Name      string `json:"name"`
-	AvatarURL string `json:"avatar_url"`
-	Provider  string `json:"provider"`
 }
 
 // TokenResponse represents OAuth token response with refresh token support
@@ -53,12 +44,13 @@ type TokenResponse struct {
 
 // Claims represents JWT claims with refresh token support
 type Claims struct {
-	UserID       string `json:"user_id"`
-	Username     string `json:"username"`
-	Name         string `json:"name"`
-	AvatarURL    string `json:"avatar_url"`
-	Provider     string `json:"provider"`
-	RefreshToken string `json:"refresh_token,omitempty"`
+	UserID       string   `json:"user_id"`
+	Username     string   `json:"username"`
+	Name         string   `json:"name"`
+	AvatarURL    string   `json:"avatar_url"`
+	Provider     string   `json:"provider"`
+	RefreshToken string   `json:"refresh_token,omitempty"`
+	OIDCGroups   []string `json:"oidc_groups,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -134,7 +126,7 @@ func (g *GitHubProvider) RefreshToken(refreshToken string) (*TokenResponse, erro
 	return nil, fmt.Errorf("github does not support token refresh")
 }
 
-func (g *GitHubProvider) GetUserInfo(accessToken string) (*User, error) {
+func (g *GitHubProvider) GetUserInfo(accessToken string) (*common.User, error) {
 	req, err := http.NewRequest("GET", "https://api.github.com/user", nil)
 	if err != nil {
 		return nil, err
@@ -163,7 +155,7 @@ func (g *GitHubProvider) GetUserInfo(accessToken string) (*User, error) {
 		return nil, err
 	}
 
-	return &User{
+	return &common.User{
 		ID:        fmt.Sprintf("%d", githubUser.ID),
 		Username:  githubUser.Login,
 		Name:      githubUser.Name,
@@ -193,7 +185,7 @@ func NewGenericProvider(name string) *GenericProvider {
 	if scopesEnv != "" {
 		scopes = strings.Split(scopesEnv, ",")
 	} else {
-		scopes = []string{"openid", "profile", "email"}
+		scopes = []string{"openid", "profile", "email", "groups", "roles"}
 	}
 
 	authURL := os.Getenv(prefix + "_AUTH_URL")
@@ -336,7 +328,7 @@ func (g *GenericProvider) RefreshToken(refreshToken string) (*TokenResponse, err
 	return &tokenResp, nil
 }
 
-func (g *GenericProvider) GetUserInfo(accessToken string) (*User, error) {
+func (g *GenericProvider) GetUserInfo(accessToken string) (*common.User, error) {
 	req, err := http.NewRequest("GET", g.UserInfoURL, nil)
 	if err != nil {
 		return nil, err
@@ -358,13 +350,17 @@ func (g *GenericProvider) GetUserInfo(accessToken string) (*User, error) {
 		return nil, err
 	}
 
+	klog.V(5).Infof("User info from %s: %v", g.Name, userInfo)
+
 	// Map common fields - this might need customization per provider
-	user := &User{
+	user := &common.User{
 		Provider: g.Name,
 	}
 
 	if id, ok := userInfo["id"]; ok {
 		user.ID = fmt.Sprintf("%v", id)
+	} else if sub, ok := userInfo["sub"]; ok {
+		user.ID = fmt.Sprintf("%v", sub)
 	}
 	if username, ok := userInfo["username"]; ok {
 		user.Username = fmt.Sprintf("%v", username)
@@ -382,6 +378,23 @@ func (g *GenericProvider) GetUserInfo(accessToken string) (*User, error) {
 		user.AvatarURL = fmt.Sprintf("%v", picture)
 	}
 
+	var groups []interface{}
+	if v, ok := userInfo["groups"]; ok {
+		if arr, ok := v.([]interface{}); ok {
+			groups = arr
+		}
+	} else if roles, ok := userInfo["roles"]; ok {
+		if arr, ok := roles.([]interface{}); ok {
+			groups = arr
+		}
+	}
+
+	if len(groups) != 0 {
+		user.OIDCGroups = make([]string, len(groups))
+		for i, v := range groups {
+			user.OIDCGroups[i] = fmt.Sprintf("%v", v)
+		}
+	}
 	return user, nil
 }
 
@@ -442,7 +455,7 @@ func (om *OAuthManager) GenerateState() string {
 	return base64.URLEncoding.EncodeToString(b)
 }
 
-func (om *OAuthManager) GenerateJWT(user *User, refreshToken string) (string, error) {
+func (om *OAuthManager) GenerateJWT(user *common.User, refreshToken string) (string, error) {
 	now := time.Now()
 	expirationTime := now.Add(common.JWTExpirationSeconds * time.Second)
 
@@ -453,6 +466,7 @@ func (om *OAuthManager) GenerateJWT(user *User, refreshToken string) (string, er
 		AvatarURL:    user.AvatarURL,
 		Provider:     user.Provider,
 		RefreshToken: refreshToken,
+		OIDCGroups:   user.OIDCGroups,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(now),
@@ -525,34 +539,14 @@ func (om *OAuthManager) RefreshJWT(tokenString string) (string, error) {
 
 	// If no refresh token available, just generate a new JWT with existing claims
 	// This is for providers like GitHub that don't expire tokens
-	user := &User{
-		ID:        claims.UserID,
-		Username:  claims.Username,
-		Name:      claims.Name,
-		AvatarURL: claims.AvatarURL,
-		Provider:  claims.Provider,
+	user := &common.User{
+		ID:         claims.UserID,
+		Username:   claims.Username,
+		Name:       claims.Name,
+		AvatarURL:  claims.AvatarURL,
+		Provider:   claims.Provider,
+		OIDCGroups: claims.OIDCGroups,
 	}
 
 	return om.GenerateJWT(user, "")
-}
-
-func CheckPermissions(user *User) bool {
-	allowUsers := common.OAuthAllowUsers
-	if allowUsers == "" {
-		return false
-	}
-	if allowUsers == "*" {
-		return true // Allow all users if wildcard is set
-	}
-	allowedUsers := strings.SplitSeq(allowUsers, ",")
-	for allowedUser := range allowedUsers {
-		allowedUser = strings.TrimSpace(allowedUser)
-		if user.Username == allowedUser {
-			return true
-		}
-		if user.Name == allowedUser {
-			return true
-		}
-	}
-	return false
 }

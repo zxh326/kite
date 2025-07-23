@@ -20,7 +20,6 @@ var (
 	JwtSecret       = ""
 	OAuthEnabled    = false
 	OAuthProviders  = ""
-	OAuthAllowUsers = ""
 	EnableAnalytics = false
 
 	NodeTerminalImage = "busybox:latest"
@@ -51,13 +50,6 @@ func LoadEnvs() {
 		} else {
 			klog.Warning("OAUTH_PROVIDERS is not set, OAuth will not work as expected")
 		}
-		if allowUsers := os.Getenv("OAUTH_ALLOW_USERS"); allowUsers != "" {
-			OAuthAllowUsers = allowUsers
-		} else {
-			klog.Warning("OAUTH_ALLOW_USERS is not set, OAuth will not work as expected")
-		}
-	} else {
-		klog.Warning("OAUTH_ENABLED is not set to true, do not use in PRODUCTION")
 	}
 
 	if port := os.Getenv("PORT"); port != "" {
@@ -71,7 +63,8 @@ func LoadEnvs() {
 	if nodeTerminalImage := os.Getenv("NODE_TERMINAL_IMAGE"); nodeTerminalImage != "" {
 		NodeTerminalImage = nodeTerminalImage
 	}
-	if readonly := os.Getenv("READONLY"); readonly == "true" {
-		Readonly = true
+
+	if !OAuthEnabled && !PasswordLoginEnabled {
+		klog.Warning("OAuth and Password login are both disabled, DO NOT USE IN PRODUCTION!!!")
 	}
 }
