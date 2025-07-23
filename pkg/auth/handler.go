@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/rbac"
 	"k8s.io/klog/v2"
 )
 
@@ -84,7 +85,7 @@ func (h *AuthHandler) PasswordLogin(c *gin.Context) {
 	}
 
 	// Create user object
-	user := &User{
+	user := &common.User{
 		Username: req.Username,
 		Name:     req.Username,
 		Provider: "password",
@@ -195,12 +196,12 @@ func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 		var tokenString string
 
 		if !common.OAuthEnabled && !common.PasswordLoginEnabled {
-			c.Set("user", gin.H{
-				"id":         "anonymous",
-				"username":   "anonymous",
-				"name":       "Anonymous",
-				"avatar_url": "",
-				"provider":   "none",
+			c.Set("user", common.User{
+				ID:        "anonymous",
+				Username:  "anonymous",
+				Name:      "Anonymous",
+				AvatarURL: "",
+				Provider:  "none",
 			})
 			c.Next()
 			return
@@ -259,12 +260,14 @@ func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 		}
 
 		// Store user info in context
-		c.Set("user", gin.H{
-			"id":         claims.UserID,
-			"username":   claims.Username,
-			"name":       claims.Name,
-			"avatar_url": claims.AvatarURL,
-			"provider":   claims.Provider,
+		c.Set("user", common.User{
+			ID:         claims.UserID,
+			Username:   claims.Username,
+			Name:       claims.Name,
+			AvatarURL:  claims.AvatarURL,
+			Provider:   claims.Provider,
+			OIDCGroups: []string{},
+			Role:       rbac.RBACConfig.MergeUserPermissions(claims.UserID, []string{}), // TODO: Handle OIDC groups
 		})
 		c.Next()
 	}

@@ -19,7 +19,7 @@ import (
 type OAuthProvider interface {
 	GetAuthURL(state string) string
 	ExchangeCodeForToken(code string) (*TokenResponse, error)
-	GetUserInfo(accessToken string) (*User, error)
+	GetUserInfo(accessToken string) (*common.User, error)
 	RefreshToken(refreshToken string) (*TokenResponse, error)
 	GetProviderName() string
 }
@@ -30,15 +30,6 @@ type OAuthConfig struct {
 	ClientSecret string
 	RedirectURL  string
 	Scopes       []string
-}
-
-// User represents a generic user from any OAuth provider
-type User struct {
-	ID        string `json:"id"`
-	Username  string `json:"username"`
-	Name      string `json:"name"`
-	AvatarURL string `json:"avatar_url"`
-	Provider  string `json:"provider"`
 }
 
 // TokenResponse represents OAuth token response with refresh token support
@@ -133,7 +124,7 @@ func (g *GitHubProvider) RefreshToken(refreshToken string) (*TokenResponse, erro
 	return nil, fmt.Errorf("github does not support token refresh")
 }
 
-func (g *GitHubProvider) GetUserInfo(accessToken string) (*User, error) {
+func (g *GitHubProvider) GetUserInfo(accessToken string) (*common.User, error) {
 	req, err := http.NewRequest("GET", "https://api.github.com/user", nil)
 	if err != nil {
 		return nil, err
@@ -162,7 +153,7 @@ func (g *GitHubProvider) GetUserInfo(accessToken string) (*User, error) {
 		return nil, err
 	}
 
-	return &User{
+	return &common.User{
 		ID:        fmt.Sprintf("%d", githubUser.ID),
 		Username:  githubUser.Login,
 		Name:      githubUser.Name,
@@ -279,7 +270,7 @@ func (g *GenericProvider) RefreshToken(refreshToken string) (*TokenResponse, err
 	return &tokenResp, nil
 }
 
-func (g *GenericProvider) GetUserInfo(accessToken string) (*User, error) {
+func (g *GenericProvider) GetUserInfo(accessToken string) (*common.User, error) {
 	req, err := http.NewRequest("GET", g.UserInfoURL, nil)
 	if err != nil {
 		return nil, err
@@ -302,7 +293,7 @@ func (g *GenericProvider) GetUserInfo(accessToken string) (*User, error) {
 	}
 
 	// Map common fields - this might need customization per provider
-	user := &User{
+	user := &common.User{
 		Provider: g.Name,
 	}
 
@@ -381,7 +372,7 @@ func (om *OAuthManager) GenerateState() string {
 	return base64.URLEncoding.EncodeToString(b)
 }
 
-func (om *OAuthManager) GenerateJWT(user *User, refreshToken string) (string, error) {
+func (om *OAuthManager) GenerateJWT(user *common.User, refreshToken string) (string, error) {
 	now := time.Now()
 	expirationTime := now.Add(common.JWTExpirationSeconds * time.Second)
 
@@ -464,7 +455,7 @@ func (om *OAuthManager) RefreshJWT(tokenString string) (string, error) {
 
 	// If no refresh token available, just generate a new JWT with existing claims
 	// This is for providers like GitHub that don't expire tokens
-	user := &User{
+	user := &common.User{
 		ID:        claims.UserID,
 		Username:  claims.Username,
 		Name:      claims.Name,
@@ -475,7 +466,7 @@ func (om *OAuthManager) RefreshJWT(tokenString string) (string, error) {
 	return om.GenerateJWT(user, "")
 }
 
-func CheckPermissions(user *User) bool {
+func CheckPermissions(user *common.User) bool {
 	allowUsers := common.OAuthAllowUsers
 	if allowUsers == "" {
 		return false
