@@ -253,6 +253,20 @@ export function Terminal({
     xtermRef.current = terminal
     fitAddonRef.current = fitAddon
 
+    // Apply additional styles to prevent scroll bubbling
+    if (terminal.element) {
+      terminal.element.style.overscrollBehavior = 'none'
+      terminal.element.style.touchAction = 'none'
+      terminal.element.addEventListener(
+        'wheel',
+        (e) => {
+          e.stopPropagation()
+          e.preventDefault()
+        },
+        { passive: false }
+      )
+    }
+
     const handleResize = () => fitAddon.fit()
     window.addEventListener('resize', handleResize)
 
@@ -304,7 +318,7 @@ export function Terminal({
           websocket.send(pingMessage)
           updateNetworkStats(new Blob([pingMessage]).size, true)
         }
-      }, 10000)
+      }, 30000)
 
       terminal.writeln(`\x1b[32mConnected to ${type} terminal!\x1b[0m`)
       terminal.writeln('')
@@ -380,14 +394,37 @@ export function Terminal({
       }
     }
     setTimeout(() => handleTerminalResize(), 100)
-    if (fitAddonRef.current) {
-      const resizeObserver = new ResizeObserver(handleTerminalResize)
-      if (terminal.element) resizeObserver.observe(terminal.element)
-      return () => resizeObserver.disconnect()
+
+    let resizeObserver: ResizeObserver | null = null
+    if (fitAddonRef.current && terminal.element) {
+      resizeObserver = new ResizeObserver(handleTerminalResize)
+      resizeObserver.observe(terminal.element)
+    }
+
+    const handleWheelEvent = (e: WheelEvent | TouchEvent) => {
+      e.stopPropagation()
+      e.preventDefault()
+    }
+
+    const currentTerminalRef = terminalRef.current
+    if (currentTerminalRef) {
+      currentTerminalRef.addEventListener('wheel', handleWheelEvent, {
+        passive: false,
+      })
+      currentTerminalRef.addEventListener('touchmove', handleWheelEvent, {
+        passive: false,
+      })
     }
 
     return () => {
       window.removeEventListener('resize', handleResize)
+      if (resizeObserver) {
+        resizeObserver.disconnect()
+      }
+      if (currentTerminalRef) {
+        currentTerminalRef.removeEventListener('wheel', handleWheelEvent)
+        currentTerminalRef.removeEventListener('touchmove', handleWheelEvent)
+      }
       terminal.dispose()
       websocket.close()
       if (speedUpdateTimerRef.current)
@@ -406,7 +443,7 @@ export function Terminal({
 
   return (
     <Card
-      className={`flex flex-col gap-0 py-2 ${isFullscreen ? 'fixed inset-0 z-50 h-100dvh' : 'h-[calc(100dvh-180px)]'}`}
+      className={`flex flex-col gap-0 py-2 ${isFullscreen ? 'fixed inset-0 z-50 h-[100dvh]' : 'h-[calc(100dvh-180px)]'}`}
     >
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -626,6 +663,10 @@ export function Terminal({
           style={{
             maxHeight: '100%',
             overflow: 'hidden',
+            overscrollBehavior: 'none',
+            touchAction: 'none',
+            position: 'relative',
+            isolation: 'isolate',
           }}
         />
       </CardContent>
