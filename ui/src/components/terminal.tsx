@@ -53,12 +53,8 @@ export function Terminal({
   containers = [],
   type = 'pod',
 }: TerminalProps) {
-  const [selectedPod, setSelectedPod] = useState<string | undefined>(
-    podName || pods?.[0]?.metadata?.name || ''
-  )
-  const [selectedContainer, setSelectedContainer] = useState<string>(
-    containers.length > 0 ? containers[0].name : ''
-  )
+  const [selectedPod, setSelectedPod] = useState<string>('')
+  const [selectedContainer, setSelectedContainer] = useState<string>('')
   const [isConnected, setIsConnected] = useState(false)
   const [networkSpeed, setNetworkSpeed] = useState({ upload: 0, download: 0 })
   const [terminalTheme, setTerminalTheme] = useState<TerminalTheme>(() => {
@@ -66,7 +62,7 @@ export function Terminal({
     return (saved as TerminalTheme) || 'classic'
   })
   const [fontSize, setFontSize] = useState(() => {
-    const saved = localStorage.getItem('log-viewer-font-size') // 与 log viewer 共用同一个 key
+    const saved = localStorage.getItem('log-viewer-font-size')
     return saved ? parseInt(saved, 10) : 14
   })
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -82,6 +78,13 @@ export function Terminal({
     lastUpdate: Date.now(),
   })
   const speedUpdateTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const pingTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Initialize pod/container state on props change
+  useEffect(() => {
+    setSelectedPod(podName || pods?.[0]?.metadata?.name || '')
+    setSelectedContainer(containers.length > 0 ? containers[0].name : '')
+  }, [podName, pods, containers])
 
   // Handle theme change and persist to localStorage
   const handleThemeChange = useCallback((theme: TerminalTheme) => {
@@ -124,14 +127,12 @@ export function Terminal({
     // Update terminal font size without recreating the instance
     if (xtermRef.current && fitAddonRef.current) {
       xtermRef.current.options.fontSize = size
-      // Fit terminal to maintain container size after font change
+      // Delay fit to ensure font size has been applied
       setTimeout(() => {
-        fitAddonRef.current?.fit()
-        // Force refresh to apply the new font size after fitting
-        if (xtermRef.current) {
-          xtermRef.current.refresh(0, xtermRef.current.rows - 1)
+        if (fitAddonRef.current) {
+          fitAddonRef.current.fit()
         }
-      }, 0)
+      }, 100)
     }
   }, [])
 
@@ -145,6 +146,11 @@ export function Terminal({
 
   const toggleFullscreen = useCallback(() => {
     setIsFullscreen((v) => !v)
+    setTimeout(() => {
+      if (fitAddonRef.current) {
+        fitAddonRef.current.fit()
+      }
+    }, 200)
   }, [])
 
   // Handle keyboard shortcuts
@@ -174,19 +180,12 @@ export function Terminal({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [cycleTheme, fontSize, handleFontSizeChange])
 
-  useEffect(() => {
-    if (fitAddonRef.current) {
-      setTimeout(() => {
-        fitAddonRef.current?.fit()
-      }, 0)
-    }
-  }, [isFullscreen])
-
-  // Handle container selector change
   const handleContainerChange = useCallback((containerName?: string) => {
-    if (containerName) {
-      setSelectedContainer(containerName)
-    }
+    if (containerName) setSelectedContainer(containerName)
+  }, [])
+
+  const handlePodChange = useCallback((podName?: string) => {
+    setSelectedPod(podName || '')
   }, [])
 
   // Calculate network speed
@@ -203,28 +202,19 @@ export function Terminal({
     []
   )
 
-  // Initialize xterm.js terminal
-  const initializeTerminal = useCallback(() => {
+  // Unified terminal and websocket lifecycle
+  useEffect(() => {
+    if (!pods || pods.length === 0) if (!selectedPod) return
+    if (!selectedContainer) return
     if (!terminalRef.current) return
 
-    // Clean up existing terminal
-    if (xtermRef.current) {
-      xtermRef.current.dispose()
-    }
+    if (xtermRef.current) xtermRef.current.dispose()
+    if (wsRef.current) wsRef.current.close()
 
-    // Get current theme configuration at initialization time
-    const storedTheme =
-      (localStorage.getItem('terminal-theme') as TerminalTheme) || 'classic'
-    const currentTheme = TERMINAL_THEMES[storedTheme]
-
-    // Get current font size from localStorage
-    const storedFontSize = localStorage.getItem('log-viewer-font-size')
-    const currentFontSize = storedFontSize ? parseInt(storedFontSize, 10) : 14
-
-    // Create new terminal instance
+    const currentTheme = TERMINAL_THEMES[terminalTheme]
     const terminal = new XTerm({
       fontFamily: '"Maple Mono", Monaco, Menlo, "Ubuntu Mono", monospace',
-      fontSize: currentFontSize,
+      fontSize,
       theme: {
         background: currentTheme.background,
         foreground: currentTheme.foreground,
@@ -252,231 +242,197 @@ export function Terminal({
       cursorStyle: 'bar',
       scrollback: 10000,
     })
-
-    // Create and attach addons
     const fitAddon = new FitAddon()
     const searchAddon = new SearchAddon()
     const webLinksAddon = new WebLinksAddon()
-
     terminal.loadAddon(fitAddon)
     terminal.loadAddon(searchAddon)
     terminal.loadAddon(webLinksAddon)
-
-    // Open terminal in the DOM
     terminal.open(terminalRef.current)
-
-    // Fit terminal to container
     fitAddon.fit()
-
-    // Store references
     xtermRef.current = terminal
     fitAddonRef.current = fitAddon
 
-    // Handle resize
-    const handleResize = () => {
-      fitAddon.fit()
+    // Apply additional styles to prevent scroll bubbling
+    if (terminal.element) {
+      terminal.element.style.overscrollBehavior = 'none'
+      terminal.element.style.touchAction = 'none'
+      terminal.element.addEventListener(
+        'wheel',
+        (e) => {
+          e.stopPropagation()
+          e.preventDefault()
+        },
+        { passive: false }
+      )
     }
+
+    const handleResize = () => fitAddon.fit()
     window.addEventListener('resize', handleResize)
+
+    // WebSocket connection
+    setIsConnected(false)
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const isDev = process.env.NODE_ENV === 'development'
+    const host = isDev ? 'localhost:8080' : window.location.host
+    const currentCluster = localStorage.getItem('current-cluster')
+    const wsUrl =
+      type === 'pod'
+        ? `${protocol}//${host}/api/v1/terminal/${namespace}/${selectedPod}/ws?container=${selectedContainer}&x-cluster-name=${currentCluster}`
+        : `${protocol}//${host}/api/v1/node-terminal/${namespace}/ws?x-cluster-name=${currentCluster}`
+    const websocket = new WebSocket(wsUrl)
+    wsRef.current = websocket
+
+    websocket.onopen = () => {
+      setIsConnected(true)
+      networkStatsRef.current = {
+        lastReset: Date.now(),
+        bytesReceived: 0,
+        bytesSent: 0,
+        lastUpdate: Date.now(),
+      }
+      setNetworkSpeed({ upload: 0, download: 0 })
+      if (speedUpdateTimerRef.current)
+        clearInterval(speedUpdateTimerRef.current)
+      speedUpdateTimerRef.current = setInterval(() => {
+        const now = Date.now()
+        const stats = networkStatsRef.current
+        const timeDiff = (now - stats.lastReset) / 1000
+        if (timeDiff > 0) {
+          setNetworkSpeed({
+            upload: stats.bytesSent / timeDiff,
+            download: stats.bytesReceived / timeDiff,
+          })
+          if (timeDiff >= 3) {
+            stats.lastReset = now
+            stats.bytesSent = 0
+            stats.bytesReceived = 0
+          }
+        }
+      }, 500)
+
+      if (pingTimerRef.current) clearInterval(pingTimerRef.current)
+      pingTimerRef.current = setInterval(() => {
+        if (websocket.readyState === WebSocket.OPEN) {
+          const pingMessage = JSON.stringify({ type: 'ping' })
+          websocket.send(pingMessage)
+          updateNetworkStats(new Blob([pingMessage]).size, true)
+        }
+      }, 30000)
+
+      terminal.writeln(`\x1b[32mConnected to ${type} terminal!\x1b[0m`)
+      terminal.writeln('')
+    }
+
+    websocket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data)
+        const dataSize = new Blob([event.data]).size
+        updateNetworkStats(dataSize, false)
+        switch (message.type) {
+          case 'stdout':
+          case 'stderr':
+            terminal.write(message.data)
+            break
+          case 'info':
+            terminal.writeln(`\x1b[34m${message.data}\x1b[0m`)
+            break
+          case 'connected':
+            terminal.writeln(`\x1b[32m${message.data}\x1b[0m`)
+            break
+          case 'error':
+            terminal.writeln(`\x1b[31mError: ${message.data}\x1b[0m`)
+            setIsConnected(false)
+            break
+          case 'pong':
+            // Ignore pong messages from server
+            break
+        }
+      } catch (err) {
+        console.error('Failed to parse WebSocket message:', err)
+      }
+    }
+
+    websocket.onerror = (error) => {
+      console.error('WebSocket error:', error)
+      terminal.writeln('\x1b[31mWebSocket connection error\x1b[0m')
+      setIsConnected(false)
+    }
+
+    websocket.onclose = (event) => {
+      setIsConnected(false)
+      setNetworkSpeed({ upload: 0, download: 0 })
+      if (speedUpdateTimerRef.current) {
+        clearInterval(speedUpdateTimerRef.current)
+        speedUpdateTimerRef.current = null
+      }
+      if (pingTimerRef.current) {
+        clearInterval(pingTimerRef.current)
+        pingTimerRef.current = null
+      }
+      if (event.code !== 1000) {
+        terminal.writeln('\x1b[31mConnection closed unexpectedly\x1b[0m')
+      } else {
+        terminal.writeln('\x1b[32mConnection closed\x1b[0m')
+      }
+    }
+
+    terminal.onData((data) => {
+      if (websocket.readyState === WebSocket.OPEN) {
+        const message = JSON.stringify({ type: 'stdin', data })
+        websocket.send(message)
+        updateNetworkStats(new Blob([message]).size, true)
+      }
+    })
+
+    const handleTerminalResize = () => {
+      if (fitAddonRef.current && websocket.readyState === WebSocket.OPEN) {
+        const { cols, rows } = terminal
+        const message = JSON.stringify({ type: 'resize', cols, rows })
+        websocket.send(message)
+        updateNetworkStats(new Blob([message]).size, true)
+      }
+    }
+    setTimeout(() => handleTerminalResize(), 100)
+
+    let resizeObserver: ResizeObserver | null = null
+    if (fitAddonRef.current && terminal.element) {
+      resizeObserver = new ResizeObserver(handleTerminalResize)
+      resizeObserver.observe(terminal.element)
+    }
+
+    const handleWheelEvent = (e: WheelEvent | TouchEvent) => {
+      e.stopPropagation()
+      e.preventDefault()
+    }
+
+    const currentTerminalRef = terminalRef.current
+    if (currentTerminalRef) {
+      currentTerminalRef.addEventListener('wheel', handleWheelEvent, {
+        passive: false,
+      })
+      currentTerminalRef.addEventListener('touchmove', handleWheelEvent, {
+        passive: false,
+      })
+    }
 
     return () => {
       window.removeEventListener('resize', handleResize)
+      if (resizeObserver) {
+        resizeObserver.disconnect()
+      }
+      if (currentTerminalRef) {
+        currentTerminalRef.removeEventListener('wheel', handleWheelEvent)
+        currentTerminalRef.removeEventListener('touchmove', handleWheelEvent)
+      }
       terminal.dispose()
+      websocket.close()
+      if (speedUpdateTimerRef.current)
+        clearInterval(speedUpdateTimerRef.current)
+      if (pingTimerRef.current) clearInterval(pingTimerRef.current)
     }
-  }, [])
-
-  // Connect to WebSocket for terminal session
-  const connectTerminal = useCallback(async () => {
-    const ws = wsRef.current
-    if (ws?.readyState === WebSocket.OPEN) {
-      ws.close()
-    }
-
-    if (!xtermRef.current) return
-
-    try {
-      const terminal = xtermRef.current
-
-      // Clear terminal and show connection message
-      terminal.clear()
-
-      if (type === 'pod') {
-        terminal.writeln(
-          `\x1b[32mConnecting to ${namespace}/${selectedPod}/${selectedContainer}...\x1b[0m`
-        )
-      }
-      if (type === 'node') {
-        terminal.writeln(
-          `\x1b[32mWill create a node agent to connect to node terminal...\x1b[0m`
-        )
-      }
-
-      // Create WebSocket connection to the real backend
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      // In development, use the backend server port directly
-      const isDev = process.env.NODE_ENV === 'development'
-      const host = isDev ? 'localhost:8080' : window.location.host
-      const currentCluster = localStorage.getItem('current-cluster')
-      const wsUrl =
-        type == 'pod'
-          ? `${protocol}//${host}/api/v1/terminal/${namespace}/${selectedPod}/ws?container=${selectedContainer}&x-cluster-name=${currentCluster}`
-          : `${protocol}//${host}/api/v1/node-terminal/${namespace}/ws?x-cluster-name=${currentCluster}`
-
-      const websocket = new WebSocket(wsUrl)
-      wsRef.current = websocket
-
-      websocket.onopen = () => {
-        setIsConnected(true)
-        // Reset network stats on new connection
-        networkStatsRef.current = {
-          lastReset: Date.now(),
-          bytesReceived: 0,
-          bytesSent: 0,
-          lastUpdate: Date.now(),
-        }
-        setNetworkSpeed({ upload: 0, download: 0 })
-
-        // Start periodic speed update timer
-        if (speedUpdateTimerRef.current) {
-          clearInterval(speedUpdateTimerRef.current)
-        }
-        speedUpdateTimerRef.current = setInterval(() => {
-          const now = Date.now()
-          const stats = networkStatsRef.current
-          const timeDiff = (now - stats.lastReset) / 1000
-
-          if (timeDiff > 0) {
-            const uploadSpeed = stats.bytesSent / timeDiff
-            const downloadSpeed = stats.bytesReceived / timeDiff
-
-            setNetworkSpeed({
-              upload: uploadSpeed,
-              download: downloadSpeed,
-            })
-
-            // Reset counters every 3 seconds
-            if (timeDiff >= 3) {
-              stats.lastReset = now
-              stats.bytesSent = 0
-              stats.bytesReceived = 0
-            }
-          }
-        }, 500)
-
-        setInterval(() => {
-          if (websocket.readyState === WebSocket.OPEN) {
-            websocket.send(JSON.stringify({ type: 'ping' }))
-          }
-        }, 30000)
-
-        terminal.writeln(`\x1b[32mConnected to ${type} terminal!\x1b[0m`)
-        terminal.writeln('')
-      }
-
-      websocket.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data)
-          const dataSize = new Blob([event.data]).size
-          updateNetworkStats(dataSize, false) // Incoming data
-
-          switch (message.type) {
-            case 'stdout':
-            case 'stderr':
-              terminal.write(message.data)
-              break
-            case 'info':
-              terminal.writeln(`\x1b[34m${message.data}\x1b[0m`)
-              break
-            case 'connected':
-              terminal.writeln(`\x1b[32m${message.data}\x1b[0m`)
-              break
-            case 'error':
-              terminal.writeln(`\x1b[31mError: ${message.data}\x1b[0m`)
-              setIsConnected(false)
-              break
-            case 'pong':
-              // Handle ping/pong for keep-alive
-              break
-          }
-        } catch (err) {
-          console.error('Failed to parse WebSocket message:', err)
-        }
-      }
-
-      websocket.onerror = (error) => {
-        console.error('WebSocket error:', error)
-        terminal.writeln('\x1b[31mWebSocket connection error\x1b[0m')
-        setIsConnected(false)
-      }
-
-      websocket.onclose = (event) => {
-        setIsConnected(false)
-        setNetworkSpeed({ upload: 0, download: 0 })
-
-        // Clear speed update timer
-        if (speedUpdateTimerRef.current) {
-          clearInterval(speedUpdateTimerRef.current)
-          speedUpdateTimerRef.current = null
-        }
-
-        if (event.code !== 1000) {
-          // Not a normal closure
-          terminal.writeln('\x1b[31mConnection closed unexpectedly\x1b[0m')
-        } else {
-          terminal.writeln('\x1b[32mConnection closed\x1b[0m')
-        }
-      }
-
-      // Handle terminal input
-      terminal.onData((data) => {
-        if (websocket.readyState === WebSocket.OPEN) {
-          const message = JSON.stringify({
-            type: 'stdin',
-            data: data,
-          })
-          websocket.send(message)
-          updateNetworkStats(new Blob([message]).size, true) // Outgoing data
-        }
-      })
-
-      // Handle terminal resize
-      const handleTerminalResize = () => {
-        if (fitAddonRef.current && websocket.readyState === WebSocket.OPEN) {
-          const { cols, rows } = terminal
-          const message = JSON.stringify({
-            type: 'resize',
-            cols: cols,
-            rows: rows,
-          })
-          websocket.send(message)
-          updateNetworkStats(new Blob([message]).size, true) // Outgoing data
-        }
-      }
-
-      // Send initial size
-      setTimeout(() => {
-        handleTerminalResize()
-      }, 100)
-
-      // Listen for resize events
-      if (fitAddonRef.current) {
-        // Trigger resize on fit addon changes
-        const resizeObserver = new ResizeObserver(handleTerminalResize)
-        if (terminal.element) {
-          resizeObserver.observe(terminal.element)
-        }
-
-        return () => {
-          resizeObserver.disconnect()
-        }
-      }
-    } catch (error) {
-      console.error('Failed to connect to terminal:', error)
-      if (xtermRef.current) {
-        xtermRef.current.writeln(`\x1b[31mFailed to connect: ${error}\x1b[0m`)
-      }
-      setIsConnected(false)
-    }
-  }, [namespace, selectedPod, selectedContainer, type, updateNetworkStats])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPod, selectedContainer, namespace, type, updateNetworkStats])
 
   // Clear terminal
   const clearTerminal = useCallback(() => {
@@ -485,59 +441,9 @@ export function Terminal({
     }
   }, [])
 
-  // Initialize terminal when component mounts
-  useEffect(() => {
-    const cleanup = initializeTerminal()
-    return cleanup
-  }, [initializeTerminal])
-
-  // Connect terminal when container changes
-  useEffect(() => {
-    if (selectedContainer && xtermRef.current) {
-      connectTerminal()
-    }
-    if (type == 'node' && namespace && xtermRef.current) {
-      connectTerminal()
-    }
-  }, [selectedContainer, connectTerminal, type, namespace])
-
-  // Cleanup on unmount
-  useEffect(() => {
-    const currentWs = wsRef.current
-    const currentTerm = xtermRef.current
-    const currentTimer = speedUpdateTimerRef.current
-
-    return () => {
-      if (currentWs) {
-        currentWs.close()
-      }
-      if (currentTerm) {
-        currentTerm.dispose()
-      }
-      if (currentTimer) {
-        clearInterval(currentTimer)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    // reset terminal when pods or containers change
-    if (xtermRef.current) {
-      setSelectedPod(podName || pods?.[0]?.metadata?.name || '')
-      setSelectedContainer(containers.length > 0 ? containers[0].name : '')
-    }
-  }, [
-    clearTerminal,
-    connectTerminal,
-    containers,
-    initializeTerminal,
-    podName,
-    pods,
-  ])
-
   return (
     <Card
-      className={`flex flex-col py-4 gap-0 ${isFullscreen ? 'fixed inset-0 z-50 m-0 rounded-none h-[100dvh]' : 'h-[calc(100dvh-180px)]'}`}
+      className={`flex flex-col gap-0 py-2 ${isFullscreen ? 'fixed inset-0 z-50 h-[100dvh]' : 'h-[calc(100dvh-180px)]'}`}
     >
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -569,9 +475,7 @@ export function Terminal({
               <PodSelector
                 pods={pods}
                 selectedPod={selectedPod}
-                onPodChange={(podName) => {
-                  setSelectedPod(podName)
-                }}
+                onPodChange={handlePodChange}
               />
             )}
 
@@ -752,10 +656,18 @@ export function Terminal({
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 p-0 flex h-full">
+      <CardContent className="p-0 flex h-full min-h-0">
         <div
           ref={terminalRef}
-          className="flex-1 overflow-auto h-full bg-black"
+          className="flex-1 h-full min-h-0"
+          style={{
+            maxHeight: '100%',
+            overflow: 'hidden',
+            overscrollBehavior: 'none',
+            touchAction: 'none',
+            position: 'relative',
+            isolation: 'isolate',
+          }}
         />
       </CardContent>
     </Card>
