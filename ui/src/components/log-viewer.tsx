@@ -199,6 +199,29 @@ export function LogViewer({
     scrollToBottom()
   }, [logsData.logs.length, scrollToBottom])
 
+  useEffect(() => {
+    const logContainer = logContainerRef.current
+    if (!logContainer) return
+
+    const handleWheelEvent = (e: WheelEvent) => {
+      e.stopPropagation()
+    }
+
+    const handleTouchMove = (e: TouchEvent) => {
+      e.stopPropagation()
+    }
+
+    logContainer.addEventListener('wheel', handleWheelEvent, { passive: true })
+    logContainer.addEventListener('touchmove', handleTouchMove, {
+      passive: true,
+    })
+
+    return () => {
+      logContainer.removeEventListener('wheel', handleWheelEvent)
+      logContainer.removeEventListener('touchmove', handleTouchMove)
+    }
+  }, [])
+
   const displayedLogCount = useMemo(
     () => (logsData?.logs?.slice(logStartIndex) || []).length,
     [logsData?.logs, logStartIndex]
@@ -619,6 +642,8 @@ export function LogViewer({
               ? 'calc(100dvh - 60px)'
               : 'calc(100dvh - 255px)',
             fontSize: `${fontSize}px`,
+            overscrollBehavior: 'contain',
+            touchAction: 'pan-y',
           }}
         >
           {isLoading && !logsData && (
