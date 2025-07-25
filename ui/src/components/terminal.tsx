@@ -78,6 +78,7 @@ export function Terminal({
     lastUpdate: Date.now(),
   })
   const speedUpdateTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const pingTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // Initialize pod/container state on props change
   useEffect(() => {
@@ -126,14 +127,12 @@ export function Terminal({
     // Update terminal font size without recreating the instance
     if (xtermRef.current && fitAddonRef.current) {
       xtermRef.current.options.fontSize = size
-      // Fit terminal to maintain container size after font change
+      // Delay fit to ensure font size has been applied
       setTimeout(() => {
-        fitAddonRef.current?.fit()
-        // Force refresh to apply the new font size after fitting
-        if (xtermRef.current) {
-          xtermRef.current.refresh(0, xtermRef.current.rows - 1)
+        if (fitAddonRef.current) {
+          fitAddonRef.current.fit()
         }
-      }, 0)
+      }, 100)
     }
   }, [])
 
@@ -147,6 +146,11 @@ export function Terminal({
 
   const toggleFullscreen = useCallback(() => {
     setIsFullscreen((v) => !v)
+    setTimeout(() => {
+      if (fitAddonRef.current) {
+        fitAddonRef.current.fit()
+      }
+    }, 200)
   }, [])
 
   // Handle keyboard shortcuts
@@ -200,6 +204,8 @@ export function Terminal({
 
   // Unified terminal and websocket lifecycle
   useEffect(() => {
+    if (!pods || pods.length === 0) if (!selectedPod) return
+    if (!selectedContainer) return
     if (!terminalRef.current) return
 
     if (xtermRef.current) xtermRef.current.dispose()
@@ -290,6 +296,16 @@ export function Terminal({
           }
         }
       }, 500)
+
+      if (pingTimerRef.current) clearInterval(pingTimerRef.current)
+      pingTimerRef.current = setInterval(() => {
+        if (websocket.readyState === WebSocket.OPEN) {
+          const pingMessage = JSON.stringify({ type: 'ping' })
+          websocket.send(pingMessage)
+          updateNetworkStats(new Blob([pingMessage]).size, true)
+        }
+      }, 10000)
+
       terminal.writeln(`\x1b[32mConnected to ${type} terminal!\x1b[0m`)
       terminal.writeln('')
     }
@@ -314,6 +330,9 @@ export function Terminal({
             terminal.writeln(`\x1b[31mError: ${message.data}\x1b[0m`)
             setIsConnected(false)
             break
+          case 'pong':
+            // Ignore pong messages from server
+            break
         }
       } catch (err) {
         console.error('Failed to parse WebSocket message:', err)
@@ -332,6 +351,10 @@ export function Terminal({
       if (speedUpdateTimerRef.current) {
         clearInterval(speedUpdateTimerRef.current)
         speedUpdateTimerRef.current = null
+      }
+      if (pingTimerRef.current) {
+        clearInterval(pingTimerRef.current)
+        pingTimerRef.current = null
       }
       if (event.code !== 1000) {
         terminal.writeln('\x1b[31mConnection closed unexpectedly\x1b[0m')
@@ -369,16 +392,10 @@ export function Terminal({
       websocket.close()
       if (speedUpdateTimerRef.current)
         clearInterval(speedUpdateTimerRef.current)
+      if (pingTimerRef.current) clearInterval(pingTimerRef.current)
     }
-  }, [
-    selectedPod,
-    selectedContainer,
-    namespace,
-    type,
-    terminalTheme,
-    fontSize,
-    updateNetworkStats,
-  ])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPod, selectedContainer, namespace, type, updateNetworkStats])
 
   // Clear terminal
   const clearTerminal = useCallback(() => {
@@ -389,7 +406,7 @@ export function Terminal({
 
   return (
     <Card
-      className={`flex flex-col py-2 gap-0 ${isFullscreen ? 'py-0 fixed inset-0 z-50 m-0 rounded-none h-[100dvh]' : 'h-[calc(100dvh-180px)]'}`}
+      className={`flex flex-col gap-0 py-2 ${isFullscreen ? 'fixed inset-0 z-50 h-100dvh' : 'h-[calc(100dvh-180px)]'}`}
     >
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -602,10 +619,14 @@ export function Terminal({
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 p-0 flex h-full">
+      <CardContent className="p-0 flex h-full min-h-0">
         <div
           ref={terminalRef}
-          className="flex-1 overflow-auto h-full bg-black"
+          className="flex-1 h-full min-h-0"
+          style={{
+            maxHeight: '100%',
+            overflow: 'hidden',
+          }}
         />
       </CardContent>
     </Card>
