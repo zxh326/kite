@@ -1,5 +1,7 @@
 package common
 
+import "github.com/zxh326/kite/pkg/rbac"
+
 type SearchResult struct {
 	ID           string `json:"id"`
 	Name         string `json:"name"`
@@ -53,4 +55,15 @@ type ClusterInfo struct {
 	Name      string `json:"name"`
 	Version   string `json:"version"`
 	IsDefault bool   `json:"isDefault"`
+}
+
+// User represents a generic user from any OAuth provider
+type User struct {
+	ID         string     `json:"id"`
+	Username   string     `json:"username"`
+	Name       string     `json:"name"`
+	AvatarURL  string     `json:"avatar_url"`
+	Provider   string     `json:"provider"`
+	OIDCGroups []string   `json:"oidc_groups,omitempty"` // Optional OIDC groups for RBAC
+	Role       *rbac.Role `json:"role,omitempty"`        // Optional role for RBAC
 }

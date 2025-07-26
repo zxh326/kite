@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -140,8 +141,16 @@ func (cm *ClusterManager) GetClientSet(clusterName string) (*ClientSet, error) {
 }
 
 func (cm *ClusterManager) GetClusters(c *gin.Context) {
+	user := c.MustGet("user").(common.User)
+	if user.Role == nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "User does not have permissions to view clusters"})
+		return
+	}
 	result := make([]common.ClusterInfo, 0, len(cm.clusters))
 	for name, cluster := range cm.clusters {
+		if !user.Role.CanAccessCluster(name) {
+			continue
+		}
 		result = append(result, common.ClusterInfo{
 			Name:      name,
 			Version:   cluster.Version,
