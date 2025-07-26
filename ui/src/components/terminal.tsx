@@ -153,33 +153,6 @@ export function Terminal({
     }, 200)
   }, [])
 
-  // Handle keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl/Cmd + T to cycle theme
-      if ((e.ctrlKey || e.metaKey) && e.key === 't') {
-        e.preventDefault()
-        cycleTheme()
-      }
-      // Font size shortcuts
-      if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
-        e.preventDefault()
-        handleFontSizeChange(Math.min(24, fontSize + 1))
-      }
-      if ((e.ctrlKey || e.metaKey) && (e.key === '-' || e.key === '_')) {
-        e.preventDefault()
-        handleFontSizeChange(Math.max(10, fontSize - 1))
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === '0') {
-        e.preventDefault()
-        handleFontSizeChange(14) // Reset to default font size
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [cycleTheme, fontSize, handleFontSizeChange])
-
   const handleContainerChange = useCallback((containerName?: string) => {
     if (containerName) setSelectedContainer(containerName)
   }, [])
@@ -601,39 +574,6 @@ export function Terminal({
                           <SelectItem value="24">24px</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
-                  </div>
-
-                  {/* Keyboard Shortcuts */}
-                  <div className="space-y-2 pt-2 border-t">
-                    <Label className="text-xs font-medium text-muted-foreground">
-                      Keyboard Shortcuts
-                    </Label>
-                    <div className="space-y-1 text-xs text-muted-foreground">
-                      <div className="flex justify-between">
-                        <span>Cycle Theme</span>
-                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs">
-                          Ctrl+T
-                        </kbd>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Increase Font Size</span>
-                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs">
-                          Ctrl++
-                        </kbd>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Decrease Font Size</span>
-                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs">
-                          Ctrl+-
-                        </kbd>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Reset Font Size</span>
-                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs">
-                          Ctrl+0
-                        </kbd>
-                      </div>
                     </div>
                   </div>
                 </div>
