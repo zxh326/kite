@@ -926,7 +926,7 @@ export function NodeDetail(props: { name: string }) {
             label: 'Terminal',
             content: (
               <div className="space-y-6">
-                <Terminal type="node" namespace={name} />
+                <Terminal type="node" nodeName={name} />
               </div>
             ),
           },
