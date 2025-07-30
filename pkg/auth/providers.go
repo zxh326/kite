@@ -209,8 +209,14 @@ func NewGenericProvider(name string) *GenericProvider {
 				return nil
 			}
 			resp, err := http.Get(wellKnown)
-			if err == nil && resp.StatusCode == 200 {
-				defer resp.Body.Close()
+			if err != nil {
+				klog.Warningf("Failed to fetch well-known configuration for %s: %v", name, err)
+				return nil
+			}
+			defer func() {
+				_ = resp.Body.Close()
+			}()
+			if resp.StatusCode == 200 {
 				var meta struct {
 					AuthorizationEndpoint string `json:"authorization_endpoint"`
 					TokenEndpoint         string `json:"token_endpoint"`
