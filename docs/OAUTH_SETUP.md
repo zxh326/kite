@@ -54,11 +54,21 @@ OAUTH_ALLOW_USERS=*
    PROVIDER_CLIENT_ID=your_client_id
    PROVIDER_CLIENT_SECRET=your_client_secret
    PROVIDER_REDIRECT_URL=http://localhost:8080/api/auth/callback
-   PROVIDER_SCOPES=scope1,scope2
-   PROVIDER_AUTH_URL=https://provider.com/oauth/authorize
-   PROVIDER_TOKEN_URL=https://provider.com/oauth/token
-   PROVIDER_USERINFO_URL=https://provider.com/api/user
+   # PROVIDER_SCOPES=scope1,scope2   # Optional, defaults to openid,profile,email
+   # PROVIDER_AUTH_URL=...           # Optional, auto-discovered if not set
+   # PROVIDER_TOKEN_URL=...          # Optional, auto-discovered if not set
+   # PROVIDER_USERINFO_URL=...       # Optional, auto-discovered if not set
+   # PROVIDER_ISSUER=...             # Optional, used for .well-known discovery
    ```
+
+**Automatic Endpoint Discovery:**
+
+- If `PROVIDER_AUTH_URL`, `PROVIDER_TOKEN_URL`, or `PROVIDER_USERINFO_URL` are not set, Kite will automatically discover them using the provider's `.well-known/openid-configuration` endpoint (OpenID Connect Discovery).
+- You can set `PROVIDER_ISSUER` to explicitly specify the issuer base URL for discovery.
+
+**Default Scopes:**
+
+- If `PROVIDER_SCOPES` is not set, Kite will default to `openid,profile,email`.
 
 ### Example: GitLab OAuth
 
