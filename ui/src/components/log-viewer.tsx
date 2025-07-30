@@ -14,7 +14,7 @@ import { Pod } from 'kubernetes-types/core/v1'
 import { SimpleContainer } from '@/types/k8s'
 import { LOG_THEMES, LogTheme } from '@/types/themes'
 import { ansiStateToCss, parseAnsi, stripAnsi } from '@/lib/ansi-parser'
-import { useLogsStream } from '@/lib/api'
+import { useLogsWebSocket } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -67,10 +67,16 @@ export function LogViewer({
   const [previous, setPrevious] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [autoScroll, setAutoScroll] = useState(true)
-  const [follow, setFollow] = useState(true)
   const [isReconnecting, setIsReconnecting] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [wordWrap, setWordWrap] = useState(true)
+  const [wordWrap, setWordWrap] = useState<boolean>(() => {
+    const saved = localStorage.getItem('log-viewer-word-wrap')
+    if (saved === null) {
+      localStorage.setItem('log-viewer-word-wrap', 'true')
+      return true
+    }
+    return saved === 'true'
+  })
   const [logTheme, setLogTheme] = useState<LogTheme>(() => {
     const saved = localStorage.getItem('log-viewer-theme')
     return (saved as LogTheme) || 'classic'
@@ -141,19 +147,15 @@ export function LogViewer({
     }
   }, [autoScroll])
 
-  // Use the new streaming logs hook
-  const { logs, isLoading, error, isConnected, downloadSpeed } = useLogsStream(
-    namespace,
-    selectPodName!,
-    {
+  // Use the new WebSocket logs hook
+  const { logs, isLoading, error, isConnected, downloadSpeed } =
+    useLogsWebSocket(namespace, selectPodName!, {
       container: selectedContainer,
       tailLines,
       timestamps,
       previous,
-      follow,
       enabled: true,
-    }
-  )
+    })
 
   const handleClearLogs = useCallback(() => {
     if (logs) {
@@ -174,7 +176,7 @@ export function LogViewer({
     }, 500)
 
     return () => clearTimeout(timer)
-  }, [selectedContainer, tailLines, timestamps, previous, follow, isLoading])
+  }, [selectedContainer, tailLines, timestamps, previous, isLoading])
 
   // Hide reconnecting state when loading completes
   useEffect(() => {
@@ -263,6 +265,13 @@ export function LogViewer({
     setIsFullscreen((prev) => !prev)
   }, [])
 
+  const toggleWordWrap = useCallback(() => {
+    setWordWrap((prev) => {
+      localStorage.setItem('log-viewer-word-wrap', `${!prev}`)
+      return !prev
+    })
+  }, [])
+
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -283,7 +292,7 @@ export function LogViewer({
       // Alt/Option + Z to toggle word wrap
       if (e.altKey && (e.key === 'z' || e.key === 'Z' || e.key === 'Ω')) {
         e.preventDefault()
-        setWordWrap((prev) => !prev)
+        toggleWordWrap()
       }
       // Font size shortcuts
       if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
@@ -306,9 +315,9 @@ export function LogViewer({
     searchTerm,
     isFullscreen,
     toggleFullscreen,
-    setWordWrap,
     fontSize,
     handleFontSizeChange,
+    toggleWordWrap,
   ])
 
   return (
@@ -437,15 +446,6 @@ export function LogViewer({
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="follow">Follow Logs (Real-time)</Label>
-                    <Switch
-                      id="follow"
-                      checked={follow}
-                      onCheckedChange={setFollow}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
                     <Label htmlFor="previous">Previous Container</Label>
                     <Switch
                       id="previous"
@@ -468,7 +468,7 @@ export function LogViewer({
                     <Switch
                       id="word-wrap"
                       checked={wordWrap}
-                      onCheckedChange={setWordWrap}
+                      onCheckedChange={toggleWordWrap}
                     />
                   </div>
 
