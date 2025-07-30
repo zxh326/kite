@@ -348,12 +348,6 @@ export function LogViewer({
                 {isReconnecting && (
                   <span className="text-blue-600">Reconnecting...</span>
                 )}
-                {error && (
-                  <span className="text-red-600">
-                    Error:{' '}
-                    {error instanceof Error ? error.message : 'Unknown error'}
-                  </span>
-                )}
               </div>
             </CardDescription>
           </div>
@@ -652,8 +646,7 @@ export function LogViewer({
 
           {error && (
             <div className={`text-center ${LOG_THEMES[logTheme].error}`}>
-              Failed to load logs:{' '}
-              {error instanceof Error ? error.message : 'Unknown error'}
+              Error: {error instanceof Error ? error.message : 'Unknown error'}
             </div>
           )}
 
