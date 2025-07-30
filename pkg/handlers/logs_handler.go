@@ -1,15 +1,16 @@
 package handlers
 
 import (
-	"bufio"
+	"context"
+	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/cluster"
+	"golang.org/x/net/websocket"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -20,120 +21,136 @@ func NewLogsHandler() *LogsHandler {
 	return &LogsHandler{}
 }
 
-// GetPodLogs handles fetching logs for a specific pod/container
-func (h *LogsHandler) GetPodLogs(c *gin.Context) {
-	ctx := c.Request.Context()
+type LogReadWriter struct {
+	conn   *websocket.Conn
+	stream io.ReadCloser
+}
 
-	// Get cluster info from context
-	cs := c.MustGet("cluster").(*cluster.ClientSet)
-
-	// Get path parameters
-	namespace := c.Param("namespace")
-	podName := c.Param("podName")
-	if namespace == "" || podName == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "namespace and podName are required"})
-		return
+func NewLogReadWriter(ctx context.Context, conn *websocket.Conn, stream io.ReadCloser) *LogReadWriter {
+	l := &LogReadWriter{
+		conn:   conn,
+		stream: stream,
 	}
-
-	// Get query parameters
-	container := c.Query("container")
-	tailLines := c.DefaultQuery("tailLines", "100")
-	follow := c.DefaultQuery("follow", "false")
-	timestamps := c.DefaultQuery("timestamps", "true")
-	previous := c.DefaultQuery("previous", "false")
-	sinceSeconds := c.Query("sinceSeconds")
-
-	// Parse parameters
-	tail, err := strconv.ParseInt(tailLines, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tailLines parameter"})
-		return
-	}
-
-	followBool := follow == "true"
-	timestampsBool := timestamps == "true"
-	previousBool := previous == "true"
-
-	// Build log options
-	logOptions := &corev1.PodLogOptions{
-		Container:  container,
-		Follow:     followBool,
-		Timestamps: timestampsBool,
-		TailLines:  &tail,
-		Previous:   previousBool,
-	}
-
-	if sinceSeconds != "" {
-		since, err := strconv.ParseInt(sinceSeconds, 10, 64)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid sinceSeconds parameter"})
-			return
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				_ = l.stream.Close()
+				return
+			default:
+				var temp []byte
+				err := websocket.Message.Receive(l.conn, &temp)
+				if err != nil {
+					_ = l.stream.Close()
+					return
+				}
+				if strings.Contains(string(temp), "ping") {
+					_ = websocket.Message.Send(l.conn, "pong")
+				}
+			}
 		}
-		logOptions.SinceSeconds = &since
-	}
-
-	// Get log stream
-	req := cs.K8sClient.ClientSet.CoreV1().Pods(namespace).GetLogs(podName, logOptions)
-	podLogs, err := req.Stream(ctx)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to get pod logs: %v", err)})
-		return
-	}
-	defer func() {
-		_ = podLogs.Close()
 	}()
+	return l
+}
 
-	if followBool {
-		// Set SSE headers for streaming logs (follow=true)
-		c.Header("Content-Type", "text/event-stream")
-		c.Header("Cache-Control", "no-cache")
-		c.Header("Connection", "keep-alive")
-		c.Status(http.StatusOK)
+func (l *LogReadWriter) Write(p []byte) (int, error) {
+	err := sendMessage(l.conn, "log", string(p))
+	if err != nil {
+		return 0, err
+	}
+	return len(p), nil
+}
 
-		if _, err := c.Writer.WriteString("event: connected\ndata: {\"status\":\"connected\"}\n\n"); err != nil {
+func (l *LogReadWriter) Read(p []byte) (int, error) {
+	return l.stream.Read(p)
+}
+
+type LogsMessage struct {
+	Type string `json:"type"` // "log", "error", "connected", "close"
+	Data string `json:"data"`
+}
+
+// HandleLogsWebSocket handles WebSocket connections for log streaming
+func (h *LogsHandler) HandleLogsWebSocket(c *gin.Context) {
+	websocket.Handler(func(ws *websocket.Conn) {
+		ctx, cancel := context.WithCancel(c.Request.Context())
+		defer cancel()
+		cs := c.MustGet("cluster").(*cluster.ClientSet)
+		namespace := c.Param("namespace")
+		podName := c.Param("podName")
+		if namespace == "" || podName == "" {
+			_ = sendErrorMessage(ws, "namespace and podName are required")
 			return
 		}
-		c.Writer.Flush()
 
-		scanner := bufio.NewScanner(podLogs)
-		scanner.Buffer(make([]byte, 8*1024), 64*1024)
+		container := c.Query("container")
+		tailLines := c.DefaultQuery("tailLines", "100")
+		timestamps := c.DefaultQuery("timestamps", "true")
+		previous := c.DefaultQuery("previous", "false")
+		sinceSeconds := c.Query("sinceSeconds")
 
-		for scanner.Scan() {
-			line := scanner.Text()
-			sseData := fmt.Sprintf("event: log\ndata: %s\n\n", line)
-			if _, err := c.Writer.WriteString(sseData); err != nil {
+		tail, err := strconv.ParseInt(tailLines, 10, 64)
+		if err != nil {
+			_ = sendErrorMessage(ws, "invalid tailLines parameter")
+			return
+		}
+
+		timestampsBool := timestamps == "true"
+		previousBool := previous == "true"
+
+		// Build log options
+		logOptions := &corev1.PodLogOptions{
+			Container:  container,
+			Follow:     true,
+			Timestamps: timestampsBool,
+			TailLines:  &tail,
+			Previous:   previousBool,
+		}
+
+		if sinceSeconds != "" {
+			since, err := strconv.ParseInt(sinceSeconds, 10, 64)
+			if err != nil {
+				_ = sendErrorMessage(ws, "invalid sinceSeconds parameter")
 				return
 			}
-			c.Writer.Flush()
+			logOptions.SinceSeconds = &since
 		}
 
-		if err := scanner.Err(); err != nil {
-			errorData := fmt.Sprintf("event: error\ndata: %s\n\n", err.Error())
-			_, _ = c.Writer.WriteString(errorData)
-		}
-
-		// Send close event
-		if _, err := c.Writer.WriteString("event: close\ndata: {\"status\":\"closed\"}\n\n"); err != nil {
-			return
-		}
-		c.Writer.Flush()
-	} else {
-		logs, err := io.ReadAll(podLogs)
+		req := cs.K8sClient.ClientSet.CoreV1().Pods(namespace).GetLogs(podName, logOptions)
+		podLogs, err := req.Stream(ctx)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to read pod logs: %v", err)})
+			_ = sendErrorMessage(ws, fmt.Sprintf("Failed to get pod logs: %v", err))
+			return
+		}
+		defer func() {
+			_ = podLogs.Close()
+		}()
+
+		if err := sendMessage(ws, "connected", "{\"status\":\"connected\"}"); err != nil {
 			return
 		}
 
-		logLines := strings.Split(string(logs), "\n")
-		if len(logLines) > 0 && logLines[len(logLines)-1] == "" {
-			logLines = logLines[:len(logLines)-1]
+		lrw := NewLogReadWriter(ctx, ws, podLogs)
+		_, err = io.Copy(lrw, lrw)
+		if err != nil && !errors.Is(err, io.EOF) {
+			_ = sendErrorMessage(ws, err.Error())
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"logs":      logLines,
-			"container": container,
-			"pod":       podName,
-			"namespace": namespace,
-		})
+		_ = sendMessage(ws, "close", "{\"status\":\"closed\"}")
+	}).ServeHTTP(c.Writer, c.Request)
+}
+
+func sendMessage(ws *websocket.Conn, msgType, data string) error {
+	msg := LogsMessage{
+		Type: msgType,
+		Data: data,
 	}
+	if err := websocket.JSON.Send(ws, msg); err != nil {
+		return err
+	}
+	return nil
+}
+
+func sendErrorMessage(ws *websocket.Conn, errMsg string) error {
+	return sendMessage(ws, "error", errMsg)
 }

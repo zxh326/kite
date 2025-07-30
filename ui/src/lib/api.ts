@@ -1069,3 +1069,210 @@ export function useRelatedResources(
     placeholderData: (prev) => prev,
   })
 }
+
+// WebSocket implementation for logs streaming
+export const useLogsWebSocket = (
+  namespace: string,
+  podName: string,
+  options?: {
+    container?: string
+    tailLines?: number
+    timestamps?: boolean
+    previous?: boolean
+    sinceSeconds?: number
+    enabled?: boolean
+  }
+) => {
+  const [logs, setLogs] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+  const [downloadSpeed, setDownloadSpeed] = useState(0)
+  const webSocketRef = useRef<WebSocket | null>(null)
+  const networkStatsRef = useRef({
+    lastReset: Date.now(),
+    bytesReceived: 0,
+  })
+  const speedUpdateTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  const stopStreaming = useCallback(() => {
+    if (webSocketRef.current) {
+      webSocketRef.current.close()
+      webSocketRef.current = null
+    }
+
+    // Clear speed update timer
+    if (speedUpdateTimerRef.current) {
+      clearInterval(speedUpdateTimerRef.current)
+      speedUpdateTimerRef.current = null
+    }
+
+    setIsConnected(false)
+    setIsLoading(false)
+    setDownloadSpeed(0)
+  }, [])
+
+  const startStreaming = useCallback(async () => {
+    if (!namespace || !podName || options?.enabled === false) return
+
+    // Close any existing connection first to prevent race conditions
+    if (webSocketRef.current) {
+      webSocketRef.current.close()
+      webSocketRef.current = null
+    }
+
+    try {
+      setIsLoading(true)
+      setError(null)
+      setLogs([]) // Clear previous logs when starting new stream
+
+      // Build WebSocket URL with query parameters
+      const params = new URLSearchParams()
+      if (options?.container) {
+        params.append('container', options.container)
+      }
+      if (options?.tailLines !== undefined) {
+        params.append('tailLines', options.tailLines.toString())
+      }
+      if (options?.timestamps !== undefined) {
+        params.append('timestamps', options.timestamps.toString())
+      }
+      if (options?.previous !== undefined) {
+        params.append('previous', options.previous.toString())
+      }
+      if (options?.sinceSeconds !== undefined) {
+        params.append('sinceSeconds', options.sinceSeconds.toString())
+      }
+
+      const currentCluster = localStorage.getItem('current-cluster')
+      if (currentCluster) {
+        params.append('x-cluster-name', currentCluster)
+      }
+
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const isDev = process.env.NODE_ENV === 'development'
+      const host = isDev ? 'localhost:8080' : window.location.host
+      const wsUrl = `${protocol}//${host}/api/v1/logs/${namespace}/${podName}/ws?${params.toString()}`
+
+      // Create WebSocket connection
+      const ws = new WebSocket(wsUrl)
+      webSocketRef.current = ws
+
+      ws.onopen = () => {
+        console.log('WebSocket connection opened')
+        setIsLoading(false)
+        setIsConnected(true)
+        setError(null)
+
+        // Reset network stats and start speed tracking
+        networkStatsRef.current = {
+          lastReset: Date.now(),
+          bytesReceived: 0,
+        }
+        setDownloadSpeed(0)
+
+        // Start periodic speed update timer
+        if (speedUpdateTimerRef.current) {
+          clearInterval(speedUpdateTimerRef.current)
+        }
+        speedUpdateTimerRef.current = setInterval(() => {
+          const now = Date.now()
+          const stats = networkStatsRef.current
+          const timeDiff = (now - stats.lastReset) / 1000
+
+          if (timeDiff > 0) {
+            const downloadSpeedValue = stats.bytesReceived / timeDiff
+            setDownloadSpeed(downloadSpeedValue)
+
+            // Reset counters every 3 seconds
+            if (timeDiff >= 3) {
+              stats.lastReset = now
+              stats.bytesReceived = 0
+            }
+          }
+        }, 500)
+      }
+
+      ws.onclose = () => {
+        console.log('WebSocket connection closed')
+        setIsConnected(false)
+        setIsLoading(false)
+      }
+
+      ws.onerror = (event) => {
+        console.error('WebSocket error:', event)
+        setError(new Error('WebSocket connection error'))
+        setIsConnected(false)
+        setIsLoading(false)
+      }
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          // Calculate data size for network speed tracking
+          const dataSize = new Blob([event.data]).size
+          networkStatsRef.current.bytesReceived += dataSize
+
+          switch (data.type) {
+            case 'log':
+              setLogs((prev) => [...prev, data.data])
+              break
+            case 'error':
+              setError(new Error(data.data))
+              break
+            case 'close':
+              setIsConnected(false)
+              break
+          }
+        } catch (err) {
+          console.error('Failed to parse WebSocket message:', err)
+        }
+      }
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err)
+      }
+      setIsLoading(false)
+      setIsConnected(false)
+    }
+  }, [
+    namespace,
+    podName,
+    options?.container,
+    options?.tailLines,
+    options?.timestamps,
+    options?.previous,
+    options?.sinceSeconds,
+    options?.enabled,
+  ])
+
+  const refetch = useCallback(() => {
+    stopStreaming()
+    setTimeout(startStreaming, 100) // Small delay to ensure cleanup
+  }, [stopStreaming, startStreaming])
+
+  useEffect(() => {
+    if (options?.enabled !== false) {
+      startStreaming()
+    }
+
+    return () => {
+      stopStreaming()
+    }
+  }, [startStreaming, stopStreaming, options?.enabled])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return stopStreaming
+  }, [stopStreaming])
+
+  return {
+    logs,
+    isLoading,
+    error,
+    isConnected,
+    downloadSpeed,
+    refetch,
+    stopStreaming,
+  }
+}

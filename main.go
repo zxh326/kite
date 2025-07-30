@@ -91,7 +91,7 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 		api.GET("/prometheus/pods/:namespace/:podName/metrics", promHandler.GetPodMetrics)
 
 		logsHandler := handlers.NewLogsHandler()
-		api.GET("/logs/:namespace/:podName", logsHandler.GetPodLogs)
+		api.GET("/logs/:namespace/:podName/ws", logsHandler.HandleLogsWebSocket)
 
 		terminalHandler := handlers.NewTerminalHandler()
 		api.GET("/terminal/:namespace/:podName/ws", terminalHandler.HandleTerminalWebSocket)
