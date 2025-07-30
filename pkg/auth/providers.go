@@ -13,6 +13,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/zxh326/kite/pkg/common"
+	"k8s.io/klog/v2"
 )
 
 // OAuthProvider defines the interface for OAuth providers
@@ -181,22 +182,78 @@ type GenericProvider struct {
 
 func NewGenericProvider(name string) *GenericProvider {
 	prefix := strings.ToUpper(name)
-	// FIXME: get config from well-known endpoint
+	clientID := os.Getenv(prefix + "_CLIENT_ID")
+	clientSecret := os.Getenv(prefix + "_CLIENT_SECRET")
+	redirectURL := os.Getenv("OAUTH_REDIRECT")
+	if redirectURL == "" {
+		redirectURL = os.Getenv(prefix + "_REDIRECT_URL")
+	}
+	scopesEnv := os.Getenv(prefix + "_SCOPES")
+	var scopes []string
+	if scopesEnv != "" {
+		scopes = strings.Split(scopesEnv, ",")
+	} else {
+		scopes = []string{"openid", "profile", "email"}
+	}
+
+	authURL := os.Getenv(prefix + "_AUTH_URL")
+	tokenURL := os.Getenv(prefix + "_TOKEN_URL")
+	userInfoURL := os.Getenv(prefix + "_USERINFO_URL")
+
+	if authURL == "" || tokenURL == "" || userInfoURL == "" {
+		issuer := os.Getenv(prefix + "_ISSUER")
+		if issuer != "" {
+			wellKnown, err := url.JoinPath(issuer, ".well-known", "openid-configuration")
+			if err != nil {
+				klog.Warningf("Failed to construct well-known URL for %s: %v", name, err)
+				return nil
+			}
+			resp, err := http.Get(wellKnown)
+			if err != nil {
+				klog.Warningf("Failed to fetch well-known configuration for %s: %v", name, err)
+				return nil
+			}
+			defer func() {
+				_ = resp.Body.Close()
+			}()
+			if resp.StatusCode == 200 {
+				var meta struct {
+					AuthorizationEndpoint string `json:"authorization_endpoint"`
+					TokenEndpoint         string `json:"token_endpoint"`
+					UserinfoEndpoint      string `json:"userinfo_endpoint"`
+				}
+				if err := json.NewDecoder(resp.Body).Decode(&meta); err == nil {
+					if authURL == "" {
+						authURL = meta.AuthorizationEndpoint
+					}
+					if tokenURL == "" {
+						tokenURL = meta.TokenEndpoint
+					}
+					if userInfoURL == "" {
+						userInfoURL = meta.UserinfoEndpoint
+					}
+					klog.V(5).Infof("Discovered %s openid configuration", name)
+				}
+			}
+		}
+	}
+
+	if authURL == "" || tokenURL == "" || userInfoURL == "" {
+		klog.Errorf("Provider %s is missing required URLs: authURL=%s, tokenURL=%s, userInfoURL=%s", name, authURL, tokenURL, userInfoURL)
+		return nil
+	}
+
 	gp := &GenericProvider{
 		Config: OAuthConfig{
-			ClientID:     os.Getenv(prefix + "_CLIENT_ID"),
-			ClientSecret: os.Getenv(prefix + "_CLIENT_SECRET"),
-			RedirectURL:  os.Getenv("OAUTH_REDIRECT"),
-			Scopes:       strings.Split(os.Getenv(prefix+"_SCOPES"), ","),
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+			RedirectURL:  redirectURL,
+			Scopes:       scopes,
 		},
-		AuthURL:     os.Getenv(prefix + "_AUTH_URL"),
-		TokenURL:    os.Getenv(prefix + "_TOKEN_URL"),
-		UserInfoURL: os.Getenv(prefix + "_USERINFO_URL"),
+		AuthURL:     authURL,
+		TokenURL:    tokenURL,
+		UserInfoURL: userInfoURL,
 		Name:        name,
-	}
-	if gp.Config.RedirectURL == "" {
-		// for compatibility
-		gp.Config.RedirectURL = os.Getenv(prefix + "_REDIRECT_URL")
 	}
 	return gp
 }
@@ -350,6 +407,10 @@ func NewOAuthManager() *OAuthManager {
 		providerName = strings.TrimSpace(providerName)
 		if providerName != "" && providerName != "github" {
 			provider := NewGenericProvider(providerName)
+			if provider == nil {
+				klog.Warningf("Failed to create provider for %s, skipping", providerName)
+				continue
+			}
 			if provider.Config.ClientID != "" {
 				manager.providers[providerName] = provider
 			}
