@@ -45,7 +45,11 @@ func NewLogReadWriter(ctx context.Context, conn *websocket.Conn, stream io.ReadC
 					return
 				}
 				if strings.Contains(string(temp), "ping") {
-					_ = websocket.Message.Send(l.conn, "pong")
+					err = sendMessage(l.conn, "pong", "pong")
+					if err != nil {
+						_ = l.stream.Close()
+						return
+					}
 				}
 			}
 		}
@@ -54,10 +58,18 @@ func NewLogReadWriter(ctx context.Context, conn *websocket.Conn, stream io.ReadC
 }
 
 func (l *LogReadWriter) Write(p []byte) (int, error) {
-	err := sendMessage(l.conn, "log", string(p))
-	if err != nil {
-		return 0, err
+	logString := string(p)
+	logLines := strings.SplitSeq(logString, "\n")
+	for line := range logLines {
+		if line == "" {
+			continue
+		}
+		err := sendMessage(l.conn, "log", line)
+		if err != nil {
+			return 0, err
+		}
 	}
+
 	return len(p), nil
 }
 
