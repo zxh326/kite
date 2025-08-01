@@ -24,7 +24,7 @@ export function NamespaceSelector({
     const nameA = a.metadata?.name?.toLowerCase() || ''
     const nameB = b.metadata?.name?.toLowerCase() || ''
     return nameA.localeCompare(nameB)
-  })
+  }) || [{ metadata: { name: 'default' } }]
 
   return (
     <Select value={selectedNamespace} onValueChange={handleNamespaceChange}>
