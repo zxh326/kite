@@ -10,6 +10,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/cluster"
+	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/rbac"
 	"golang.org/x/net/websocket"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -88,10 +90,16 @@ func (h *LogsHandler) HandleLogsWebSocket(c *gin.Context) {
 		ctx, cancel := context.WithCancel(c.Request.Context())
 		defer cancel()
 		cs := c.MustGet("cluster").(*cluster.ClientSet)
+		user := c.MustGet("user").(common.User)
 		namespace := c.Param("namespace")
 		podName := c.Param("podName")
 		if namespace == "" || podName == "" {
 			_ = sendErrorMessage(ws, "namespace and podName are required")
+			return
+		}
+
+		if !rbac.CanAccess(user, "pods", "log", cs.Name, namespace) {
+			_ = sendErrorMessage(ws, rbac.NoAccess(user.Key(), string(common.VerbLog), "pods", namespace, cs.Name))
 			return
 		}
 

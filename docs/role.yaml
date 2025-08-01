@@ -1,0 +1,34 @@
+roles:
+  - name: admin
+    description: Administrator role with full access
+    clusters:
+      - '*'
+    resources:
+      - '*'
+    namespaces:
+      - '*'
+    verbs:
+      - '*'
+  - name: viewer
+    description: Viewer role with read-only access
+    clusters:
+      - '*'
+    resources:
+      - '*'
+    namespaces:
+      - '*'
+    verbs:
+      - 'get'
+roleMapping:
+  # map specific users to the admin role
+  # map specific OIDC groups to the admin role
+  - name: admin
+    users:
+      - alice
+      - bob
+    oidcGroups:
+      - admins
+  # all users in the system can view resources
+  - name: viewer
+    users:
+      - '*'

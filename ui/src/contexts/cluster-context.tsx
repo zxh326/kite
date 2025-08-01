@@ -39,7 +39,8 @@ export const ClusterProvider: React.FC<{ children: React.ReactNode }> = ({
       })
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch clusters: ${response.status}`)
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(`${errorData.error || response.status}`)
       }
 
       return response.json()
