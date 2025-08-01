@@ -72,7 +72,7 @@ func GetOverview(c *gin.Context) {
 				}
 			}
 		}
-		if pod.Status.Phase == v1.PodRunning {
+		if pod.Status.Phase == v1.PodRunning || pod.Status.Phase == v1.PodSucceeded {
 			runningPods++
 		}
 	}
