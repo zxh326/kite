@@ -207,22 +207,54 @@ export function LogViewer({
 
     const handleWheelEvent = (e: WheelEvent) => {
       e.stopPropagation()
+      setTimeout(() => {
+        if (logContainer) {
+          const { scrollTop, scrollHeight, clientHeight } = logContainer
+          const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10 // 10px tolerance
+
+          if (isAtBottom && !autoScroll) {
+            setAutoScroll(true)
+          } else if (!isAtBottom && autoScroll) {
+            setAutoScroll(false)
+          }
+        }
+      }, 50)
     }
 
-    const handleTouchMove = (e: TouchEvent) => {
+    const handleTouchStart = (e: TouchEvent) => {
       e.stopPropagation()
     }
 
+    const handleTouchEnd = (e: TouchEvent) => {
+      e.stopPropagation()
+      setTimeout(() => {
+        if (logContainer) {
+          const { scrollTop, scrollHeight, clientHeight } = logContainer
+          const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10 // 10px tolerance
+
+          if (isAtBottom && !autoScroll) {
+            setAutoScroll(true)
+          } else if (!isAtBottom && autoScroll) {
+            setAutoScroll(false)
+          }
+        }
+      }, 50)
+    }
+
     logContainer.addEventListener('wheel', handleWheelEvent, { passive: true })
-    logContainer.addEventListener('touchmove', handleTouchMove, {
+    logContainer.addEventListener('touchstart', handleTouchStart, {
+      passive: true,
+    })
+    logContainer.addEventListener('touchend', handleTouchEnd, {
       passive: true,
     })
 
     return () => {
       logContainer.removeEventListener('wheel', handleWheelEvent)
-      logContainer.removeEventListener('touchmove', handleTouchMove)
+      logContainer.removeEventListener('touchstart', handleTouchStart)
+      logContainer.removeEventListener('touchend', handleTouchEnd)
     }
-  }, [])
+  }, [autoScroll])
 
   const displayedLogCount = useMemo(
     () => (logsData?.logs?.slice(logStartIndex) || []).length,
@@ -691,9 +723,14 @@ export function LogViewer({
                 }`}
                 onClick={() => {
                   if (logContainerRef.current) {
-                    logContainerRef.current.scrollTop =
-                      logContainerRef.current.scrollHeight
                     setAutoScroll(true)
+                    // Use requestAnimationFrame to ensure autoScroll state is updated first
+                    requestAnimationFrame(() => {
+                      if (logContainerRef.current) {
+                        logContainerRef.current.scrollTop =
+                          logContainerRef.current.scrollHeight
+                      }
+                    })
                   }
                 }}
               >
