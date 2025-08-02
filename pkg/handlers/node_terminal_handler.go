@@ -90,7 +90,11 @@ func (h *NodeTerminalHandler) createNodeAgent(ctx context.Context, cs *cluster.C
 		podName = fmt.Sprintf("%s-%s", nodeName, utils.RandomString(5))
 	}
 
-	if len(podName) >= 63 {
+	if len(podName) > 63 {
+		podName = fmt.Sprintf("%s-%s", nodeName, utils.RandomString(5))
+	}
+
+	if len(podName) > 63 {
 		podName = podName[:62]
 	}
 	// Define the kite node agent pod spec
