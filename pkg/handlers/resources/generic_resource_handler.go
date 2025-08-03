@@ -10,10 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/rbac"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -176,7 +178,27 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 
 		return t1.After(t2.Time)
 	})
-	_ = meta.SetList(objectList, items)
+
+	user := c.MustGet("user").(common.User)
+	filterItems := make([]runtime.Object, 0, len(items))
+	for i := range items {
+		obj, err := meta.Accessor(items[i])
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to access object metadata"})
+			return
+		}
+		obj.SetManagedFields(nil)
+		anno := obj.GetAnnotations()
+		if anno != nil {
+			delete(anno, common.KubectlAnnotation)
+		}
+		// for namespaces, we need to ensure user has permission to view them
+		if h.Name() == "namespaces" && !rbac.CanAccessNamespace(user, cs.Name, obj.GetName()) {
+			continue
+		}
+		filterItems = append(filterItems, items[i])
+	}
+	_ = meta.SetList(objectList, filterItems)
 
 	c.JSON(http.StatusOK, objectList)
 }

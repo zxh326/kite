@@ -2,9 +2,12 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/cluster"
+	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/rbac"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/klog/v2"
@@ -24,6 +27,7 @@ type ApplyResourceRequest struct {
 // ApplyResource applies a YAML resource to the cluster
 func (h *ResourceApplyHandler) ApplyResource(c *gin.Context) {
 	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	user := c.MustGet("user").(common.User)
 
 	var req ApplyResourceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -39,6 +43,13 @@ func (h *ResourceApplyHandler) ApplyResource(c *gin.Context) {
 	if err != nil {
 		klog.Errorf("Failed to decode YAML: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid YAML format: " + err.Error()})
+		return
+	}
+
+	resource := strings.ToLower(obj.GetKind()) + "s"
+	if !rbac.CanAccess(user, resource, "create", cs.Name, obj.GetNamespace()) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": rbac.NoAccess(user.Key(), string(common.VerbCreate), resource, obj.GetNamespace(), cs.Name)})
 		return
 	}
 

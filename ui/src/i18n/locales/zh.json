@@ -165,5 +165,10 @@
       "invalidCredentials": "用户名或密码无效",
       "unknownError": "发生未知错误"
     }
+  },
+  "cluster": {
+    "loading": "加载集群中...",
+    "error": "加载集群时出错: {{error}}",
+    "error403": "您没有权限访问此集群。请联系您的管理员以获取更多信息。"
   }
 }

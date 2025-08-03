@@ -165,5 +165,10 @@
       "invalidCredentials": "Invalid username or password",
       "unknownError": "An unknown error occurred"
     }
+  },
+  "cluster": {
+    "loading": "Loading clusters...",
+    "error": "Error loading clusters: {{error}}",
+    "error403": "You do not have permission to access this cluster. Please contact your administrator for more information."
   }
 }

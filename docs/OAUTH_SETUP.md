@@ -11,14 +11,9 @@ Kite supports multiple OAuth providers through a flexible configuration system:
 
 ## Permissions
 
-You need to set the `OAUTH_ALLOW_USERS` environment variable to limit access permissions. This variable should contain a list of usernames allowed to access, separated by commas.
+By default, even if the login is successful, Kite will not grant any permissions to the user. You need to manually configure RBAC rules to grant access permissions.
 
-```env
-OAUTH_ALLOW_USERS=user1,user2,user3
-
-# It can also be configured with *, allowing all users logging in via OAuth to access.
-OAUTH_ALLOW_USERS=*
-```
+See [RBAC Configuration Guide](./RBAC_CONFIG.md).
 
 ## Built-in Providers
 
