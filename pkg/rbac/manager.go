@@ -16,21 +16,19 @@ var (
 )
 
 var (
-	defaultRoles = []common.Role{
-		{
-			Name:       "admin",
-			Verbs:      []string{"*"},
-			Resources:  []string{"*"},
-			Namespaces: []string{"*"},
-			Clusters:   []string{"*"},
-		},
-		{
-			Name:       "viewer",
-			Verbs:      []string{"get"},
-			Resources:  []string{"*"},
-			Namespaces: []string{"*"},
-			Clusters:   []string{"*"},
-		},
+	defaultAdminRole = common.Role{
+		Name:       "admin",
+		Verbs:      []string{"*"},
+		Resources:  []string{"*"},
+		Namespaces: []string{"*"},
+		Clusters:   []string{"*"},
+	}
+	defaultViewerRole = common.Role{
+		Name:       "viewer",
+		Verbs:      []string{"get"},
+		Resources:  []string{"*"},
+		Namespaces: []string{"*"},
+		Clusters:   []string{"*"},
 	}
 )
 
@@ -87,15 +85,33 @@ func compatibleRoleConfig(role *common.RolesConfig) {
 		if role.RoleMapping == nil {
 			role.RoleMapping = make([]common.RoleMapping, 0)
 		}
-		role.Roles = append(role.Roles, defaultRoles...)
+		existAdmin := false
+		existViewer := false
+		for _, r := range role.Roles {
+			if r.Name == "admin" {
+				existAdmin = true
+			}
+			if r.Name == "viewer" {
+				existViewer = true
+			}
+		}
+		if !existAdmin {
+			role.Roles = append(role.Roles, defaultAdminRole)
+		}
+		if !existViewer {
+			role.Roles = append(role.Roles, defaultViewerRole)
+		}
+
 		// Ensure admin role mapping is set if OAuth users or Kite username are defined
 		if len(common.OAuthAllowUsers) > 0 {
+			klog.Infof("Adding OAuth users to viewer role mapping: %v", common.OAuthAllowUsers)
 			role.RoleMapping = append(role.RoleMapping, common.RoleMapping{
 				Name:  "viewer",
 				Users: common.OAuthAllowUsers,
 			})
 		}
 		if len(common.KiteUsername) > 0 {
+			klog.Infof("Adding Kite username to viewer role mapping: %s", common.KiteUsername)
 			role.RoleMapping = append(role.RoleMapping, common.RoleMapping{
 				Name:  "viewer",
 				Users: []string{common.KiteUsername},

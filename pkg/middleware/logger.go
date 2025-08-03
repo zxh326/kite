@@ -23,8 +23,12 @@ func Logger() gin.HandlerFunc {
 					return ""
 				}
 			}
-			user := param.Keys["user"].(common.User)
-			name := user.Key()
+			name := "-"
+			if v, ok := param.Keys["user"]; ok {
+				if user, ok := v.(common.User); ok {
+					name = user.Key()
+				}
+			}
 
 			cluster := "-"
 			if clusterName, exists := param.Keys[ClusterNameKey]; exists {

@@ -14,7 +14,7 @@ import {
 export function UserMenu() {
   const { user, logout } = useAuth()
 
-  if (!user || user.provider === 'none') return null
+  if (!user) return null
 
   const getInitials = (name: string) => {
     return name
@@ -58,17 +58,26 @@ export function UserMenu() {
                 via {user.provider}
               </p>
             )}
+            {user.roles && user.roles.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Role: {user.roles.map((role) => role.name).join(', ')}
+              </p>
+            )}
           </div>
         </div>
 
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={handleLogout}
-          className="cursor-pointer text-red-600 focus:text-red-600"
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
-        </DropdownMenuItem>
+        {user.provider !== 'none' && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="cursor-pointer text-red-600 focus:text-red-600"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Log out</span>
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

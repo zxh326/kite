@@ -96,6 +96,7 @@ _Secure authentication with GitHub and custom OAuth providers_
 
 - 🛡️ **OAuth Integration** - Support for GitHub and custom OAuth providers
 - 🔑 **Username/Password** - Simple authentication using environment variables
+- 🔒 **Role Based Access Control** - Fine-grained access control for users and groups
 
 ---
 
@@ -115,6 +116,7 @@ _Secure authentication with GitHub and custom OAuth providers_
 | `OAUTH_ALLOW_USERS`        | Comma-separated list of users allowed to access the dashboard,support wildcard (\*) for all users | `-`                           | OAuth\*  |
 | `KITE_USERNAME`            | Username for basic authentication. If set, enables password auth.                                 | `-`                           | No       |
 | `KITE_PASSWORD`            | Password for basic authentication. If set, enables password auth.                                 | `-`                           | No       |
+| `ROLES_CONFIG_PATH`        | Path to the roles configuration file.                                                             | `/config/roles.yaml`          | No       |
 
 \*Required only when OAuth is enabled
 
@@ -189,15 +191,29 @@ docker run --rm -p 8080:8080 -v ~/.kube/config:/home/nonroot/.kube/config ghcr.i
 
 ### Common Issues
 
-**1. Prometheus metrics not available**
+**1. Multi-cluster access issues**
+
+Ensure your kubeconfig file is correctly set up and accessible. You can specify the path using the `KUBECONFIG` environment variable.
+
+**2. Prometheus metrics not available**
 
 see [Prometheus Setup Guide](docs/PROMETHEUS_SETUP.md) for configuring Prometheus and kube-state-metrics.
 
-**2. OAuth authentication issues**
+**3. OAuth authentication issues**
 
 see [OAuth Setup Guide](docs/OAUTH_SETUP.md) for troubleshooting OAuth configuration.
 
-**3. Analytics issues**
+**4. Role Based Access Control (RBAC) issues**
+
+Ensure your `roles.yaml` file is correctly configured and applied. You can check the logs for any RBAC-related errors.
+
+See [Roles Configuration](docs/ROLES_CONFIG.md) for more details on configuring roles and permissions.
+
+**4.1. How to manage RBAC rules in the UI?**
+
+As you know, kite is a lightweight Kubernetes dashboard designed to provide simple cluster management features. It does not require any external dependencies. If RBAC management functionality is added to the UI, at least one DB is needed to store RBAC rules, which would make kite more complex. As of now, we do not plan to introduce such features.
+
+**5. Analytics issues**
 
 By default, kite will not collect any analytics data.
 
@@ -207,7 +223,7 @@ kite will use `umami` to collect very little anonymous usage.
 
 source code is available at [Analytics](https://github.com/zxh326/kite/blob/main/pkg/utils/utils.go#L10-L16)
 
-**4. Custom font**
+**6. Custom font**
 
 build kite with `make build` and change the font in `./ui/src/index.css`
 

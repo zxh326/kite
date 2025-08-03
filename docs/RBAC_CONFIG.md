@@ -93,3 +93,4 @@ roleMapping:
 ## NOTE
 
 - Ensure that sensitive roles (e.g., `admin`) are only mapped to trusted users or groups.
+- The `roles.yaml` file will automatically be loaded when changed, If using configmap mount, it will take about 1 minute to take effect.

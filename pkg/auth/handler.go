@@ -185,18 +185,24 @@ func (h *AuthHandler) GetUser(c *gin.Context) {
 	})
 }
 
+var (
+	AnonymousUser = common.User{
+		ID:        "anonymous",
+		Username:  "anonymous",
+		Name:      "Anonymous",
+		AvatarURL: "",
+		Provider:  "none",
+	}
+)
+
 func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var tokenString string
 
 		if !common.OAuthEnabled && !common.PasswordLoginEnabled {
-			c.Set("user", common.User{
-				ID:        "anonymous",
-				Username:  "anonymous",
-				Name:      "Anonymous",
-				AvatarURL: "",
-				Provider:  "none",
-			})
+			anonymous := AnonymousUser
+			anonymous.Roles = rbac.GetUserRoles(anonymous)
+			c.Set("user", anonymous)
 			c.Next()
 			return
 		}
