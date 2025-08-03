@@ -52,4 +52,4 @@ jobs:
       - name: lint
         run: make pre-commit
       - name: Test
-        run: ./kite -h
+        run: make test
