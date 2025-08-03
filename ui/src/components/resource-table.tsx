@@ -70,7 +70,13 @@ export function ResourceTable<T>({
 
   const [selectedNamespace, setSelectedNamespace] = useState<
     string | undefined
-  >()
+  >(() => {
+    // Try to get the stored namespace from localStorage
+    const storedNamespace = localStorage.getItem(
+      localStorage.getItem('current-cluster') + 'selectedNamespace'
+    )
+    return storedNamespace || (clusterScope ? undefined : 'default')
+  })
   const { isLoading, data, isError, error, refetch } = useResources(
     resourceType ?? (resourceName.toLowerCase() as ResourceType),
     selectedNamespace,
@@ -78,20 +84,6 @@ export function ResourceTable<T>({
       refreshInterval: 5000, // Refresh every 5 seconds
     }
   )
-
-  // Set initial namespace when namespaces are loaded
-  useEffect(() => {
-    if (!clusterScope && !selectedNamespace && setSelectedNamespace) {
-      const storedNamespace = localStorage.getItem(
-        localStorage.getItem('current-cluster') + 'selectedNamespace'
-      )
-      if (storedNamespace) {
-        setSelectedNamespace(storedNamespace)
-      } else {
-        setSelectedNamespace('default') // Set a default namespace if none is stored
-      }
-    }
-  }, [clusterScope, selectedNamespace, setSelectedNamespace])
 
   // Initialize our debounced search function just once
   const debouncedSetSearch = useMemo(
