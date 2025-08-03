@@ -43,7 +43,7 @@ func LoadEnvs() {
 	if secret := os.Getenv("JWT_SECRET"); secret != "" {
 		JwtSecret = secret
 	} else {
-		klog.Warning("JWT_SECRET is not set, using random secret key, restart server will lose all sessions")
+		klog.Warning("JWT_SECRET is not set, using random secret key, restart server will lose all sessions.")
 		JwtSecret = utils.RandomString(32)
 	}
 

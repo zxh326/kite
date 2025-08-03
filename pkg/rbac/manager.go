@@ -32,6 +32,14 @@ var (
 		Namespaces: []string{"*"},
 		Clusters:   []string{"*"},
 	}
+
+	defaultLimitedRole = common.Role{
+		Name:       "limited",
+		Verbs:      []string{"get"},
+		Resources:  []string{"not_exist_resource"},
+		Namespaces: []string{"*"},
+		Clusters:   []string{"*"},
+	}
 )
 
 func InitRBAC(configPath string) {
@@ -103,42 +111,52 @@ func watchConfig(path string) {
 
 // for compatibility with old configure
 func compatibleRoleConfig(role *common.RolesConfig) {
+	existAdmin := false
+	existViewer := false
+	for _, r := range role.Roles {
+		if r.Name == defaultAdminRole.Name {
+			existAdmin = true
+		}
+		if r.Name == defaultViewerRole.Name {
+			existViewer = true
+		}
+	}
+	if !existAdmin {
+		role.Roles = append(role.Roles, defaultAdminRole)
+	}
+	if !existViewer {
+		role.Roles = append(role.Roles, defaultViewerRole)
+	}
+
 	if len(common.OAuthAllowUsers) > 0 || len(common.KiteUsername) > 0 {
 		if role.RoleMapping == nil {
 			role.RoleMapping = make([]common.RoleMapping, 0)
-		}
-		existAdmin := false
-		existViewer := false
-		for _, r := range role.Roles {
-			if r.Name == "admin" {
-				existAdmin = true
-			}
-			if r.Name == "viewer" {
-				existViewer = true
-			}
-		}
-		if !existAdmin {
-			role.Roles = append(role.Roles, defaultAdminRole)
-		}
-		if !existViewer {
-			role.Roles = append(role.Roles, defaultViewerRole)
 		}
 
 		// Ensure admin role mapping is set if OAuth users or Kite username are defined
 		if len(common.OAuthAllowUsers) > 0 {
 			klog.Infof("Adding OAuth users to viewer role mapping: %v", common.OAuthAllowUsers)
 			role.RoleMapping = append(role.RoleMapping, common.RoleMapping{
-				Name:  "viewer",
+				Name:  defaultViewerRole.Name,
 				Users: common.OAuthAllowUsers,
 			})
 		}
 		if len(common.KiteUsername) > 0 {
 			klog.Infof("Adding Kite username to viewer role mapping: %s", common.KiteUsername)
 			role.RoleMapping = append(role.RoleMapping, common.RoleMapping{
-				Name:  "viewer",
+				Name:  defaultViewerRole.Name,
 				Users: []string{common.KiteUsername},
 			})
 		}
+	}
+
+	if !common.OAuthEnabled && !common.PasswordLoginEnabled {
+		klog.Infof("Adding anonymous user to viewer role mapping")
+		role.Roles = append(role.Roles, defaultLimitedRole)
+		role.RoleMapping = append(role.RoleMapping, common.RoleMapping{
+			Name:  defaultLimitedRole.Name,
+			Users: []string{"anonymous"},
+		})
 	}
 }
 
