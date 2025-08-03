@@ -55,24 +55,45 @@ func watchConfig(path string) {
 			klog.Errorf("Failed to close watcher: %v", err)
 		}
 	}()
+
+	// Add initial watch on the path
 	_ = watcher.Add(path)
+
+	// Function to reload configuration
+	reloadConfig := func() {
+		klog.V(3).Infof("Reloading RBAC configuration from %s", path)
+		cfg, err := LoadRolesConfig(path)
+		if err != nil {
+			klog.Errorf("Failed to reload RBAC configuration: %v", err)
+			return
+		}
+		rwlock.Lock()
+		RBACConfig = cfg
+		rwlock.Unlock()
+		klog.V(3).Info("RBAC configuration reloaded successfully")
+	}
+
 	for {
 		select {
 		case event := <-watcher.Events:
 			klog.V(5).Infof("RBAC config file event: %s", event)
-			// k8s configmaps uses symlinks, we need this workaround to detect the real file change
-			if event.Op == fsnotify.Remove {
+
+			// Handle different types of events
+			if event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
+				// ConfigMap updates in k8s can trigger Remove or Rename events as symlinks are updated
+				klog.V(4).Infof("ConfigMap change detected (remove/rename). Re-adding watcher for %s", path)
 				_ = watcher.Remove(event.Name)
-				// add a new watcher pointing to the new symlink/file
+
+				// Wait a moment for k8s to finish updating the symlink/file
+				// Re-add the watcher to the path
 				_ = watcher.Add(path)
-			}
-			if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
-				cfg, err := LoadRolesConfig(path)
-				if err == nil {
-					rwlock.Lock()
-					RBACConfig = cfg
-					rwlock.Unlock()
-				}
+
+				// Then reload the configuration
+				reloadConfig()
+			} else if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
+				// Regular file write or create event
+				klog.V(4).Infof("File write/create detected. Reloading configuration")
+				reloadConfig()
 			}
 		case err := <-watcher.Errors:
 			klog.Errorf("RBAC config watcher error: %v", err)
