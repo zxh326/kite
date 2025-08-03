@@ -58,6 +58,7 @@ export function Terminal({
   const [selectedPod, setSelectedPod] = useState<string>('')
   const [selectedContainer, setSelectedContainer] = useState<string>('')
   const [isConnected, setIsConnected] = useState(false)
+  const [reconnectFlag, setReconnectFlag] = useState(false)
   const [networkSpeed, setNetworkSpeed] = useState({ upload: 0, download: 0 })
   const [terminalTheme, setTerminalTheme] = useState<TerminalTheme>(() => {
     const saved = localStorage.getItem('terminal-theme')
@@ -410,7 +411,14 @@ export function Terminal({
       if (pingTimerRef.current) clearInterval(pingTimerRef.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPod, selectedContainer, namespace, type, updateNetworkStats])
+  }, [
+    selectedPod,
+    selectedContainer,
+    namespace,
+    type,
+    updateNetworkStats,
+    reconnectFlag,
+  ])
 
   // Clear terminal
   const clearTerminal = useCallback(() => {
@@ -430,7 +438,12 @@ export function Terminal({
               <IconTerminal className="h-5 w-5" />
               Terminal
             </CardTitle>
-            <ConnectionIndicator isConnected={isConnected} />
+            <ConnectionIndicator
+              isConnected={isConnected}
+              onReconnect={() => {
+                setReconnectFlag((prev) => !prev)
+              }}
+            />
             <NetworkSpeedIndicator
               uploadSpeed={networkSpeed.upload}
               downloadSpeed={networkSpeed.download}

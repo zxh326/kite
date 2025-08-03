@@ -148,7 +148,7 @@ export function LogViewer({
   }, [autoScroll])
 
   // Use the new WebSocket logs hook
-  const { logs, isLoading, error, isConnected, downloadSpeed } =
+  const { logs, isLoading, error, isConnected, downloadSpeed, refetch } =
     useLogsWebSocket(namespace, selectPodName!, {
       container: selectedContainer,
       tailLines,
@@ -371,7 +371,10 @@ export function LogViewer({
                     </span>
                   )}
                 </span>
-                <ConnectionIndicator isConnected={isConnected} />
+                <ConnectionIndicator
+                  isConnected={isConnected}
+                  onReconnect={refetch}
+                />
                 <NetworkSpeedIndicator
                   downloadSpeed={downloadSpeed}
                   uploadSpeed={0}
