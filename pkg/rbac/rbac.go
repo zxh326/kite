@@ -51,25 +51,33 @@ func GetUserRoles(user common.User) []common.Role {
 	if user.Roles != nil {
 		return user.Roles
 	}
-	var roles []common.Role
+	rolesMap := make(map[string]common.Role)
+	rwlock.RLock()
+	defer rwlock.RUnlock()
 	for _, mapping := range RBACConfig.RoleMapping {
 		if contains(mapping.Users, "*") || contains(mapping.Users, user.Key()) {
 			if r := findRole(mapping.Name); r != nil {
-				roles = append(roles, *r)
+				rolesMap[r.Name] = *r
 			}
 		}
 		for _, group := range user.OIDCGroups {
 			if contains(mapping.OIDCGroups, group) {
 				if r := findRole(mapping.Name); r != nil {
-					roles = append(roles, *r)
+					rolesMap[r.Name] = *r
 				}
 			}
 		}
+	}
+	roles := make([]common.Role, 0, len(rolesMap))
+	for _, role := range rolesMap {
+		roles = append(roles, role)
 	}
 	return roles
 }
 
 func findRole(name string) *common.Role {
+	rwlock.RLock()
+	defer rwlock.RUnlock()
 	for _, r := range RBACConfig.Roles {
 		if r.Name == name {
 			return &r

@@ -13,6 +13,7 @@ import (
 var (
 	RBACConfig *common.RolesConfig
 	once       sync.Once
+	rwlock     sync.RWMutex
 )
 
 var (
@@ -54,7 +55,6 @@ func watchConfig(path string) {
 		}
 	}()
 	_ = watcher.Add(path)
-	mu := &sync.Mutex{}
 	for {
 		select {
 		case event := <-watcher.Events:
@@ -68,9 +68,9 @@ func watchConfig(path string) {
 			if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
 				cfg, err := LoadRolesConfig(path)
 				if err == nil {
-					mu.Lock()
+					rwlock.Lock()
 					RBACConfig = cfg
-					mu.Unlock()
+					rwlock.Unlock()
 				}
 			}
 		case err := <-watcher.Errors:
