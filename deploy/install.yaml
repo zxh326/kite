@@ -1,3 +1,42 @@
+
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kite-roles
+  namespace: default
+data:
+  roles.yaml: |-
+    roles:
+      - name: admin
+        description: Administrator role with full access
+        clusters:
+          - '*'
+        resources:
+          - '*'
+        namespaces:
+          - '*'
+        verbs:
+          - '*'
+      - name: viewer
+        description: Viewer role with read-only access
+        clusters:
+          - '*'
+        resources:
+          - '*'
+        namespaces:
+          - '*'
+        verbs:
+          - 'get'
+    roleMapping:
+      - name: admin
+        oidcGroups:
+          - admins
+      - name: admin
+        users:
+          - 'TODO_UPDATE_ME'
+      - name: viewer
+        users:
+          - 'TODO_UPDATE_ME'
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -37,6 +76,11 @@ spec:
         app: kite
     spec:
       serviceAccountName: kite
+      volumes:
+        - name: kite-roles
+          configMap:
+            name: kite-roles
+            defaultMode: 420
       containers:
         - image: ghcr.io/zxh326/kite:latest
           imagePullPolicy: IfNotPresent
@@ -48,6 +92,9 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
+          volumeMounts:
+            - name: kite-roles
+              mountPath: /config
           livenessProbe:
             httpGet:
               path: /healthz
