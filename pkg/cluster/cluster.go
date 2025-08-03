@@ -145,8 +145,11 @@ func (cm *ClusterManager) GetClusters(c *gin.Context) {
 	result := make([]common.ClusterInfo, 0, len(cm.clusters))
 	user := c.MustGet("user").(common.User)
 	if len(user.Roles) == 0 {
-		err := fmt.Errorf("user %s does not have permissions to view any clusters", user.Key())
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		c.SetCookie("auth_token", "", -1, "/", "", false, true)
+		c.Header("Location", "/login?error=insufficient_permissions&reason=insufficient_permissions&user="+user.Username)
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Access denied",
+		})
 		return
 	}
 
@@ -164,8 +167,11 @@ func (cm *ClusterManager) GetClusters(c *gin.Context) {
 		return result[i].Name < result[j].Name
 	})
 	if len(result) == 0 {
-		err := fmt.Errorf("user %s does not have permissions to view any clusters", user.Key())
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		c.SetCookie("auth_token", "", -1, "/", "", false, true)
+		c.Header("Location", "/login?error=insufficient_permissions&reason=insufficient_permissions&user="+user.Username)
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Access denied",
+		})
 		return
 	}
 	c.JSON(200, result)

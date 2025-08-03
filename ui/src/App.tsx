@@ -45,17 +45,7 @@ function ClusterAwareApp() {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-red-500">
-          {error.message.includes('not have permissions') ? (
-            <p>
-              {t('cluster.error403')}
-              <br />
-              <br />
-
-              {error.message}
-            </p>
-          ) : (
-            <p>{t('cluster.error', { error: error.message })}</p>
-          )}
+          <p>{t('cluster.error', { error: error.message })}</p>
         </div>
       </div>
     )

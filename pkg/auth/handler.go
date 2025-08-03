@@ -150,6 +150,13 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		return
 	}
 
+	role := rbac.GetUserRoles(*user)
+	if len(role) == 0 {
+		klog.Warningf("OAuth Callback - Access denied for user: %s (provider: %s, name: %s)", user.Username, provider, user.Name)
+		c.Redirect(http.StatusFound, "/login?error=insufficient_permissions&reason=insufficient_permissions&user="+user.Username+"&provider="+provider)
+		return
+	}
+
 	// Generate JWT with refresh token support
 	jwtToken, err := h.manager.GenerateJWT(user, tokenResp.RefreshToken)
 	if err != nil {

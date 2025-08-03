@@ -38,6 +38,15 @@ export const ClusterProvider: React.FC<{ children: React.ReactNode }> = ({
         },
       })
 
+      if (response.status === 403) {
+        const errorData = await response.json().catch(() => ({}))
+        const redirectUrl = response.headers.get('Location')
+        if (redirectUrl) {
+          window.location.href = redirectUrl
+        }
+        throw new Error(`${errorData.error || response.status}`)
+      }
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         throw new Error(`${errorData.error || response.status}`)
