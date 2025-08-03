@@ -144,7 +144,7 @@ func (cm *ClusterManager) GetClientSet(clusterName string) (*ClientSet, error) {
 func (cm *ClusterManager) GetClusters(c *gin.Context) {
 	result := make([]common.ClusterInfo, 0, len(cm.clusters))
 	user := c.MustGet("user").(common.User)
-	if user.Roles == nil {
+	if len(user.Roles) == 0 {
 		err := fmt.Errorf("user %s does not have permissions to view any clusters", user.Key())
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return

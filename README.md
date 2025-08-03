@@ -104,21 +104,18 @@ _Secure authentication with GitHub and custom OAuth providers_
 
 ### Environment Variables
 
-| Variable                   | Description                                                                                       | Default                       | Required |
-| -------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------- | -------- |
-| `PORT`                     | Server port                                                                                       | `8080`                        | No       |
-| `KUBECONFIG`               | Kubernetes config path for multi-cluster access                                                   | `inCluster or ~/.kube/config` | No       |
-| `ENABLE_ANALYTICS`         | Enable anonymous usage analytics                                                                  | `false`                       | No       |
-| `PROMETHEUS_URL`           | Default Prometheus server URL [Prometheus Setup Guide](docs/PROMETHEUS_SETUP.md)                  | `-`                           | No       |
-| `<CLUSTER>_PROMETHEUS_URL` | Cluster-specific Prometheus URL (see Multi-Cluster section below)                                 | `-`                           | No       |
-| `JWT_SECRET`               | JWT secret for signing tokens. default is random string                                           | `random string`               | Yes\*    |
-| `OAUTH_ENABLED`            | Enable OAuth authentication. [OAuth Setup Guide](docs/OAUTH_SETUP.md).                            | `false`                       | No       |
-| `OAUTH_ALLOW_USERS`        | Comma-separated list of users allowed to access the dashboard,support wildcard (\*) for all users | `-`                           | OAuth\*  |
-| `KITE_USERNAME`            | Username for basic authentication. If set, enables password auth.                                 | `-`                           | No       |
-| `KITE_PASSWORD`            | Password for basic authentication. If set, enables password auth.                                 | `-`                           | No       |
-| `ROLES_CONFIG_PATH`        | Path to the roles configuration file.                                                             | `/config/roles.yaml`          | No       |
-
-\*Required only when OAuth is enabled
+| Variable                   | Description                                                                               | Default                       | Required |
+| -------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------- | -------- |
+| `PORT`                     | Server port                                                                               | `8080`                        | No       |
+| `KUBECONFIG`               | Kubernetes config path for multi-cluster access                                           | `inCluster or ~/.kube/config` | No       |
+| `ENABLE_ANALYTICS`         | Enable anonymous usage analytics                                                          | `false`                       | No       |
+| `PROMETHEUS_URL`           | Default Prometheus server URL [Prometheus Setup Guide](docs/PROMETHEUS_SETUP.md)          | `-`                           | No       |
+| `<CLUSTER>_PROMETHEUS_URL` | Cluster-specific Prometheus URL (see Multi-Cluster section below)                         | `-`                           | No       |
+| `JWT_SECRET`               | JWT secret for signing tokens. default is random string                                   | `random string`               | No       |
+| `OAUTH_ENABLED`            | Enable OAuth authentication. [OAuth Setup Guide](docs/OAUTH_SETUP.md).                    | `false`                       | No       |
+| `KITE_USERNAME`            | Username for basic authentication. If set, enables password auth. default has viewer role | `-`                           | No       |
+| `KITE_PASSWORD`            | Password for basic authentication. If set, enables password auth.                         | `-`                           | No       |
+| `ROLES_CONFIG_PATH`        | Path to the roles configuration file.                                                     | `/config/roles.yaml`          | No       |
 
 ### Docker
 
