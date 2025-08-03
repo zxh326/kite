@@ -1,6 +1,7 @@
 package rbac
 
 import (
+	"fmt"
 	"os"
 	"sync"
 
@@ -37,7 +38,7 @@ func InitRBAC(configPath string) {
 	once.Do(func() {
 		cfg, err := LoadRolesConfig(configPath)
 		if err != nil {
-			panic("Failed to load roles.yaml: " + err.Error())
+			panic(fmt.Sprintf("Failed to load RBAC configuration from %s: %v. Ensure the file exists and has correct permissions.", configPath, err))
 		}
 		RBACConfig = cfg
 		go watchConfig(configPath)
