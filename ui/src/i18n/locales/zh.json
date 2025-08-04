@@ -170,5 +170,25 @@
     "loading": "加载集群中...",
     "error": "加载集群时出错: {{error}}",
     "error403": "您没有权限访问此集群。请联系您的管理员以获取更多信息。"
+  },
+  "resourceTable": {
+    "errorLoading": "加载 {{resourceName}} 时出错",
+    "tryAgain": "重试"
+  },
+  "rbac": {
+    "noPermissionCluster": "用户 {{user}} 没有权限在集群 {{cluster}} 上执行 {{verb}} {{resource}}",
+    "noPermissionNamespace": "用户 {{user}} 没有权限在集群 {{cluster}} 的命名空间 {{namespace}} 中执行 {{verb}} {{resource}}",
+    "accessDenied": "访问被拒绝",
+    "insufficientPermissions": "您没有足够的权限执行此操作",
+    "allNamespaces": "所有命名空间",
+    "get": "获取",
+    "verb": {
+      "get": "获取",
+      "create": "创建",
+      "update": "更新",
+      "delete": "删除",
+      "log": "查看日志",
+      "exec": "exec"
+    }
   }
 }
