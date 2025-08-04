@@ -77,7 +77,9 @@ export function ResourceTable<T>({
     const storedNamespace = localStorage.getItem(
       localStorage.getItem('current-cluster') + 'selectedNamespace'
     )
-    return storedNamespace || (clusterScope ? undefined : 'default')
+    return clusterScope
+      ? undefined // No namespace for cluster scope
+      : storedNamespace || 'default' // Default to 'default' if not set
   })
   const { isLoading, data, isError, error, refetch } = useResources(
     resourceType ?? (resourceName.toLowerCase() as ResourceType),

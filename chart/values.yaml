@@ -19,6 +19,8 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+debug: false
+
 # Multi-cluster configuration using kubeconfig
 multiCluster:
   # Enable multi-cluster mode by mounting kubeconfig
@@ -54,6 +56,37 @@ multiCluster:
   # Default Prometheus URL for clusters that don't have specific configuration
   defaultPrometheusUrl: ""
 
+roleConfig:
+  roles:
+    - name: admin
+      description: Administrator role with full access.
+      clusters:
+        - '*'
+      resources:
+        - '*'
+      namespaces:
+        - '*'
+      verbs:
+        - '*'
+    - name: viewer
+      description: Viewer role with read-only access
+      clusters:
+        - '*'
+      resources:
+        - '*'
+      namespaces:
+        - '*'
+      verbs:
+        - 'get'
+  roleMapping:
+    # map specific users to the admin role
+    # - name: admin
+    #   oidcGroups:
+    #     - admins
+    # - name: viewer
+    #   users:
+    #     - 'zxh326'
+
 # update 
 jwtSecret: "your_jwt_secret_key_here"
 
@@ -64,7 +97,6 @@ basicAuth:
 
 oauth:
   enabled: false
-  allowUsers: "*"
   # This is the redirect URL for OAuth callbacks.
   # change this to your application's URL.
   redirect: "http://localhost:8080/api/auth/callback"
