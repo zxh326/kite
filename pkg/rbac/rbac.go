@@ -3,6 +3,7 @@ package rbac
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/zxh326/kite/pkg/common"
 	"k8s.io/klog/v2"
@@ -88,6 +89,11 @@ func findRole(name string) *common.Role {
 
 func match(list []string, val string) bool {
 	for _, v := range list {
+		if len(v) > 1 && strings.HasPrefix(v, "!") {
+			if v[1:] == val {
+				return false
+			}
+		}
 		if v == "*" || v == val {
 			return true
 		}

@@ -10,11 +10,13 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { Pod } from 'kubernetes-types/core/v1'
+import { useTranslation } from 'react-i18next'
 
 import { SimpleContainer } from '@/types/k8s'
 import { LOG_THEMES, LogTheme } from '@/types/themes'
 import { ansiStateToCss, parseAnsi, stripAnsi } from '@/lib/ansi-parser'
 import { useLogsWebSocket } from '@/lib/api'
+import { translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -91,6 +93,8 @@ export function LogViewer({
   const [selectPodName, setSelectPodName] = useState<string | undefined>(
     podName || pods?.[0]?.metadata?.name || ''
   )
+
+  const { t } = useTranslation()
 
   useEffect(() => {
     if (podName) {
@@ -681,7 +685,7 @@ export function LogViewer({
 
           {error && (
             <div className={`text-center ${LOG_THEMES[logTheme].error}`}>
-              Error: {error instanceof Error ? error.message : 'Unknown error'}
+              {translateError(error, t)}
             </div>
           )}
 

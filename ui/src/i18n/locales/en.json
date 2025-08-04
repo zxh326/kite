@@ -34,11 +34,17 @@
     "httproutes": "HTTP Routes",
     "configMaps": "ConfigMaps",
     "secrets": "Secrets",
-    "persistentVolumeClaims": "Persistent Volume Claims",
+    "persistentvolumeclaims": "Persistent Volume Claims",
+    "persistentvolumes": "Persistent Volumes",
     "nodes": "Nodes",
     "namespaces": "Namespaces",
     "customResources": "Custom Resources",
-    "customResourceDefinitions": "Custom Resource Definitions"
+    "customResourceDefinitions": "Custom Resource Definitions",
+    "replicasets": "ReplicaSets",
+    "cronjobs": "Cron Jobs",
+    "storageclasses": "Storage Classes",
+    "events": "Events",
+    "crds": "CRDs"
   },
   "overview": {
     "title": "Overview",
@@ -170,5 +176,24 @@
     "loading": "Loading clusters...",
     "error": "Error loading clusters: {{error}}",
     "error403": "You do not have permission to access this cluster. Please contact your administrator for more information."
+  },
+  "resourceTable": {
+    "errorLoading": "Error loading {{resourceName}}",
+    "tryAgain": "Try Again"
+  },
+  "rbac": {
+    "noPermissionCluster": "User {{user}} does not have permission to {{verb}} {{resource}} on cluster {{cluster}}",
+    "noPermissionNamespace": "User {{user}} does not have permission to {{verb}} {{resource}} in namespace {{namespace}} on cluster {{cluster}}",
+    "accessDenied": "Access Denied",
+    "insufficientPermissions": "You do not have sufficient permissions to perform this action",
+    "allNamespaces": "All Namespaces",
+    "verb": {
+      "get": "Get",
+      "create": "Create",
+      "update": "Update",
+      "delete": "Delete",
+      "log": "View Logs",
+      "exec": "Execute"
+    }
   }
 }

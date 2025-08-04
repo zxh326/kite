@@ -15,8 +15,11 @@ import { Pod } from 'kubernetes-types/core/v1'
 
 import '@xterm/xterm/css/xterm.css'
 
+import { useTranslation } from 'react-i18next'
+
 import { SimpleContainer } from '@/types/k8s'
 import { TERMINAL_THEMES, TerminalTheme } from '@/types/themes'
+import { translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -82,6 +85,7 @@ export function Terminal({
   })
   const speedUpdateTimerRef = useRef<NodeJS.Timeout | null>(null)
   const pingTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const { t } = useTranslation()
 
   // Initialize pod/container state on props change
   useEffect(() => {
@@ -320,7 +324,9 @@ export function Terminal({
             terminal.writeln(`\x1b[32m${message.data}\x1b[0m`)
             break
           case 'error':
-            terminal.writeln(`\x1b[31mError: ${message.data}\x1b[0m`)
+            terminal.writeln(
+              `\x1b[31mError: ${translateError(new Error(message.data), t)}\x1b[0m`
+            )
             setIsConnected(false)
             break
           case 'pong':

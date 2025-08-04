@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { applyResource } from '@/lib/api'
 import { getTemplateByName, resourceTemplates } from '@/lib/templates'
+import { translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -35,6 +37,7 @@ export function CreateResourceDialog({
   const [yaml, setYaml] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<string>('')
+  const { t } = useTranslation()
 
   const handleTemplateSelect = (templateName: string) => {
     if (templateName === 'empty') {
@@ -66,9 +69,7 @@ export function CreateResourceDialog({
       onOpenChange(false)
     } catch (error) {
       console.error('Error creating resource:', error)
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to create resource'
-      )
+      toast.error(translateError(error, t))
     } finally {
       setIsLoading(false)
     }

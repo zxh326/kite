@@ -3,9 +3,11 @@ import yaml from 'js-yaml'
 import { Deployment } from 'kubernetes-types/apps/v1'
 import { Container } from 'kubernetes-types/core/v1'
 import { Plus, Trash2, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { createResource } from '@/lib/api'
+import { translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -106,6 +108,7 @@ export function DeploymentCreateDialog({
   const [isCreating, setIsCreating] = useState(false)
   const [step, setStep] = useState(1)
   const [editedYaml, setEditedYaml] = useState<string>('')
+  const { t } = useTranslation()
   const totalSteps = 3
 
   const updateFormData = (updates: Partial<DeploymentFormData>) => {
@@ -353,11 +356,7 @@ export function DeploymentCreateDialog({
       onSuccess(createdDeployment, deployment.metadata.namespace)
     } catch (error) {
       console.error('Failed to create deployment:', error)
-      toast.error(
-        `Failed to create deployment: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      )
+      toast.error(translateError(error, t))
     } finally {
       setIsCreating(false)
     }

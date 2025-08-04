@@ -11,6 +11,7 @@ import {
 import * as yaml from 'js-yaml'
 import { StatefulSet } from 'kubernetes-types/apps/v1'
 import { Container } from 'kubernetes-types/core/v1'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -21,7 +22,7 @@ import {
   useResources,
 } from '@/lib/api'
 import { toSimpleContainer } from '@/lib/k8s'
-import { formatDate } from '@/lib/utils'
+import { formatDate, translateError } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -35,6 +36,7 @@ import {
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { ContainerTable } from '@/components/container-table'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
+import { ErrorMessage } from '@/components/error-message'
 import { EventTable } from '@/components/event-table'
 import { LabelsAnno } from '@/components/lables-anno'
 import { LogViewer } from '@/components/log-viewer'
@@ -57,6 +59,8 @@ export function StatefulSetDetail(props: { namespace: string; name: string }) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [refreshInterval, setRefreshInterval] = useState<number>(0)
   const navigate = useNavigate()
+
+  const { t } = useTranslation()
 
   // Fetch statefulset data
   const {
@@ -128,11 +132,7 @@ export function StatefulSetDetail(props: { namespace: string; name: string }) {
       setRefreshInterval(1000)
     } catch (error) {
       console.error('Failed to save YAML:', error)
-      toast.error(
-        `Failed to save YAML: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      )
+      toast.error(translateError(error, t))
     } finally {
       setIsSavingYaml(false)
     }
@@ -164,11 +164,7 @@ export function StatefulSetDetail(props: { namespace: string; name: string }) {
       setRefreshInterval(1000)
     } catch (error) {
       console.error('Failed to scale statefulset:', error)
-      toast.error(
-        `Failed to scale statefulset: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      )
+      toast.error(translateError(error, t))
     }
   }
 
@@ -205,11 +201,7 @@ export function StatefulSetDetail(props: { namespace: string; name: string }) {
       setRefreshInterval(1000)
     } catch (error) {
       console.error('Failed to restart statefulset:', error)
-      toast.error(
-        `Failed to restart statefulset: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      )
+      toast.error(translateError(error, t))
     }
   }
 
@@ -220,11 +212,8 @@ export function StatefulSetDetail(props: { namespace: string; name: string }) {
       toast.success('StatefulSet deleted successfully')
       navigate(`/statefulsets`)
     } catch (error) {
-      toast.error(
-        `Failed to delete StatefulSet: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      )
+      toast.error(translateError(error, t))
+
       setIsDeleting(false)
       setIsDeleteDialogOpen(false)
     }
@@ -266,11 +255,7 @@ export function StatefulSetDetail(props: { namespace: string; name: string }) {
       setRefreshInterval(1000)
     } catch (error) {
       console.error('Failed to update container:', error)
-      toast.error(
-        `Failed to update container: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      )
+      toast.error(translateError(error, t))
     }
   }
 
@@ -291,17 +276,11 @@ export function StatefulSetDetail(props: { namespace: string; name: string }) {
 
   if (isStatefulSetError || !statefulset) {
     return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center text-destructive">
-              <IconExclamationCircle className="w-12 h-12 mx-auto text-red-500 mb-4" />
-              Error loading StatefulSet:{' '}
-              {statefulsetError?.message || 'StatefulSet not found'}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <ErrorMessage
+        resourceName={'StatefulSet'}
+        error={statefulsetError}
+        refetch={handleRefresh}
+      />
     )
   }
 

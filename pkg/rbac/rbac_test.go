@@ -44,6 +44,15 @@ func TestCanAccess(t *testing.T) {
 		Verbs:       []string{"get"},
 	}
 
+	notKubeSystemRole := common.Role{
+		Name:        "not-kube-system",
+		Description: "Access to all namespaces except kube-system",
+		Clusters:    []string{"*"},
+		Resources:   []string{"*"},
+		Namespaces:  []string{"!kube-system", "*"},
+		Verbs:       []string{"*"},
+	}
+
 	tests := []struct {
 		name       string
 		roles      []common.Role
@@ -183,6 +192,34 @@ func TestCanAccess(t *testing.T) {
 			cluster:    "any-cluster",
 			namespace:  "any-namespace",
 			expected:   true,
+		},
+		{
+			name:  "allow all-namespace but not kube-system: access",
+			roles: []common.Role{notKubeSystemRole},
+			mappings: []common.RoleMapping{
+				{Name: "not-kube-system", Users: []string{"*"}},
+			},
+			user:       "any-user",
+			oidcGroups: []string{},
+			resource:   "pod",
+			verb:       "get",
+			cluster:    "any-cluster",
+			namespace:  "any-namespace",
+			expected:   true,
+		},
+		{
+			name:  "allow all-namespace but not kube-system: not access",
+			roles: []common.Role{notKubeSystemRole},
+			mappings: []common.RoleMapping{
+				{Name: "not-kube-system", Users: []string{"*"}},
+			},
+			user:       "any-user",
+			oidcGroups: []string{},
+			resource:   "pod",
+			verb:       "get",
+			cluster:    "any-cluster",
+			namespace:  "kube-system",
+			expected:   false,
 		},
 	}
 

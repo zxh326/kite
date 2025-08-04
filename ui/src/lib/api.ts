@@ -407,7 +407,6 @@ export const useResource = <T extends keyof ResourceTypeMap>(
     queryFn: () => {
       return fetchResource<ResourceTypeMap[T]>(resource, name, ns)
     },
-    retry: 1,
     refetchOnWindowFocus: 'always',
     refetchInterval: options?.refreshInterval || 0, // Default to no auto-refresh
     placeholderData: (prevData) => prevData,
