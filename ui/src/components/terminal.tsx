@@ -15,8 +15,11 @@ import { Pod } from 'kubernetes-types/core/v1'
 
 import '@xterm/xterm/css/xterm.css'
 
+import { useTranslation } from 'react-i18next'
+
 import { SimpleContainer } from '@/types/k8s'
 import { TERMINAL_THEMES, TerminalTheme } from '@/types/themes'
+import { translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -58,6 +61,7 @@ export function Terminal({
   const [selectedPod, setSelectedPod] = useState<string>('')
   const [selectedContainer, setSelectedContainer] = useState<string>('')
   const [isConnected, setIsConnected] = useState(false)
+  const [reconnectFlag, setReconnectFlag] = useState(false)
   const [networkSpeed, setNetworkSpeed] = useState({ upload: 0, download: 0 })
   const [terminalTheme, setTerminalTheme] = useState<TerminalTheme>(() => {
     const saved = localStorage.getItem('terminal-theme')
@@ -81,6 +85,7 @@ export function Terminal({
   })
   const speedUpdateTimerRef = useRef<NodeJS.Timeout | null>(null)
   const pingTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const { t } = useTranslation()
 
   // Initialize pod/container state on props change
   useEffect(() => {
@@ -319,7 +324,9 @@ export function Terminal({
             terminal.writeln(`\x1b[32m${message.data}\x1b[0m`)
             break
           case 'error':
-            terminal.writeln(`\x1b[31mError: ${message.data}\x1b[0m`)
+            terminal.writeln(
+              `\x1b[31mError: ${translateError(new Error(message.data), t)}\x1b[0m`
+            )
             setIsConnected(false)
             break
           case 'pong':
@@ -410,7 +417,14 @@ export function Terminal({
       if (pingTimerRef.current) clearInterval(pingTimerRef.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPod, selectedContainer, namespace, type, updateNetworkStats])
+  }, [
+    selectedPod,
+    selectedContainer,
+    namespace,
+    type,
+    updateNetworkStats,
+    reconnectFlag,
+  ])
 
   // Clear terminal
   const clearTerminal = useCallback(() => {
@@ -430,7 +444,12 @@ export function Terminal({
               <IconTerminal className="h-5 w-5" />
               Terminal
             </CardTitle>
-            <ConnectionIndicator isConnected={isConnected} />
+            <ConnectionIndicator
+              isConnected={isConnected}
+              onReconnect={() => {
+                setReconnectFlag((prev) => !prev)
+              }}
+            />
             <NetworkSpeedIndicator
               uploadSpeed={networkSpeed.upload}
               downloadSpeed={networkSpeed.download}

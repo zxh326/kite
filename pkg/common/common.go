@@ -2,6 +2,7 @@ package common
 
 import (
 	"os"
+	"strings"
 
 	"github.com/zxh326/kite/pkg/utils"
 	"k8s.io/klog/v2"
@@ -20,7 +21,7 @@ var (
 	JwtSecret       = ""
 	OAuthEnabled    = false
 	OAuthProviders  = ""
-	OAuthAllowUsers = ""
+	OAuthAllowUsers = []string{} // Deprecated, use rbac config instead
 	EnableAnalytics = false
 
 	NodeTerminalImage = "busybox:latest"
@@ -34,13 +35,15 @@ var (
 	PasswordLoginEnabled = KiteUsername != "" && KitePassword != ""
 
 	Readonly = false
+
+	RolesConfigPath = "/config/roles.yaml"
 )
 
 func LoadEnvs() {
 	if secret := os.Getenv("JWT_SECRET"); secret != "" {
 		JwtSecret = secret
 	} else {
-		klog.Warning("JWT_SECRET is not set, using random secret key, restart server will lose all sessions")
+		klog.Warning("JWT_SECRET is not set, using random secret key, restart server will lose all sessions.")
 		JwtSecret = utils.RandomString(32)
 	}
 
@@ -52,12 +55,8 @@ func LoadEnvs() {
 			klog.Warning("OAUTH_PROVIDERS is not set, OAuth will not work as expected")
 		}
 		if allowUsers := os.Getenv("OAUTH_ALLOW_USERS"); allowUsers != "" {
-			OAuthAllowUsers = allowUsers
-		} else {
-			klog.Warning("OAUTH_ALLOW_USERS is not set, OAuth will not work as expected")
+			OAuthAllowUsers = strings.Split(allowUsers, ",")
 		}
-	} else {
-		klog.Warning("OAUTH_ENABLED is not set to true, do not use in PRODUCTION")
 	}
 
 	if port := os.Getenv("PORT"); port != "" {
@@ -71,7 +70,12 @@ func LoadEnvs() {
 	if nodeTerminalImage := os.Getenv("NODE_TERMINAL_IMAGE"); nodeTerminalImage != "" {
 		NodeTerminalImage = nodeTerminalImage
 	}
-	if readonly := os.Getenv("READONLY"); readonly == "true" {
-		Readonly = true
+
+	if !OAuthEnabled && !PasswordLoginEnabled {
+		klog.Warning("OAuth and Password login are both disabled, DO NOT USE IN PRODUCTION!!!")
+	}
+
+	if rolePath := os.Getenv("ROLES_CONFIG_PATH"); rolePath != "" {
+		RolesConfigPath = rolePath
 	}
 }

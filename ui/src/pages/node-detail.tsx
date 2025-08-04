@@ -11,6 +11,7 @@ import {
 } from '@tabler/icons-react'
 import * as yaml from 'js-yaml'
 import { Node } from 'kubernetes-types/core/v1'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import {
@@ -23,7 +24,12 @@ import {
   useResource,
   useResources,
 } from '@/lib/api'
-import { formatCPU, formatDate, formatMemory } from '@/lib/utils'
+import {
+  formatCPU,
+  formatDate,
+  formatMemory,
+  translateError,
+} from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -42,6 +48,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { ErrorMessage } from '@/components/error-message'
 import { EventTable } from '@/components/event-table'
 import { LabelsAnno } from '@/components/lables-anno'
 import { NodeMonitoring } from '@/components/node-monitoring'
@@ -54,6 +61,7 @@ export function NodeDetail(props: { name: string }) {
   const [yamlContent, setYamlContent] = useState('')
   const [isSavingYaml, setIsSavingYaml] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const { t } = useTranslation()
 
   // Node operation states
   const [isDrainPopoverOpen, setIsDrainPopoverOpen] = useState(false)
@@ -107,11 +115,7 @@ export function NodeDetail(props: { name: string }) {
       toast.success('YAML saved successfully')
     } catch (error) {
       console.error('Failed to save YAML:', error)
-      toast.error(
-        `Failed to save YAML: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      )
+      toast.error(translateError(error, t))
     } finally {
       setIsSavingYaml(false)
     }
@@ -126,11 +130,7 @@ export function NodeDetail(props: { name: string }) {
       handleRefresh()
     } catch (error) {
       console.error('Failed to drain node:', error)
-      toast.error(
-        `Failed to drain node: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      )
+      toast.error(translateError(error, t))
     }
   }
 
@@ -142,11 +142,7 @@ export function NodeDetail(props: { name: string }) {
       handleRefresh()
     } catch (error) {
       console.error('Failed to cordon node:', error)
-      toast.error(
-        `Failed to cordon node: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      )
+      toast.error(translateError(error, t))
     }
   }
 
@@ -158,11 +154,7 @@ export function NodeDetail(props: { name: string }) {
       handleRefresh()
     } catch (error) {
       console.error('Failed to uncordon node:', error)
-      toast.error(
-        `Failed to uncordon node: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      )
+      toast.error(translateError(error, t))
     }
   }
 
@@ -180,11 +172,7 @@ export function NodeDetail(props: { name: string }) {
       handleRefresh()
     } catch (error) {
       console.error('Failed to taint node:', error)
-      toast.error(
-        `Failed to taint node: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      )
+      toast.error(translateError(error, t))
     }
   }
 
@@ -202,11 +190,7 @@ export function NodeDetail(props: { name: string }) {
       handleRefresh()
     } catch (error) {
       console.error('Failed to remove taint:', error)
-      toast.error(
-        `Failed to remove taint: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      )
+      toast.error(translateError(error, t))
     }
   }
 
@@ -237,15 +221,7 @@ export function NodeDetail(props: { name: string }) {
 
   if (isError || !data) {
     return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center text-destructive">
-              Error loading node details: {error?.message || `Node not found`}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <ErrorMessage resourceName="Node" error={error} refetch={handleRefresh} />
     )
   }
 

@@ -10,11 +10,13 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { Pod } from 'kubernetes-types/core/v1'
+import { useTranslation } from 'react-i18next'
 
 import { SimpleContainer } from '@/types/k8s'
 import { LOG_THEMES, LogTheme } from '@/types/themes'
 import { ansiStateToCss, parseAnsi, stripAnsi } from '@/lib/ansi-parser'
 import { useLogsWebSocket } from '@/lib/api'
+import { translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -92,6 +94,8 @@ export function LogViewer({
     podName || pods?.[0]?.metadata?.name || ''
   )
 
+  const { t } = useTranslation()
+
   useEffect(() => {
     if (podName) {
       if (selectPodName !== podName) {
@@ -148,7 +152,7 @@ export function LogViewer({
   }, [autoScroll])
 
   // Use the new WebSocket logs hook
-  const { logs, isLoading, error, isConnected, downloadSpeed } =
+  const { logs, isLoading, error, isConnected, downloadSpeed, refetch } =
     useLogsWebSocket(namespace, selectPodName!, {
       container: selectedContainer,
       tailLines,
@@ -371,7 +375,10 @@ export function LogViewer({
                     </span>
                   )}
                 </span>
-                <ConnectionIndicator isConnected={isConnected} />
+                <ConnectionIndicator
+                  isConnected={isConnected}
+                  onReconnect={refetch}
+                />
                 <NetworkSpeedIndicator
                   downloadSpeed={downloadSpeed}
                   uploadSpeed={0}
@@ -678,7 +685,7 @@ export function LogViewer({
 
           {error && (
             <div className={`text-center ${LOG_THEMES[logTheme].error}`}>
-              Error: {error instanceof Error ? error.message : 'Unknown error'}
+              {translateError(error, t)}
             </div>
           )}
 
@@ -695,11 +702,38 @@ export function LogViewer({
                 key={index}
                 className={wordWrap ? 'break-words' : 'break-all'}
               >
-                {segments.map((segment, segIndex) => (
-                  <span key={segIndex} style={ansiStateToCss(segment.styles)}>
-                    {segment.text}
-                  </span>
-                ))}
+                {segments.map((segment, segIndex) => {
+                  const text = segment.text
+                  if (!searchTerm) {
+                    return (
+                      <span
+                        key={segIndex}
+                        style={ansiStateToCss(segment.styles)}
+                      >
+                        {text}
+                      </span>
+                    )
+                  }
+
+                  const parts = text.split(new RegExp(`(${searchTerm})`, 'gi'))
+                  return (
+                    <span key={segIndex} style={ansiStateToCss(segment.styles)}>
+                      {parts.map((part, i) => {
+                        if (part.toLowerCase() === searchTerm.toLowerCase()) {
+                          return (
+                            <span
+                              key={i}
+                              className="bg-yellow-500/50 dark:bg-yellow-500/30 rounded px-0.5"
+                            >
+                              {part}
+                            </span>
+                          )
+                        }
+                        return part
+                      })}
+                    </span>
+                  )
+                })}
               </div>
             )
           })}

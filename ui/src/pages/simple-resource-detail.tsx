@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react'
 import { IconLoader, IconRefresh, IconTrash } from '@tabler/icons-react'
 import * as yaml from 'js-yaml'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { ResourceType, ResourceTypeMap } from '@/types/api'
 import { deleteResource, updateResource, useResource } from '@/lib/api'
 import { getOwnerInfo } from '@/lib/k8s'
-import { formatDate } from '@/lib/utils'
+import { formatDate, translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
+import { ErrorMessage } from '@/components/error-message'
 import { EventTable } from '@/components/event-table'
 import { LabelsAnno } from '@/components/lables-anno'
 import { RelatedResourcesTable } from '@/components/related-resource-table'
@@ -30,6 +32,8 @@ export function SimpleResourceDetail<T extends ResourceType>(props: {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const navigate = useNavigate()
+
+  const { t } = useTranslation()
 
   const {
     data,
@@ -54,11 +58,7 @@ export function SimpleResourceDetail<T extends ResourceType>(props: {
       // Navigate back to the deployments list page
       navigate(`/${resourceType}`)
     } catch (error) {
-      toast.error(
-        `Failed to delete ${resourceType.slice(0, -1)}: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      )
+      toast.error(translateError(error, t))
     } finally {
       setIsDeleting(false)
       setIsDeleteDialogOpen(false)
@@ -73,11 +73,7 @@ export function SimpleResourceDetail<T extends ResourceType>(props: {
       // Refresh data after successful save
       await handleRefresh()
     } catch (error) {
-      toast.error(
-        `Failed to save YAML: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      )
+      toast.error(translateError(error, t))
     } finally {
       setIsSavingYaml(false)
     }
@@ -110,16 +106,11 @@ export function SimpleResourceDetail<T extends ResourceType>(props: {
 
   if (isError || !data) {
     return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center text-destructive">
-              Error loading {resourceType.slice(0, -1)}:{' '}
-              {error?.message || `${resourceType.slice(0, -1)} not found`}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <ErrorMessage
+        resourceName={resourceType.slice(0, -1)}
+        error={error}
+        refetch={handleRefresh}
+      />
     )
   }
 

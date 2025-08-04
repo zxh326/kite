@@ -5,7 +5,6 @@ import { useQuery } from '@tanstack/react-query'
 
 import {
   clusterScopeResources,
-  DeploymentRelatedResource,
   ImageTagInfo,
   OverviewData,
   PodMetrics,
@@ -71,14 +70,6 @@ export const fetchResources = <T>(
   return fetchAPI<T>(endpoint)
 }
 
-export const fetchDeploymentRelated = (
-  namespace: string,
-  name: string
-): Promise<DeploymentRelatedResource> => {
-  const endpoint = `/deployments/${namespace}/${name}/related`
-  return fetchAPI<DeploymentRelatedResource>(endpoint)
-}
-
 // Search API types
 export interface SearchResult {
   id: string
@@ -125,7 +116,7 @@ export const scaleDeployment = async (
   replicas: number
 ): Promise<{ message: string; deployment: unknown; replicas: number }> => {
   const endpoint = `/deployments/${namespace}/${name}/scale`
-  const response = await apiClient.post<{
+  const response = await apiClient.put<{
     message: string
     deployment: unknown
     replicas: number
@@ -141,7 +132,7 @@ export const restartDeployment = async (
   name: string
 ): Promise<void> => {
   const endpoint = `/deployments/${namespace}/${name}/restart`
-  await apiClient.post(`${endpoint}`, {
+  await apiClient.put(`${endpoint}`, {
     headers: {
       'Content-Type': 'application/json',
     },
@@ -416,26 +407,10 @@ export const useResource = <T extends keyof ResourceTypeMap>(
     queryFn: () => {
       return fetchResource<ResourceTypeMap[T]>(resource, name, ns)
     },
-    retry: 1,
     refetchOnWindowFocus: 'always',
     refetchInterval: options?.refreshInterval || 0, // Default to no auto-refresh
     placeholderData: (prevData) => prevData,
     staleTime: options?.staleTime || 1000,
-  })
-}
-
-export const useDeploymentRelated = (
-  namespace: string,
-  name: string,
-  options?: { staleTime?: number; refreshInterval?: number }
-) => {
-  return useQuery({
-    queryKey: ['deployment-related', namespace, name],
-    queryFn: () => fetchDeploymentRelated(namespace, name),
-    enabled: !!namespace && !!name,
-    staleTime: options?.staleTime || 1000,
-    placeholderData: (prevData) => prevData,
-    refetchInterval: options?.refreshInterval || 0,
   })
 }
 
@@ -917,6 +892,7 @@ export const useLogsStream = (
           },
           // onError callback
           (err: Error) => {
+            console.error('SSE error:', err)
             setError(err)
             setIsLoading(false)
             setIsConnected(false)

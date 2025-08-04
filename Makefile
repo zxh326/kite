@@ -89,6 +89,9 @@ format: ## Format code
 pre-commit: format lint ## Run pre-commit checks
 	@echo "✅ Pre-commit checks completed!"
 
+test: ## Run tests
+	@echo "🧪 Running tests..."
+	go test -v ./...
 
 define go-install-tool
 @[ -f "$(1)-$(3)" ] || { \

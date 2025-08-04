@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zxh326/kite/pkg/common"
 )
 
 var unlogPath = []string{
@@ -22,12 +23,10 @@ func Logger() gin.HandlerFunc {
 					return ""
 				}
 			}
-			user, ok := param.Keys["user"].(gin.H)
 			name := "-"
-			if ok {
-				name = user["username"].(string)
-				if user["username"] == "" {
-					name = user["name"].(string)
+			if v, ok := param.Keys["user"]; ok {
+				if user, ok := v.(common.User); ok {
+					name = user.Key()
 				}
 			}
 

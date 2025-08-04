@@ -13,7 +13,7 @@ import {
   SortingState,
   useReactTable,
 } from '@tanstack/react-table'
-import { Box, Database, Plus, RotateCcw, Search, XCircle } from 'lucide-react'
+import { Box, Database, Plus, Search, XCircle } from 'lucide-react'
 
 import { ResourceType } from '@/types/api'
 import { useResources } from '@/lib/api'
@@ -37,6 +37,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
+import { ErrorMessage } from './error-message'
 import { NamespaceSelector } from './selector/namespace-selector'
 
 export interface ResourceTableProps<T> {
@@ -67,31 +68,30 @@ export function ResourceTable<T>({
     pageIndex: 0,
     pageSize: 20,
   })
+  const [refreshInterval, setRefreshInterval] = useState(5000)
 
   const [selectedNamespace, setSelectedNamespace] = useState<
     string | undefined
-  >()
+  >(() => {
+    // Try to get the stored namespace from localStorage
+    const storedNamespace = localStorage.getItem(
+      localStorage.getItem('current-cluster') + 'selectedNamespace'
+    )
+    return storedNamespace || (clusterScope ? undefined : 'default')
+  })
   const { isLoading, data, isError, error, refetch } = useResources(
     resourceType ?? (resourceName.toLowerCase() as ResourceType),
     selectedNamespace,
     {
-      refreshInterval: 5000, // Refresh every 5 seconds
+      refreshInterval, // Refresh every 5 seconds
     }
   )
 
-  // Set initial namespace when namespaces are loaded
   useEffect(() => {
-    if (!clusterScope && !selectedNamespace && setSelectedNamespace) {
-      const storedNamespace = localStorage.getItem(
-        localStorage.getItem('current-cluster') + 'selectedNamespace'
-      )
-      if (storedNamespace) {
-        setSelectedNamespace(storedNamespace)
-      } else {
-        setSelectedNamespace('default') // Set a default namespace if none is stored
-      }
+    if (error) {
+      setRefreshInterval(0)
     }
-  }, [clusterScope, selectedNamespace, setSelectedNamespace])
+  }, [error])
 
   // Initialize our debounced search function just once
   const debouncedSetSearch = useMemo(
@@ -258,21 +258,11 @@ export function ResourceTable<T>({
 
     if (isError) {
       return (
-        <div className="h-72 flex flex-col items-center justify-center">
-          <div className="mb-4 text-red-500">
-            <XCircle className="h-16 w-16" />
-          </div>
-          <h3 className="text-lg font-medium text-red-500 mb-1">
-            Error loading {resourceName.toLowerCase()}
-          </h3>
-          <p className="text-muted-foreground mb-4">
-            {(error as Error).message}
-          </p>
-          <Button variant="outline" onClick={() => refetch()}>
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Try Again
-          </Button>
-        </div>
+        <ErrorMessage
+          resourceName={resourceName}
+          error={error}
+          refetch={refetch}
+        />
       )
     }
 

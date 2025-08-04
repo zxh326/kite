@@ -12,6 +12,7 @@ interface User {
   name: string
   avatar_url: string
   provider: string
+  roles?: { name: string }[]
 }
 
 interface AuthContextType {

@@ -40,8 +40,6 @@ type Restartable interface {
 var handlers = map[string]resourceHandler{}
 
 func RegisterRoutes(group *gin.RouterGroup) {
-	// Note: All handlers now get the k8s client from gin context instead of being passed it during initialization
-	// We pass nil as the k8sClient parameter since handlers will get it from context
 	handlers = map[string]resourceHandler{
 		"pods":                   NewGenericResourceHandler[*corev1.Pod, *corev1.PodList]("pods", false, true),
 		"namespaces":             NewGenericResourceHandler[*corev1.Namespace, *corev1.NamespaceList]("namespaces", true, false),

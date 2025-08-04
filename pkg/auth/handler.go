@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/rbac"
 	"k8s.io/klog/v2"
 )
 
@@ -84,7 +85,7 @@ func (h *AuthHandler) PasswordLogin(c *gin.Context) {
 	}
 
 	// Create user object
-	user := &User{
+	user := &common.User{
 		Username: req.Username,
 		Name:     req.Username,
 		Provider: "password",
@@ -149,7 +150,8 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		return
 	}
 
-	if !CheckPermissions(user) {
+	role := rbac.GetUserRoles(*user)
+	if len(role) == 0 {
 		klog.Warningf("OAuth Callback - Access denied for user: %s (provider: %s, name: %s)", user.Username, provider, user.Name)
 		c.Redirect(http.StatusFound, "/login?error=insufficient_permissions&reason=insufficient_permissions&user="+user.Username+"&provider="+provider)
 		return
@@ -190,18 +192,24 @@ func (h *AuthHandler) GetUser(c *gin.Context) {
 	})
 }
 
+var (
+	AnonymousUser = common.User{
+		ID:        "anonymous",
+		Username:  "anonymous",
+		Name:      "Anonymous",
+		AvatarURL: "",
+		Provider:  "none",
+	}
+)
+
 func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var tokenString string
 
 		if !common.OAuthEnabled && !common.PasswordLoginEnabled {
-			c.Set("user", gin.H{
-				"id":         "anonymous",
-				"username":   "anonymous",
-				"name":       "Anonymous",
-				"avatar_url": "",
-				"provider":   "none",
-			})
+			anonymous := AnonymousUser
+			anonymous.Roles = rbac.GetUserRoles(anonymous)
+			c.Set("user", anonymous)
 			c.Next()
 			return
 		}
@@ -258,14 +266,16 @@ func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 			}
 		}
 
-		// Store user info in context
-		c.Set("user", gin.H{
-			"id":         claims.UserID,
-			"username":   claims.Username,
-			"name":       claims.Name,
-			"avatar_url": claims.AvatarURL,
-			"provider":   claims.Provider,
-		})
+		u := common.User{
+			ID:         claims.UserID,
+			Username:   claims.Username,
+			Name:       claims.Name,
+			AvatarURL:  claims.AvatarURL,
+			Provider:   claims.Provider,
+			OIDCGroups: claims.OIDCGroups,
+		}
+		u.Roles = rbac.GetUserRoles(u)
+		c.Set("user", u)
 		c.Next()
 	}
 }

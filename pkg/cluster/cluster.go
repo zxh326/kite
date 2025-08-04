@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -11,6 +12,7 @@ import (
 	"github.com/zxh326/kite/pkg/common"
 	"github.com/zxh326/kite/pkg/kube"
 	"github.com/zxh326/kite/pkg/prometheus"
+	"github.com/zxh326/kite/pkg/rbac"
 	"github.com/zxh326/kite/pkg/utils"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -141,7 +143,20 @@ func (cm *ClusterManager) GetClientSet(clusterName string) (*ClientSet, error) {
 
 func (cm *ClusterManager) GetClusters(c *gin.Context) {
 	result := make([]common.ClusterInfo, 0, len(cm.clusters))
+	user := c.MustGet("user").(common.User)
+	if len(user.Roles) == 0 {
+		c.SetCookie("auth_token", "", -1, "/", "", false, true)
+		c.Header("Location", "/login?error=insufficient_permissions&reason=insufficient_permissions&user="+user.Username)
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Access denied",
+		})
+		return
+	}
+
 	for name, cluster := range cm.clusters {
+		if !rbac.CanAccessCluster(user, name) {
+			continue
+		}
 		result = append(result, common.ClusterInfo{
 			Name:      name,
 			Version:   cluster.Version,
@@ -151,6 +166,14 @@ func (cm *ClusterManager) GetClusters(c *gin.Context) {
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].Name < result[j].Name
 	})
+	if len(result) == 0 {
+		c.SetCookie("auth_token", "", -1, "/", "", false, true)
+		c.Header("Location", "/login?error=insufficient_permissions&reason=insufficient_permissions&user="+user.Username)
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Access denied",
+		})
+		return
+	}
 	c.JSON(200, result)
 }
 

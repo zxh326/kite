@@ -1,6 +1,7 @@
 import './App.css'
 
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Outlet, useSearchParams } from 'react-router-dom'
 
 import { AppSidebar } from './components/app-sidebar'
@@ -20,7 +21,8 @@ import { apiClient } from './lib/api-client'
 import { QueryProvider } from './lib/query-provider'
 
 function ClusterAwareApp() {
-  const { currentCluster, isLoading } = useCluster()
+  const { t } = useTranslation()
+  const { currentCluster, isLoading, error } = useCluster()
 
   useEffect(() => {
     apiClient.setClusterProvider(() => {
@@ -33,7 +35,17 @@ function ClusterAwareApp() {
       <div className="flex h-screen items-center justify-center">
         <div className="flex items-center space-x-2">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
-          <span>Loading clusters...</span>
+          <span>{t('cluster.loading')}</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-red-500">
+          <p>{t('cluster.error', { error: error.message })}</p>
         </div>
       </div>
     )
