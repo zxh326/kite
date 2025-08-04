@@ -698,11 +698,38 @@ export function LogViewer({
                 key={index}
                 className={wordWrap ? 'break-words' : 'break-all'}
               >
-                {segments.map((segment, segIndex) => (
-                  <span key={segIndex} style={ansiStateToCss(segment.styles)}>
-                    {segment.text}
-                  </span>
-                ))}
+                {segments.map((segment, segIndex) => {
+                  const text = segment.text
+                  if (!searchTerm) {
+                    return (
+                      <span
+                        key={segIndex}
+                        style={ansiStateToCss(segment.styles)}
+                      >
+                        {text}
+                      </span>
+                    )
+                  }
+
+                  const parts = text.split(new RegExp(`(${searchTerm})`, 'gi'))
+                  return (
+                    <span key={segIndex} style={ansiStateToCss(segment.styles)}>
+                      {parts.map((part, i) => {
+                        if (part.toLowerCase() === searchTerm.toLowerCase()) {
+                          return (
+                            <span
+                              key={i}
+                              className="bg-yellow-500/50 dark:bg-yellow-500/30 rounded px-0.5"
+                            >
+                              {part}
+                            </span>
+                          )
+                        }
+                        return part
+                      })}
+                    </span>
+                  )
+                })}
               </div>
             )
           })}
