@@ -26,7 +26,7 @@ func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
 		})
 		return
 	}
-	klog.V(2).Infof("Received webhook request: %+v", body)
+	klog.V(1).Infof("Received webhook request: %+v", body)
 	switch body.Action {
 	case common.ActionRestart:
 		handler, err := resources.GetHandler(body.Resource)

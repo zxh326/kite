@@ -17,12 +17,12 @@ func CanAccess(user common.User, resource, verb, cluster, namespace string) bool
 			match(role.Namespaces, namespace) &&
 			match(role.Resources, resource) &&
 			match(role.Verbs, verb) {
-			klog.V(5).Infof("RBAC Check - User: %s, OIDC Groups: %v, Resource: %s, Verb: %s, Cluster: %s, Namespace: %s, Hit Role: %v",
+			klog.V(1).Infof("RBAC Check - User: %s, OIDC Groups: %v, Resource: %s, Verb: %s, Cluster: %s, Namespace: %s, Hit Role: %v",
 				user.Key(), user.OIDCGroups, resource, verb, cluster, namespace, role.Name)
 			return true
 		}
 	}
-	klog.V(5).Infof("RBAC Check - User: %s, OIDC Groups: %v, Resource: %s, Verb: %s, Cluster: %s, Namespace: %s, No Access",
+	klog.V(1).Infof("RBAC Check - User: %s, OIDC Groups: %v, Resource: %s, Verb: %s, Cluster: %s, Namespace: %s, No Access",
 		user.Key(), user.OIDCGroups, resource, verb, cluster, namespace)
 	return false
 }

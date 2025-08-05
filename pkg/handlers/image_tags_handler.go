@@ -28,7 +28,7 @@ type dockerRegistry struct {
 
 func (d dockerRegistry) GetTags(ctx context.Context) ([]ImageTagInfo, error) {
 	url := fmt.Sprintf("https://hub.docker.com/v2/repositories/%s/tags?page_size=10&ordering=last_updated", d.repo)
-	klog.V(4).Infof("fetching tags from Docker Hub: %s", url)
+	klog.V(1).Infof("fetching tags from Docker Hub: %s", url)
 	resp, err := http.Get(url)
 	if err != nil {
 		klog.Errorf("failed to get tags from Docker Hub: %v", err)

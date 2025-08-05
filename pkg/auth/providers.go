@@ -224,7 +224,7 @@ func NewGenericProvider(name string) *GenericProvider {
 					if userInfoURL == "" {
 						userInfoURL = meta.UserinfoEndpoint
 					}
-					klog.V(5).Infof("Discovered %s openid configuration", name)
+					klog.V(1).Infof("Discovered %s openid configuration", name)
 				}
 			}
 		}
@@ -350,7 +350,7 @@ func (g *GenericProvider) GetUserInfo(accessToken string) (*common.User, error) 
 		return nil, err
 	}
 
-	klog.V(5).Infof("User info from %s: %v", g.Name, userInfo)
+	klog.V(1).Infof("User info from %s: %v", g.Name, userInfo)
 
 	// Map common fields - this might need customization per provider
 	user := &common.User{

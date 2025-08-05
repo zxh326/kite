@@ -69,7 +69,7 @@ func watchConfig(path string) {
 
 	// Function to reload configuration
 	reloadConfig := func() {
-		klog.V(3).Infof("Reloading RBAC configuration from %s", path)
+		klog.V(1).Infof("Reloading RBAC configuration from %s", path)
 		cfg, err := LoadRolesConfig(path)
 		if err != nil {
 			klog.Errorf("Failed to reload RBAC configuration: %v", err)
@@ -78,18 +78,18 @@ func watchConfig(path string) {
 		rwlock.Lock()
 		RBACConfig = cfg
 		rwlock.Unlock()
-		klog.V(3).Info("RBAC configuration reloaded successfully")
+		klog.V(1).Info("RBAC configuration reloaded successfully")
 	}
 
 	for {
 		select {
 		case event := <-watcher.Events:
-			klog.V(5).Infof("RBAC config file event: %s", event)
+			klog.V(1).Infof("RBAC config file event: %s", event)
 
 			// Handle different types of events
 			if event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
 				// ConfigMap updates in k8s can trigger Remove or Rename events as symlinks are updated
-				klog.V(4).Infof("ConfigMap change detected (remove/rename). Re-adding watcher for %s", path)
+				klog.V(1).Infof("ConfigMap change detected (remove/rename). Re-adding watcher for %s", path)
 				_ = watcher.Remove(event.Name)
 
 				// Wait a moment for k8s to finish updating the symlink/file
@@ -100,7 +100,7 @@ func watchConfig(path string) {
 				reloadConfig()
 			} else if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
 				// Regular file write or create event
-				klog.V(4).Infof("File write/create detected. Reloading configuration")
+				klog.V(1).Infof("File write/create detected. Reloading configuration")
 				reloadConfig()
 			}
 		case err := <-watcher.Errors:

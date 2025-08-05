@@ -49,7 +49,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	state := h.manager.GenerateState()
 
-	klog.V(5).Infof("OAuth Login - Provider: %s, State: %s", provider, state)
+	klog.V(1).Infof("OAuth Login - Provider: %s, State: %s", provider, state)
 
 	// Store state and provider in cookies with better settings
 	// Using SameSite=Lax to allow cross-site requests during OAuth flow
@@ -114,7 +114,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		provider = "github" // Default to GitHub for backward compatibility
 	}
 
-	klog.V(5).Infof("OAuth Callback - Using provider: %s\n", provider)
+	klog.V(1).Infof("OAuth Callback - Using provider: %s\n", provider)
 
 	// Clear cookies
 	c.SetCookie("oauth_state", "", -1, "/", "", false, true)
