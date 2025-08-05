@@ -121,8 +121,14 @@ _Secure authentication with GitHub and custom OAuth providers_
 
 To run Kite using Docker, you can use the pre-built image:
 
+> NOTE: examle role config all users has viewer perminsion
+
+> See [Roles Configuration](docs/ROLES_CONFIG.md) for more details on configuring roles and permissions.
+
 ```bash
-docker run --rm -p 8080:8080 -v ~/.kube/config:/home/nonroot/.kube/config ghcr.io/zxh326/kite:latest
+# download example roles config
+wget https://raw.githubusercontent.com/zxh326/kite/refs/heads/main/docs/roles.yaml
+docker run --rm -p 8080:8080 -v ./roles.yaml:/config/roles.yaml -v ~/.kube/config:/home/nonroot/.kube/config ghcr.io/zxh326/kite:latest
 ```
 
 ### Deploy in Kubernetes
