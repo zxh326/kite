@@ -8,6 +8,9 @@ on:
     # Publish `v1.2.3` tags as releases.
     tags:
       - v*
+    paths-ignore:
+      - "docs/**"
+      - "chart/**"
 env:
   IMAGE_NAME: kite
   GO_VERSION: "1.24.3"
