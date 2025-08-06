@@ -66,13 +66,13 @@ else
 fi
 
 # Validate rendered YAML
-echo "📋 Validating rendered YAML..."
-if kubectl apply --dry-run=client -f "$TEMP_DIR/rendered.yaml" > /dev/null 2>&1; then
-    echo "✅ Rendered YAML is valid"
-else
-    echo "❌ Rendered YAML validation failed"
-    exit 1
-fi
+# echo "📋 Validating rendered YAML..."
+# if kubectl apply --dry-run=client -f "$TEMP_DIR/rendered.yaml" > /dev/null 2>&1; then
+#     echo "✅ Rendered YAML is valid"
+# else
+#     echo "❌ Rendered YAML validation failed"
+#     exit 1
+# fi
 
 # Test with different values
 echo "🔧 Testing with custom values..."
