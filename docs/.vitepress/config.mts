@@ -37,7 +37,17 @@ export default defineConfig({
     },
   },
 
-  head: [["link", { rel: "icon", href: "/logo.svg" }]],
+  head: [
+    ["link", { rel: "icon", href: "/logo.svg" }],
+    [
+      "script",
+      {
+        src: "https://cloud.umami.is/script.js",
+        "data-website-id": "764af8e4-8fa4-4fc5-83e2-304718cc15fe",
+        defer: "true",
+      },
+    ],
+  ],
 
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
