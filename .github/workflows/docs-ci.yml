@@ -1,0 +1,35 @@
+name: Test VitePress
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "docs/**"
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: "docs/pnpm-lock.yaml"
+      - name: Install dependencies
+        run: pnpm install
+        working-directory: ./docs
+      - name: Build with VitePress
+        run: pnpm run docs:build
+        working-directory: ./docs
