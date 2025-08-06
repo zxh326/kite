@@ -77,6 +77,7 @@ multiCluster:
 
   prometheus:
     # 格式为集群名：Prometheus URL
+    # 如果集群名字中有特殊字符，请使用下划线替换
     # production: "https://prometheus.production.example.com"
     # staging: "https://prometheus.staging.example.com"
     # cluster-1: "http://prometheus.cluster-1.svc.cluster.local:9090"
@@ -88,9 +89,19 @@ multiCluster:
 
 示例：
 
+- 使用环境变量
+
 ```bash
 # 集群名称: arn:aws-cn:eks:cn-north-1:123456:cluster/kite
 export ARN_AWS_CN_EKS_CN_NORTH_1_123456_CLUSTER_KITE_PROMETHEUS_URL=http://prometheus-server:9090
+```
+
+- 使用 `values.yaml`
+
+```yaml
+multiCluster:
+  prometheus:
+    arn_aws_cn_eks_cn_north_1_123456_cluster_kite: "http://prometheus-server:9090"
 ```
 
 ## 验证 Prometheus 集成

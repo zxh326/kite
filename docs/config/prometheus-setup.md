@@ -85,6 +85,7 @@ multiCluster:
 
   prometheus:
     # Format is cluster name: Prometheus URL
+    # If the cluster name contains special characters, please replace them with underscores (`_`).
     # production: "https://prometheus.production.example.com"
     # staging: "https://prometheus.staging.example.com"
     # cluster-1: "http://prometheus.cluster-1.svc.cluster.local:9090"
@@ -92,13 +93,23 @@ multiCluster:
 
 ### Special Character Handling
 
-For cluster names with special characters, replace them with underscores (`_`), and then capitalize:
+For cluster names with special characters, replace them with underscores (`_`)
 
 Example:
+
+- using env
 
 ```bash
 # Cluster name: arn:aws-cn:eks:cn-north-1:123456:cluster/kite
 export ARN_AWS_CN_EKS_CN_NORTH_1_123456_CLUSTER_KITE_PROMETHEUS_URL=http://prometheus-server:9090
+```
+
+- using values.yaml
+
+```yaml
+multiCluster:
+  prometheus:
+    arn_aws_cn_eks_cn_north_1_123456_cluster_kite: "http://prometheus-server:9090"
 ```
 
 ## Verifying Prometheus Integration
