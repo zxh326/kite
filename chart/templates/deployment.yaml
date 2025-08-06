@@ -89,8 +89,8 @@ spec:
           {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          - name: {{ include "kite.fullname" . }}-roles
-            mountPath: /config
+            - name: {{ include "kite.fullname" . }}-roles
+              mountPath: /config
       volumes:
       {{- if .Values.multiCluster.enabled }}
         - name: kubeconfig

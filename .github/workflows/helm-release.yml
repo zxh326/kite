@@ -48,6 +48,7 @@ jobs:
       - name: Lint Helm Chart
         run: |
           helm lint chart/
+          ./scripts/validate-chart.sh
 
       - name: Package Helm Chart
         run: |
