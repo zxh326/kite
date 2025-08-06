@@ -7,7 +7,7 @@ hero:
   text: "现代化、直观的 Kubernetes 仪表盘"
   tagline: "轻量级、强大的集群管理与监控工具"
   image:
-    src: /assets/logo.svg
+    src: /logo.svg
     alt: Kite Logo
   actions:
     - theme: brand
