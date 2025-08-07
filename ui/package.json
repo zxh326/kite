@@ -71,7 +71,7 @@
     "prettier": "^3.6.2",
     "tw-animate-css": "^1.3.6",
     "typescript": "~5.9.2",
-    "typescript-eslint": "^8.38.0",
+    "typescript-eslint": "^8.39.0",
     "vite": "^7.0.6"
   }
 }

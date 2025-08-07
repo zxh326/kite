@@ -84,7 +84,7 @@ export function PodListPage() {
         id: 'creationTimestamp',
         header: t('common.created'),
         cell: ({ getValue }) => {
-          const dateStr = formatDate(getValue() || '', true)
+          const dateStr = formatDate(getValue() || '')
           return (
             <span className="text-muted-foreground text-sm">{dateStr}</span>
           )

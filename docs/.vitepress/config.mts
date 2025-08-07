@@ -5,6 +5,11 @@ export default defineConfig({
   title: "Kite",
   description: "A modern, intuitive Kubernetes dashboard",
 
+  sitemap: {
+    hostname: 'https://kite.zzde.me',
+    lastmodDateOnly: false
+  },
+
   markdown: {
     image: {
       lazyLoading: true,
@@ -28,6 +33,7 @@ export default defineConfig({
           { text: "首页", link: "/zh/" },
           { text: "指南", link: "/zh/guide/" },
           { text: "配置", link: "/zh/config/" },
+          { text: "常见问题", link: "/zh/faq" },
         ],
         editLink: {
           pattern: "https://github.com/zxh326/kite/tree/main/docs/:path",
@@ -62,6 +68,7 @@ export default defineConfig({
       { text: "Home", link: "/" },
       { text: "Guide", link: "/guide/" },
       { text: "Configuration", link: "/config/" },
+      { text: "FAQ", link: "/faq" },
     ],
 
     sidebar: {
