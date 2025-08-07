@@ -1,4 +1,5 @@
 import { clsx, type ClassValue } from 'clsx'
+import { format, formatDistance } from 'date-fns'
 import { TFunction } from 'i18next'
 import { twMerge } from 'tailwind-merge'
 
@@ -54,17 +55,9 @@ export function getAge(timestamp: string): string {
 }
 
 export function formatDate(timestamp: string, addTo = false): string {
-  const s = new Date(timestamp).toLocaleString(undefined, {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  })
-
-  return addTo ? `${s} (${getAge(timestamp)})` : s
+  const date = new Date(timestamp)
+  const s = format(date, 'yyyy-MM-dd HH:mm:ss')
+  return addTo ? `${s} (${formatDistance(new Date(), date)})` : s
 }
 
 export function formatChartXTicks(
