@@ -103,6 +103,41 @@ roleMapping:
 
 ## 部署
 
+### 使用 Helm Chart
+
+```yaml
+roleConfig:
+  roles:
+    - name: admin
+      description: Administrator role with full access.
+      clusters:
+        - '*'
+      resources:
+        - '*'
+      namespaces:
+        - '*'
+      verbs:
+        - '*'
+    - name: viewer
+      description: Viewer role with read-only access
+      clusters:
+        - '*'
+      resources:
+        - '*'
+      namespaces:
+        - '*'
+      verbs:
+        - 'get'
+  roleMapping:
+    # map specific users to the admin role
+    # - name: admin
+    #   oidcGroups:
+    #     - admins
+    # - name: viewer
+    #   users:
+    #     - 'zxh326'
+```
+
 ### 使用 ConfigMap
 
 1. 使用您的 RBAC 配置创建 ConfigMap：

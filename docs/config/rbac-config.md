@@ -103,6 +103,41 @@ The role mapping section connects users or OIDC groups to roles:
 
 ## Deployment
 
+### Using Helm Chart
+
+```yaml
+roleConfig:
+  roles:
+    - name: admin
+      description: Administrator role with full access.
+      clusters:
+        - '*'
+      resources:
+        - '*'
+      namespaces:
+        - '*'
+      verbs:
+        - '*'
+    - name: viewer
+      description: Viewer role with read-only access
+      clusters:
+        - '*'
+      resources:
+        - '*'
+      namespaces:
+        - '*'
+      verbs:
+        - 'get'
+  roleMapping:
+    # map specific users to the admin role
+    # - name: admin
+    #   oidcGroups:
+    #     - admins
+    # - name: viewer
+    #   users:
+    #     - 'zxh326'
+```
+
 ### Using ConfigMap
 
 1. Create a ConfigMap with your RBAC configuration:
