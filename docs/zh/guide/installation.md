@@ -26,7 +26,7 @@ Kite 可以开箱即用，无需最少的配置。
 
 ```bash
 # 添加 Kite 仓库
-helm repo add kite https://zxh326.github.io/kite/charts
+helm repo add kite https://zxh326.github.io/kite
 
 # 更新仓库信息
 helm repo update

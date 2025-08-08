@@ -26,7 +26,7 @@ Using Helm provides the most flexibility for configuration and upgrades:
 
 ```bash
 # Add the Kite repository
-helm repo add kite https://zxh326.github.io/kite/charts
+helm repo add kite https://zxh326.github.io/kite
 
 # Update repository information
 helm repo update
