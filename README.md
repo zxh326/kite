@@ -19,6 +19,9 @@ _A modern, intuitive Kubernetes dashboard_
 
 Kite is a lightweight, modern Kubernetes dashboard that provides an intuitive interface for managing and monitoring your Kubernetes clusters. It offers real-time metrics, comprehensive resource management, multi-cluster support, and a beautiful user experience.
 
+> [!WARNING]
+> This project is currently in rapid development and testing, and the usage and API may change.
+
 ![Dashboard Overview](docs/screenshots/overview.png)
 _Comprehensive cluster overview with real-time metrics and resource statistics_
 

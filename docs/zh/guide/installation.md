@@ -9,7 +9,7 @@
 
 ## 安装选项
 
-::: info
+::: tip 注意
 Kite 可以开箱即用，无需最少的配置。
 
 - 如果使用 CLI 运行，默认使用您的本地 kubeconfig。
@@ -85,7 +85,7 @@ kubectl get svc kite -n kite-system
 
 对于生产部署，配置 Ingress 控制器以使用 TLS 暴露 Kite：
 
-::: tip
+::: warning
 Kite 的日志和 Web 终端功能需要提供 websocket 支持。
 
 某些 Ingress 控制器可能需要额外的配置才能正确处理 websocket。

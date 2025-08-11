@@ -44,21 +44,6 @@ body {
 }
 ```
 
-## How to Manage RBAC Rules in the UI
-
-As you know, Kite is a lightweight Kubernetes dashboard designed to provide simple cluster management functionality. It requires no external dependencies. If RBAC management functionality were added to the UI, it would require at least a database to store RBAC rules, which would make Kite more complex. As of now, we do not plan to introduce such functionality.
-
-## What Kite Won't Do
-
-Kite aims to provide a **lightweight** Kubernetes dashboard focused on resource management and monitoring. It will not do the following:
-
-- Built-in user system
-- Alerting system
-- CI/CD
-- Automatic cluster installation and maintenance
-
-These features often have more mature solutions available.
-
 ## How Can I Contribute to Kite?
 
 We welcome contributions! You can:

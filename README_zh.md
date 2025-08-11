@@ -19,6 +19,9 @@ _一个现代化、直观的 Kubernetes Dashboard_
 
 Kite 是一个轻量级、现代化的 Kubernetes Dashboard，为管理和监控您的 Kubernetes 集群提供了一个直观的界面。它提供实时指标、全面的资源管理、多集群支持和优美的用户体验。
 
+> [!WARNING]
+> 本项目正在快速迭代开发中，使用方式和 API 都有可能变化。
+
 ![Dashboard Overview](docs/screenshots/overview.png)
 _全面的集群概览，包含实时指标和资源统计_
 

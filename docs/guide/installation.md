@@ -9,7 +9,7 @@ This guide provides detailed instructions for installing Kite in your Kubernetes
 
 ## Installation Options
 
-::: info
+::: tip
 Kite works out of the box with minimal configuration.
 
 - If running with CLI, it defaults to using your local kubeconfig.
