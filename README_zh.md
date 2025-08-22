@@ -110,7 +110,7 @@ docker run --rm -p 8080:8080 -v ./roles.yaml:/config/roles.yaml -v ~/.kube/confi
 2.  **通过端口转发访问**
 
     ```bash
-    kubectl port-forward -n kube-system svc/kite 8080:80
+    kubectl port-forward -n kube-system svc/kite 8080:8080
     ```
 
 ### 从源码构建
