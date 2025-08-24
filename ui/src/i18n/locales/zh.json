@@ -140,7 +140,7 @@
     "tryAgainHint": "您可以尝试使用具有所需权限的其他账户登录。",
     "noLoginMethods": "未配置登录方式",
     "configureAuth": "请在您的环境中配置身份验证提供程序",
-    "footer": "© {{year}} Kite. 为 Kubernetes 爱好者而构建。",
+    "footer": "© {{year}} Kite. 版权所有。",
     "documentation": "文档",
     "errors": {
       "accessDenied": "访问被拒绝",
@@ -192,6 +192,122 @@
       "exec": "exec"
     }
   },
+  "settings": {
+    "title": "设置",
+    "description": "管理集群、角色和权限",
+    "tabs": {
+      "clusters": "集群",
+      "oauth": "OAuth",
+      "rbac": "权限控制",
+      "users": "用户"
+    }
+  },
+  "clusterManagement": {
+    "title": "集群管理",
+    "actions": {
+      "add": "添加集群",
+      "edit": "编辑",
+      "delete": "删除"
+    },
+    "table": {
+      "name": "名称",
+      "type": "类型",
+      "status": "状态",
+      "prometheus": "Prometheus",
+      "actions": "操作"
+    },
+    "type": {
+      "inCluster": "集群内",
+      "external": "外部"
+    },
+    "status": {
+      "enabled": "已启用",
+      "disabled": "已禁用"
+    },
+    "empty": {
+      "title": "暂无集群配置",
+      "description": "添加您的第一个集群以开始使用"
+    },
+    "messages": {
+      "created": "集群创建成功",
+      "updated": "集群更新成功",
+      "deleted": "集群删除成功",
+      "createError": "创建集群失败",
+      "updateError": "更新集群失败",
+      "deleteError": "删除集群失败"
+    },
+    "errors": {
+      "loadFailed": "加载集群失败"
+    },
+    "deleteConfirmation": "此操作只会移除 kite 中的集群配置，不会删除任何集群资源。",
+    "dialog": {
+      "createTitle": "添加集群",
+      "editTitle": "编辑集群",
+      "name": "名称",
+      "namePlaceholder": "输入集群名称",
+      "description": "描述",
+      "descriptionPlaceholder": "输入集群描述（可选）",
+      "type": "类型",
+      "config": "配置",
+      "configPlaceholder": "在此粘贴 kubeconfig 内容...",
+      "prometheusUrl": "Prometheus URL",
+      "prometheusUrlPlaceholder": "https://prometheus.example.com",
+      "enabled": "启用",
+      "isDefault": "设为默认"
+    }
+  },
+  "oauthManagement": {
+    "title": "OAuth 提供商管理",
+    "actions": {
+      "add": "添加提供商",
+      "edit": "编辑",
+      "delete": "删除"
+    },
+    "table": {
+      "name": "名称",
+      "clientId": "客户端 ID",
+      "issuer": "签发者",
+      "status": "状态",
+      "actions": "操作"
+    },
+    "status": {
+      "enabled": "已启用",
+      "disabled": "已禁用"
+    },
+    "empty": {
+      "title": "暂无 OAuth 提供商配置",
+      "description": "添加您的第一个 OAuth 提供商以启用社交登录"
+    },
+    "messages": {
+      "created": "OAuth 提供商创建成功",
+      "updated": "OAuth 提供商更新成功",
+      "deleted": "OAuth 提供商删除成功",
+      "createError": "创建 OAuth 提供商失败",
+      "updateError": "更新 OAuth 提供商失败",
+      "deleteError": "删除 OAuth 提供商失败"
+    },
+    "errors": {
+      "loadFailed": "加载 OAuth 提供商失败"
+    },
+    "deleteConfirmation": "此操作将移除 OAuth 提供商配置，用户将无法再使用该提供商登录。",
+    "dialog": {
+      "createTitle": "添加 OAuth 提供商",
+      "editTitle": "编辑 OAuth 提供商",
+      "name": "名称",
+      "namePlaceholder": "例如：github, google",
+      "clientId": "客户端 ID",
+      "clientIdPlaceholder": "OAuth 客户端 ID",
+      "clientSecret": "客户端密钥",
+      "clientSecretRequired": "OAuth 客户端密钥",
+      "clientSecretPlaceholder": "留空以保持当前密钥",
+      "authUrl": "授权 URL",
+      "tokenUrl": "令牌 URL",
+      "userInfoUrl": "用户信息 URL",
+      "scopes": "权限范围",
+      "issuer": "签发者",
+      "enabled": "启用"
+    }
+  },
   "initialization": {
     "title": "初始化设置",
     "welcome": "欢迎！让我们来设置您的 Kite Dashboard",
@@ -232,70 +348,6 @@
       "importSuccess": "集群导入成功",
       "importError": "导入集群失败",
       "configRequired": "请提供 kubeconfig 文件"
-    },
-    "completion": {
-      "title": "设置完成！",
-      "message": "您将很快被重定向到仪表盘..."
-    },
-    "footer": {
-      "copyright": "© {{year}} Kite. 版权所有。",
-      "documentation": "文档",
-      "github": "GitHub"
-    }
-  },
-  "settings": {
-    "title": "设置",
-    "description": "管理集群、角色和权限",
-    "tabs": {
-      "clusters": "集群管理",
-      "permissions": "权限管理"
-    }
-  },
-  "clusterManagement": {
-    "title": "集群管理",
-    "deleteConfirmation": "此操作仅会删除当前集群在 Kite 上的的配置，不会删除任何集群资源。",
-    "actions": {
-      "add": "添加集群",
-      "edit": "编辑",
-      "delete": "删除",
-      "save": "保存更改"
-    },
-    "table": {
-      "name": "名称",
-      "actions": "操作"
-    },
-    "resourceType": "集群",
-    "dialog": {
-      "add": {
-        "title": "添加新集群",
-        "description": "添加一个新的 Kubernetes 集群以便使用 Kite 进行管理。"
-      },
-      "edit": {
-        "title": "编辑集群",
-        "description": "更新集群配置。"
-      }
-    },
-    "form": {
-      "name": {
-        "label": "集群名称",
-        "placeholder": "例如：production、staging"
-      },
-      "description": {
-        "label": "描述",
-        "placeholder": "集群的简短描述"
-      },
-      "kubeconfig": {
-        "label": "Kubeconfig 内容",
-        "placeholder": "在此处粘贴您的 kubeconfig 内容..."
-      },
-      "inCluster": {
-        "note": "使用集群内服务帐户配置。无需额外的 kubeconfig。"
-      }
-    },
-    "info": {
-      "title": "当前状态",
-      "nodes": "节点",
-      "version": "版本"
     }
   }
 }

@@ -27,7 +27,7 @@ import { Textarea } from '@/components/ui/textarea'
 interface ClusterDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  cluster?: Cluster | null // 为空时表示添加模式，有值时表示编辑模式
+  cluster?: Cluster | null
   onSubmit: (clusterData: ClusterCreateRequest) => void
 }
 
@@ -52,7 +52,6 @@ export function ClusterDialog({
 
   useEffect(() => {
     if (cluster) {
-      // 编辑模式：填充现有数据
       setFormData({
         name: cluster.name,
         description: cluster.description || '',
@@ -63,7 +62,6 @@ export function ClusterDialog({
         inCluster: cluster.inCluster,
       })
     } else {
-      // 添加模式：重置为默认值
       setFormData({
         name: '',
         description: '',

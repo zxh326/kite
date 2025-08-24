@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -24,9 +25,9 @@ var (
 )
 
 type Model struct {
-	ID        uint `gorm:"primarykey"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        uint      `json:"id" gorm:"primarykey"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 type SecretString string
@@ -73,6 +74,30 @@ func (s SecretString) Value() (driver.Value, error) {
 	return encrypted, nil
 }
 
+type LowerCaseString string
+
+func (s *LowerCaseString) Scan(value interface{}) error {
+	if value == nil {
+		*s = ""
+		return nil
+	}
+	var str string
+	switch v := value.(type) {
+	case string:
+		str = v
+	case []byte:
+		str = string(v)
+	default:
+		return fmt.Errorf("cannot scan %T into LowerCaseString", value)
+	}
+	*s = LowerCaseString(strings.ToLower(str))
+	return nil
+}
+
+func (s LowerCaseString) Value() (driver.Value, error) {
+	return strings.ToLower(string(s)), nil
+}
+
 func InitDB() {
 	dsn := common.DBDSN
 
@@ -117,6 +142,7 @@ func InitDB() {
 	models := []interface{}{
 		User{},
 		Cluster{},
+		OAuthProvider{},
 	}
 	for _, model := range models {
 		err = DB.AutoMigrate(model)

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { ClusterManagement } from '@/components/settings/cluster-management'
+import { OAuthProviderManagement } from '@/components/settings/oauth-provider-management'
 
 export function SettingsPage() {
   const { t } = useTranslation()
@@ -21,22 +22,22 @@ export function SettingsPage() {
         tabs={[
           {
             value: 'clusters',
-            label: t('settings.tabs.clusters', 'Cluster Management'),
+            label: t('settings.tabs.clusters', 'Cluster'),
             content: <ClusterManagement />,
           },
           {
-            value: 'auth',
-            label: t('settings.tabs.auth', 'Authentication'),
-            content: <div />,
+            value: 'oauth',
+            label: t('settings.tabs.oauth', 'OAuth'),
+            content: <OAuthProviderManagement />,
           },
           {
             value: 'rbac',
-            label: t('settings.tabs.rbac', 'Access Control'),
+            label: t('settings.tabs.rbac', 'RBAC'),
             content: <div />,
           },
           {
             value: 'users',
-            label: t('settings.tabs.users', 'User Management'),
+            label: t('settings.tabs.users', 'User'),
             content: <div />,
           },
         ]}

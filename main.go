@@ -83,11 +83,20 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 
 	// admin apis
 	adminAPI := r.Group("/api/v1/admin")
+	// TODO check admin middleware
 	{
 		adminAPI.POST("/create_super_user", handlers.CreateSuperUser)
-		adminAPI.POST("/users", handlers.CreatePasswordUser)
+		// adminAPI.POST("/users", handlers.CreatePasswordUser)
 
-		// TODO check admin middleware
+		oauthProviderAPI := adminAPI.Group("/oauth-providers")
+		{
+			oauthProviderAPI.GET("/", authHandler.ListOAuthProviders)
+			oauthProviderAPI.POST("/", authHandler.CreateOAuthProvider)
+			oauthProviderAPI.GET("/:id", authHandler.GetOAuthProvider)
+			oauthProviderAPI.PUT("/:id", authHandler.UpdateOAuthProvider)
+			oauthProviderAPI.DELETE("/:id", authHandler.DeleteOAuthProvider)
+		}
+
 		clusterAPI := adminAPI.Group("/clusters")
 		{
 			clusterAPI.GET("/", cm.GetClusterList)

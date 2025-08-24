@@ -23,6 +23,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Footer } from '@/components/footer'
 import { LanguageToggle } from '@/components/language-toggle'
 
 interface InitStepProps {
@@ -435,33 +436,7 @@ export function InitializationPage() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 bg-white">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
-            <p className="text-sm text-gray-500">
-              {t('initialization.footer.copyright', {
-                year: new Date().getFullYear(),
-              })}
-            </p>
-            <div className="flex space-x-6 text-sm text-gray-500">
-              <a
-                href="https://kite.zzde.com"
-                target="_blank"
-                className="hover:text-gray-700 transition-colors"
-              >
-                {t('initialization.footer.documentation')}
-              </a>
-              <a
-                href="https://github.com/zxh326/kite"
-                target="_blank"
-                className="hover:text-gray-700 transition-colors"
-              >
-                Github
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }

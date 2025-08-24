@@ -319,3 +319,18 @@ export interface Cluster {
   updatedAt: string
   prometheusURL?: string
 }
+
+export interface OAuthProvider {
+  id: number
+  name: string
+  clientId: string
+  clientSecret: string
+  authUrl?: string
+  tokenUrl?: string
+  userInfoUrl?: string
+  scopes?: string
+  issuer?: string
+  enabled: boolean
+  createdAt: string
+  updatedAt: string
+}

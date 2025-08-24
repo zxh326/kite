@@ -1,9 +1,5 @@
 package model
 
-import (
-	"github.com/zxh326/kite/pkg/utils"
-)
-
 type Cluster struct {
 	Model
 	Name          string       `json:"name" gorm:"type:varchar(100);uniqueIndex;not null"`
@@ -36,11 +32,6 @@ func GetClusterByID(id uint) (*Cluster, error) {
 }
 
 func UpdateCluster(cluster *Cluster, updates map[string]interface{}) error {
-	if config, ok := updates["config"]; ok {
-		if configStr, ok := config.(string); ok && configStr != "" {
-			updates["config"] = utils.EncryptString(configStr)
-		}
-	}
 	return DB.Model(cluster).Updates(updates).Error
 }
 

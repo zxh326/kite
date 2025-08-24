@@ -7,6 +7,7 @@ import {
   Cluster,
   clusterScopeResources,
   ImageTagInfo,
+  OAuthProvider,
   OverviewData,
   PodMetrics,
   RelatedResources,
@@ -1368,4 +1369,76 @@ export const deleteCluster = async (
   id: number
 ): Promise<{ message: string }> => {
   return await apiClient.delete<{ message: string }>(`/admin/clusters/${id}`)
+}
+
+// OAuth Provider Management
+export interface OAuthProviderCreateRequest {
+  name: string
+  clientId: string
+  clientSecret: string
+  authUrl?: string
+  tokenUrl?: string
+  userInfoUrl?: string
+  scopes?: string
+  issuer?: string
+  enabled?: boolean
+}
+
+export interface OAuthProviderUpdateRequest
+  extends Omit<OAuthProviderCreateRequest, 'clientSecret'> {
+  clientSecret?: string // Optional when updating
+}
+
+// Get OAuth provider list for management
+export const fetchOAuthProviderList = (): Promise<OAuthProvider[]> => {
+  return fetchAPI<{ providers: OAuthProvider[] }>(
+    '/admin/oauth-providers/'
+  ).then((response) => response.providers)
+}
+
+export const useOAuthProviderList = (options?: { staleTime?: number }) => {
+  return useQuery({
+    queryKey: ['oauth-provider-list'],
+    queryFn: fetchOAuthProviderList,
+    staleTime: options?.staleTime || 30000, // 30 seconds cache
+  })
+}
+
+// Create OAuth provider
+export const createOAuthProvider = async (
+  providerData: OAuthProviderCreateRequest
+): Promise<{ provider: OAuthProvider }> => {
+  return await apiClient.post<{ provider: OAuthProvider }>(
+    '/admin/oauth-providers/',
+    providerData
+  )
+}
+
+// Update OAuth provider
+export const updateOAuthProvider = async (
+  id: number,
+  providerData: OAuthProviderUpdateRequest
+): Promise<{ provider: OAuthProvider }> => {
+  return await apiClient.put<{ provider: OAuthProvider }>(
+    `/admin/oauth-providers/${id}`,
+    providerData
+  )
+}
+
+// Delete OAuth provider
+export const deleteOAuthProvider = async (
+  id: number
+): Promise<{ success: boolean; message: string }> => {
+  return await apiClient.delete<{ success: boolean; message: string }>(
+    `/admin/oauth-providers/${id}`
+  )
+}
+
+// Get single OAuth provider
+export const fetchOAuthProvider = async (
+  id: number
+): Promise<OAuthProvider> => {
+  return fetchAPI<{ provider: OAuthProvider }>(
+    `/admin/oauth-providers/${id}`
+  ).then((response) => response.provider)
 }

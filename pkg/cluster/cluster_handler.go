@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -34,7 +35,6 @@ func (cm *ClusterManager) GetClusters(c *gin.Context) {
 	c.JSON(200, result)
 }
 
-// GetClusterList 获取完整的集群配置列表（用于管理界面）
 func (cm *ClusterManager) GetClusterList(c *gin.Context) {
 	clusters, err := model.ListClusters()
 	if err != nil {
@@ -55,7 +55,6 @@ func (cm *ClusterManager) GetClusterList(c *gin.Context) {
 			"config":        "",
 		}
 
-		// 获取版本信息
 		if clientSet, exists := cm.clusters[cluster.Name]; exists {
 			clusterInfo["version"] = clientSet.Version
 		}
@@ -66,7 +65,6 @@ func (cm *ClusterManager) GetClusterList(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// CreateCluster 创建新集群
 func (cm *ClusterManager) CreateCluster(c *gin.Context) {
 	var req struct {
 		Name          string `json:"name" binding:"required"`
@@ -82,16 +80,14 @@ func (cm *ClusterManager) CreateCluster(c *gin.Context) {
 		return
 	}
 
-	// 检查是否已存在同名集群
 	if _, err := model.GetClusterByName(req.Name); err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "cluster already exists"})
 		return
-	} else if err != gorm.ErrRecordNotFound {
+	} else if errors.Is(err, gorm.ErrRecordNotFound) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 如果设置为默认集群，先将其他集群设为非默认
 	if req.IsDefault {
 		if err := model.ClearDefaultCluster(); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -114,7 +110,6 @@ func (cm *ClusterManager) CreateCluster(c *gin.Context) {
 		return
 	}
 
-	// 触发同步
 	syncNow <- struct{}{}
 
 	c.JSON(http.StatusCreated, gin.H{
@@ -123,7 +118,6 @@ func (cm *ClusterManager) CreateCluster(c *gin.Context) {
 	})
 }
 
-// UpdateCluster 更新集群配置
 func (cm *ClusterManager) UpdateCluster(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -149,7 +143,7 @@ func (cm *ClusterManager) UpdateCluster(c *gin.Context) {
 
 	cluster, err := model.GetClusterByID(uint(id))
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "cluster not found"})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -157,7 +151,6 @@ func (cm *ClusterManager) UpdateCluster(c *gin.Context) {
 		return
 	}
 
-	// 如果设置为默认集群，先将其他集群设为非默认
 	if req.IsDefault && !cluster.IsDefault {
 		if err := model.ClearDefaultCluster(); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -165,7 +158,6 @@ func (cm *ClusterManager) UpdateCluster(c *gin.Context) {
 		}
 	}
 
-	// 更新字段 - 只更新非空字段
 	updates := map[string]interface{}{
 		"description":    req.Description,
 		"prometheus_url": req.PrometheusURL,
@@ -174,12 +166,10 @@ func (cm *ClusterManager) UpdateCluster(c *gin.Context) {
 		"enable":         req.Enabled,
 	}
 
-	// 只有在提供了名称且与当前名称不同时才更新名称
 	if req.Name != "" && req.Name != cluster.Name {
 		updates["name"] = req.Name
 	}
 
-	// 只有在提供了配置时才更新配置
 	if req.Config != "" {
 		updates["config"] = req.Config
 	}
@@ -189,13 +179,11 @@ func (cm *ClusterManager) UpdateCluster(c *gin.Context) {
 		return
 	}
 
-	// 触发同步
 	syncNow <- struct{}{}
 
 	c.JSON(http.StatusOK, gin.H{"message": "cluster updated successfully"})
 }
 
-// DeleteCluster 删除集群
 func (cm *ClusterManager) DeleteCluster(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -206,7 +194,7 @@ func (cm *ClusterManager) DeleteCluster(c *gin.Context) {
 
 	cluster, err := model.GetClusterByID(uint(id))
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "cluster not found"})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -214,7 +202,6 @@ func (cm *ClusterManager) DeleteCluster(c *gin.Context) {
 		return
 	}
 
-	// 不允许删除默认集群
 	if cluster.IsDefault {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete default cluster"})
 		return
@@ -225,7 +212,6 @@ func (cm *ClusterManager) DeleteCluster(c *gin.Context) {
 		return
 	}
 
-	// 触发同步
 	syncNow <- struct{}{}
 
 	c.JSON(http.StatusOK, gin.H{"message": "cluster deleted successfully"})
@@ -241,6 +227,16 @@ func (cm *ClusterManager) ImportClustersFromKubeconfig(c *gin.Context) {
 	kubeconfig, err := clientcmd.Load([]byte(clusterReq.Config))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	cc, err := model.CountClusters()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if cc > 0 {
+		c.JSON(http.StatusForbidden, gin.H{"error": "import not allowed when clusters exist"})
 		return
 	}
 

@@ -40,10 +40,7 @@ interface AuthProviderProps {
   children: ReactNode
 }
 
-let base = ''
-if (import.meta.env.DEV) {
-  base = 'http://localhost:8080'
-}
+const base = ''
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
