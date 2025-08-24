@@ -4,7 +4,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/zxh326/kite/pkg/utils"
 	"k8s.io/klog/v2"
 )
 
@@ -18,7 +17,7 @@ const (
 
 var (
 	Port            = "8080"
-	JwtSecret       = ""
+	JwtSecret       = "kite-default-jwt-secret-key-change-in-production"
 	OAuthEnabled    = false
 	OAuthProviders  = ""
 	OAuthAllowUsers = []string{} // Deprecated, use rbac config instead
@@ -37,14 +36,16 @@ var (
 	Readonly = false
 
 	RolesConfigPath = "/config/roles.yaml"
+
+	DBType = "sqlite"
+	DBDSN  = "dev.db"
+
+	KiteEncryptKey = "kite-default-encryption-key-change-in-production"
 )
 
 func LoadEnvs() {
 	if secret := os.Getenv("JWT_SECRET"); secret != "" {
 		JwtSecret = secret
-	} else {
-		klog.Warning("JWT_SECRET is not set, using random secret key, restart server will lose all sessions.")
-		JwtSecret = utils.RandomString(32)
 	}
 
 	if enabled := os.Getenv("OAUTH_ENABLED"); enabled == "true" {
@@ -77,5 +78,22 @@ func LoadEnvs() {
 
 	if rolePath := os.Getenv("ROLES_CONFIG_PATH"); rolePath != "" {
 		RolesConfigPath = rolePath
+	}
+
+	if dbDSN := os.Getenv("DB_DSN"); dbDSN != "" {
+		DBDSN = dbDSN
+	}
+
+	if dbType := os.Getenv("DB_TYPE"); dbType != "" {
+		if dbType != "sqlite" && dbType != "mysql" && dbType != "postgres" {
+			klog.Fatalf("Invalid DB_TYPE: %s, must be one of sqlite, mysql, postgres", dbType)
+		}
+		DBType = dbType
+	}
+
+	if key := os.Getenv("KITE_ENCRYPT_KEY"); key != "" {
+		KiteEncryptKey = key
+	} else {
+		klog.Warningf("KITE_ENCRYPT_KEY is not set, using default key, this is not secure for production!")
 	}
 }

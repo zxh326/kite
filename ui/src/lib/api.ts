@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
 import {
+  Cluster,
   clusterScopeResources,
   ImageTagInfo,
   OverviewData,
@@ -1046,6 +1047,50 @@ export function useRelatedResources(
   })
 }
 
+// Initialize API types
+export interface InitCheckResponse {
+  initialized: boolean
+  step: number
+}
+
+// Initialize API function
+export const fetchInitCheck = (): Promise<InitCheckResponse> => {
+  return fetchAPI<InitCheckResponse>('/init_check')
+}
+
+export const useInitCheck = () => {
+  return useQuery({
+    queryKey: ['init-check'],
+    queryFn: fetchInitCheck,
+    staleTime: 0, // Always fresh
+    refetchInterval: 0, // No auto-refresh
+  })
+}
+
+// User registration for initial setup
+export interface CreateUserRequest {
+  username: string
+  password: string
+  name?: string
+}
+
+export const createSuperUser = async (
+  userData: CreateUserRequest
+): Promise<void> => {
+  await apiClient.post('/admin/create_super_user', userData)
+}
+
+// Cluster import for initial setup
+export interface ImportClustersRequest {
+  config: string
+}
+
+export const importClusters = async (
+  request: ImportClustersRequest
+): Promise<void> => {
+  await apiClient.post('/admin/clusters/import', request)
+}
+
 // WebSocket implementation for logs streaming
 export const useLogsWebSocket = (
   namespace: string,
@@ -1219,7 +1264,7 @@ export const useLogsWebSocket = (
               break
           }
         } catch (err) {
-          console.error('Failed to parse WebSocket message:', err)
+            console.error('Failed to parse WebSocket message:', err)
         }
       }
     } catch (err) {
@@ -1269,4 +1314,52 @@ export const useLogsWebSocket = (
     refetch,
     stopStreaming,
   }
+}
+
+export interface ClusterCreateRequest {
+  name: string
+  description?: string
+  config?: string
+  prometheusURL?: string
+  inCluster?: boolean
+  isDefault?: boolean
+}
+
+export interface ClusterUpdateRequest extends ClusterCreateRequest {
+  enabled?: boolean
+}
+
+// Get cluster list for management
+export const fetchClusterList = (): Promise<Cluster[]> => {
+  return fetchAPI<Cluster[]>('/admin/clusters/')
+}
+
+export const useClusterList = (options?: { staleTime?: number }) => {
+  return useQuery({
+    queryKey: ['cluster-list'],
+    queryFn: fetchClusterList,
+    staleTime: options?.staleTime || 30000, // 30 seconds cache
+  })
+}
+
+// Create cluster
+export const createCluster = async (
+  clusterData: ClusterCreateRequest
+): Promise<{ id: number; message: string }> => {
+  return await apiClient.post<{ id: number; message: string }>('/admin/clusters/', clusterData)
+}
+
+// Update cluster
+export const updateCluster = async (
+  id: number,
+  clusterData: ClusterUpdateRequest
+): Promise<{ message: string }> => {
+  return await apiClient.put<{ message: string }>(`/admin/clusters/${id}`, clusterData)
+}
+
+// Delete cluster
+export const deleteCluster = async (
+  id: number
+): Promise<{ message: string }> => {
+  return await apiClient.delete<{ message: string }>(`/admin/clusters/${id}`)
 }

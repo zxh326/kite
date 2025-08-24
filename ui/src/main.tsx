@@ -10,6 +10,7 @@ import './i18n'
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 
 import { AuthProvider } from './contexts/auth-context'
+import { QueryProvider } from './lib/query-provider'
 import { router } from './routes'
 
 self.MonacoEnvironment = {
@@ -22,8 +23,10 @@ loader.config({ monaco })
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
+    <QueryProvider>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
+    </QueryProvider>
   </StrictMode>
 )

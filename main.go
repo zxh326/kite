@@ -21,6 +21,7 @@ import (
 	"github.com/zxh326/kite/pkg/handlers"
 	"github.com/zxh326/kite/pkg/handlers/resources"
 	"github.com/zxh326/kite/pkg/middleware"
+	"github.com/zxh326/kite/pkg/model"
 	"github.com/zxh326/kite/pkg/rbac"
 	"github.com/zxh326/kite/pkg/utils"
 	"k8s.io/klog/v2"
@@ -66,7 +67,7 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 			"status": "ok",
 		})
 	})
-
+	r.GET("/api/v1/init_check", handlers.InitCheck)
 	// Auth routes (no auth required)
 	authHandler := auth.NewAuthHandler()
 	authGroup := r.Group("/api/auth")
@@ -80,12 +81,29 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 		authGroup.GET("/user", authHandler.RequireAuth(), authHandler.GetUser)
 	}
 
+	// admin apis
+	adminAPI := r.Group("/api/v1/admin")
+	{
+		adminAPI.POST("/create_super_user", handlers.CreateSuperUser)
+		adminAPI.POST("/users", handlers.CreatePasswordUser)
+
+		// TODO check admin middleware
+		clusterAPI := adminAPI.Group("/clusters")
+		{
+			clusterAPI.GET("/", cm.GetClusterList)
+			clusterAPI.POST("/", cm.CreateCluster)
+			clusterAPI.PUT("/:id", cm.UpdateCluster)
+			clusterAPI.DELETE("/:id", cm.DeleteCluster)
+			clusterAPI.POST("/import", cm.ImportClustersFromKubeconfig)
+		}
+	}
+
 	// API routes group (protected)
 	api := r.Group("/api/v1")
+	api.GET("/clusters", authHandler.RequireAuth(), cm.GetClusters)
 	api.Use(authHandler.RequireAuth(), middleware.ClusterMiddleware(cm))
 	{
 		api.GET("/overview", handlers.GetOverview)
-		api.GET("/clusters", cm.GetClusters)
 
 		promHandler := handlers.NewPromHandler()
 		api.GET("/prometheus/resource-usage-history", promHandler.GetResourceUsageHistory)
@@ -135,6 +153,7 @@ func main() {
 	}()
 
 	common.LoadEnvs()
+	model.InitDB()
 	rbac.InitRBAC(common.RolesConfigPath)
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()

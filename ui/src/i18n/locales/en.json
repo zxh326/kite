@@ -195,5 +195,56 @@
       "log": "View Logs",
       "exec": "Execute"
     }
+  },
+  "initialization": {
+    "title": "Initial Setup",
+    "welcome": "Welcome! Let's set up your Kite dashboard",
+    "subtitle": "Complete the following steps to get started",
+    "description": "Configure your admin user and connect cluster",
+    "step1": {
+      "title": "Create Super Admin User",
+      "description": "Set up your administrator account",
+      "username": "Username",
+      "usernameRequired": "Username *",
+      "usernamePlaceholder": "Enter admin username",
+      "displayName": "Display Name",
+      "displayNamePlaceholder": "Enter display name (optional)",
+      "password": "Password",
+      "passwordRequired": "Password *",
+      "passwordPlaceholder": "Enter password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordRequired": "Confirm Password *",
+      "confirmPasswordPlaceholder": "Confirm password",
+      "creating": "Creating User...",
+      "createButton": "Create Super Admin User",
+      "passwordMismatch": "Passwords do not match",
+      "createSuccess": "Super admin user created successfully",
+      "createError": "Failed to create user"
+    },
+    "step2": {
+      "title": "Import Kubernetes Cluster",
+      "description": "Connect your Kubernetes cluster",
+      "kubeconfig": "Kubeconfig File",
+      "kubeconfigRequired": "Kubeconfig File *",
+      "kubeconfigPlaceholder": "Paste your kubeconfig file content here...",
+      "kubeconfigHint": "You can find your kubeconfig file at ~/.kube/config or get it from your cluster provider",
+      "pasteMode": "Paste Content",
+      "fileMode": "Upload File",
+      "fileHint": "Select your kubeconfig file (usually located at ~/.kube/config)",
+      "importing": "Importing Clusters...",
+      "importButton": "Import Clusters",
+      "importSuccess": "Clusters imported successfully",
+      "importError": "Failed to import clusters",
+      "configRequired": "Please provide a kubeconfig file"
+    },
+    "completion": {
+      "title": "Setup Complete!",
+      "message": "You will be redirected to the dashboard shortly..."
+    },
+    "footer": {
+      "copyright": "© {{year}} Kite. All rights reserved.",
+      "documentation": "Documentation",
+      "github": "GitHub"
+    }
   }
 }

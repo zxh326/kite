@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/model"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -113,4 +114,26 @@ func GetOverview(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, overview)
+}
+
+// var (
+// 	initialized bool
+// )
+
+func InitCheck(c *gin.Context) {
+	// if initialized {
+	// 	c.JSON(http.StatusOK, gin.H{"initialized": true})
+	// 	return
+	// }
+	step := 0
+	uc, _ := model.CountUsers()
+	if uc > 0 {
+		step++
+	}
+	cc, _ := model.CountClusters()
+	if cc > 0 {
+		step++
+	}
+	initialized := uc > 0 && cc > 0
+	c.JSON(http.StatusOK, gin.H{"initialized": initialized, "step": step})
 }

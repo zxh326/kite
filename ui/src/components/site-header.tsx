@@ -64,9 +64,9 @@ export function SiteHeader() {
                 <ColorThemeToggle />
                 <LanguageToggle />
                 <ModeToggle />
-                <UserMenu />
               </>
             )}
+            <UserMenu />
           </div>
         </div>
       </header>

@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/model"
 	"github.com/zxh326/kite/pkg/rbac"
 	"k8s.io/klog/v2"
 )
@@ -65,33 +66,31 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 func (h *AuthHandler) PasswordLogin(c *gin.Context) {
-	if common.KiteUsername == "" || common.KitePassword == "" {
-		c.JSON(http.StatusForbidden, gin.H{
-			"error": "Password authentication is not enabled.",
-		})
-		return
-	}
-
 	var req common.PasswordLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
-	// Validate credentials
-	if req.Username != common.KiteUsername || req.Password != common.KitePassword {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+	user, err := model.GetUserByUsername(req.Username)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	if !model.CheckPassword(user.Password, req.Password) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
 
 	// Create user object
-	user := &common.User{
-		Username: req.Username,
-		Name:     req.Username,
+	cuser := &common.User{
+		Username: user.Username,
+		Name:     user.Name,
 		Provider: "password",
 	}
 
-	jwtToken, err := h.manager.GenerateJWT(user, "")
+	jwtToken, err := h.manager.GenerateJWT(cuser, "")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate JWT"})
 		return
@@ -99,10 +98,7 @@ func (h *AuthHandler) PasswordLogin(c *gin.Context) {
 
 	c.SetCookie("auth_token", jwtToken, common.JWTExpirationSeconds, "/", "", false, true)
 
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Logged in successfully",
-	})
+	c.Status(http.StatusNoContent)
 }
 
 func (h *AuthHandler) Callback(c *gin.Context) {

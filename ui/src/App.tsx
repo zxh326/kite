@@ -18,7 +18,6 @@ import { Toaster } from './components/ui/sonner'
 import { ClusterProvider } from './contexts/cluster-context'
 import { useCluster } from './hooks/use-cluster'
 import { apiClient } from './lib/api-client'
-import { QueryProvider } from './lib/query-provider'
 
 function ClusterAwareApp() {
   const { t } = useTranslation()
@@ -93,13 +92,11 @@ function App() {
         defaultColorTheme="blue"
         storageKey="vite-ui-color-theme"
       >
-        <QueryProvider>
-          <ClusterProvider>
-            <GlobalSearchProvider>
-              <ClusterAwareApp />
-            </GlobalSearchProvider>
-          </ClusterProvider>
-        </QueryProvider>
+        <ClusterProvider>
+          <GlobalSearchProvider>
+            <ClusterAwareApp />
+          </GlobalSearchProvider>
+        </ClusterProvider>
       </ColorThemeProvider>
     </ThemeProvider>
   )

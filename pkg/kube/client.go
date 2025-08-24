@@ -40,6 +40,8 @@ type K8sClient struct {
 	ClientSet     *kubernetes.Clientset
 	Configuration *rest.Config
 	MetricsClient *metricsclient.Clientset
+
+	cancel context.CancelFunc
 }
 
 // NewClient creates a K8sClient from a rest.Config
@@ -54,12 +56,15 @@ func NewClient(config *rest.Config) (*K8sClient, error) {
 		klog.Warningf("failed to create metrics client: %v", err)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	var c client.Client
 	if os.Getenv("DISABLE_CACHE") == "true" {
 		c, err = client.New(config, client.Options{
 			Scheme: runtimeScheme,
 		})
 		if err != nil {
+			cancel()
 			return nil, fmt.Errorf("failed to create client: %w", err)
 		}
 	} else {
@@ -75,26 +80,28 @@ func NewClient(config *rest.Config) (*K8sClient, error) {
 			},
 		})
 		if err != nil {
+			cancel()
 			return nil, err
 		}
 
 		// Add field indexer for Pod spec.nodeName to enable efficient querying by node
-		if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Pod{}, "spec.nodeName", func(rawObj client.Object) []string {
+		if err := mgr.GetFieldIndexer().IndexField(ctx, &corev1.Pod{}, "spec.nodeName", func(rawObj client.Object) []string {
 			pod := rawObj.(*corev1.Pod)
 			if pod.Spec.NodeName == "" {
 				return nil
 			}
 			return []string{pod.Spec.NodeName}
 		}); err != nil {
+			cancel()
 			return nil, fmt.Errorf("failed to create field indexer for spec.nodeName: %w", err)
 		}
-
 		go func() {
-			if err := mgr.Start(context.Background()); err != nil {
+			if err := mgr.Start(ctx); err != nil {
 				fmt.Printf("Error starting manager: %v\n", err)
 			}
 		}()
-		if !mgr.GetCache().WaitForCacheSync(context.Background()) {
+		if !mgr.GetCache().WaitForCacheSync(ctx) {
+			cancel()
 			return nil, fmt.Errorf("failed to wait for cache sync")
 		}
 		c = mgr.GetClient()
@@ -105,5 +112,11 @@ func NewClient(config *rest.Config) (*K8sClient, error) {
 		ClientSet:     clientset,
 		Configuration: config,
 		MetricsClient: metricsClient,
+		cancel:        cancel,
 	}, nil
+}
+
+func (k *K8sClient) Stop(name string) {
+	klog.Infof("Stopping K8s client for %s", name)
+	k.cancel()
 }

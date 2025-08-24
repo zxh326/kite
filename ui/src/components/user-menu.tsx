@@ -1,5 +1,6 @@
 import { useAuth } from '@/contexts/auth-context'
 import { LogOut } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -13,6 +14,7 @@ import {
 
 export function UserMenu() {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
 
   if (!user) return null
 
@@ -31,6 +33,10 @@ export function UserMenu() {
     } catch (error) {
       console.error('Logout failed:', error)
     }
+  }
+
+  const handleSettings = () => {
+    navigate('/settings')
   }
 
   return (
@@ -65,6 +71,12 @@ export function UserMenu() {
             )}
           </div>
         </div>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem onClick={handleSettings} className="cursor-pointer">
+          <span>Settings</span>
+        </DropdownMenuItem>
 
         {user.provider !== 'none' && (
           <>

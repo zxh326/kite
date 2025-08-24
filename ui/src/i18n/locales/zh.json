@@ -38,7 +38,8 @@
     "nodes": "节点",
     "namespaces": "命名空间",
     "customResources": "自定义资源",
-    "customResourceDefinitions": "自定义资源定义"
+    "customResourceDefinitions": "自定义资源定义",
+    "settings": "设置"
   },
   "overview": {
     "title": "概览",
@@ -189,6 +190,112 @@
       "delete": "删除",
       "log": "查看日志",
       "exec": "exec"
+    }
+  },
+  "initialization": {
+    "title": "初始化设置",
+    "welcome": "欢迎！让我们来设置您的 Kite Dashboard",
+    "subtitle": "完成以下步骤开始使用",
+    "description": "配置您的管理员用户并连接您的集群",
+    "step1": {
+      "title": "创建超级管理员用户",
+      "description": "设置您的管理员账户",
+      "username": "用户名",
+      "usernameRequired": "用户名 *",
+      "usernamePlaceholder": "输入管理员用户名",
+      "displayName": "显示名称",
+      "displayNamePlaceholder": "输入显示名称（可选）",
+      "password": "密码",
+      "passwordRequired": "密码 *",
+      "passwordPlaceholder": "输入密码",
+      "confirmPassword": "确认密码",
+      "confirmPasswordRequired": "确认密码 *",
+      "confirmPasswordPlaceholder": "确认密码",
+      "creating": "创建用户中...",
+      "createButton": "创建超级管理员用户",
+      "passwordMismatch": "密码不匹配",
+      "createSuccess": "超级管理员用户创建成功",
+      "createError": "创建用户失败"
+    },
+    "step2": {
+      "title": "导入 Kubernetes 集群",
+      "description": "从您的 kubeconfig 中导入 Kubernetes 集群",
+      "kubeconfig": "Kubeconfig 文件",
+      "kubeconfigRequired": "Kubeconfig 文件 *",
+      "kubeconfigPlaceholder": "在此粘贴您的 kubeconfig 文件内容...",
+      "kubeconfigHint": "您可以在 ~/.kube/config 找到您的 kubeconfig 文件，或从集群提供商处获取",
+      "pasteMode": "粘贴内容",
+      "fileMode": "上传文件",
+      "fileHint": "选择您的 kubeconfig 文件（通常位于 ~/.kube/config）",
+      "importing": "导入集群中...",
+      "importButton": "导入集群",
+      "importSuccess": "集群导入成功",
+      "importError": "导入集群失败",
+      "configRequired": "请提供 kubeconfig 文件"
+    },
+    "completion": {
+      "title": "设置完成！",
+      "message": "您将很快被重定向到仪表盘..."
+    },
+    "footer": {
+      "copyright": "© {{year}} Kite. 版权所有。",
+      "documentation": "文档",
+      "github": "GitHub"
+    }
+  },
+  "settings": {
+    "title": "设置",
+    "description": "管理集群、角色和权限",
+    "tabs": {
+      "clusters": "集群管理",
+      "permissions": "权限管理"
+    }
+  },
+  "clusterManagement": {
+    "title": "集群管理",
+    "deleteConfirmation": "此操作仅会删除当前集群在 Kite 上的的配置，不会删除任何集群资源。",
+    "actions": {
+      "add": "添加集群",
+      "edit": "编辑",
+      "delete": "删除",
+      "save": "保存更改"
+    },
+    "table": {
+      "name": "名称",
+      "actions": "操作"
+    },
+    "resourceType": "集群",
+    "dialog": {
+      "add": {
+        "title": "添加新集群",
+        "description": "添加一个新的 Kubernetes 集群以便使用 Kite 进行管理。"
+      },
+      "edit": {
+        "title": "编辑集群",
+        "description": "更新集群配置。"
+      }
+    },
+    "form": {
+      "name": {
+        "label": "集群名称",
+        "placeholder": "例如：production、staging"
+      },
+      "description": {
+        "label": "描述",
+        "placeholder": "集群的简短描述"
+      },
+      "kubeconfig": {
+        "label": "Kubeconfig 内容",
+        "placeholder": "在此处粘贴您的 kubeconfig 内容..."
+      },
+      "inCluster": {
+        "note": "使用集群内服务帐户配置。无需额外的 kubeconfig。"
+      }
+    },
+    "info": {
+      "title": "当前状态",
+      "nodes": "节点",
+      "version": "版本"
     }
   }
 }

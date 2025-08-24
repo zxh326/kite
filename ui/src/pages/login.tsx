@@ -305,7 +305,7 @@ export function LoginPage() {
             </p>
             <div className="flex space-x-6 text-sm text-gray-500">
               <a
-                href="https://github.com/zxh326/kite"
+                href="https://kite.zzde.com"
                 target="_blank"
                 className="hover:text-gray-700 transition-colors"
               >

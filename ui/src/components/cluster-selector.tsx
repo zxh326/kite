@@ -59,10 +59,6 @@ export function ClusterSelector() {
     )
   }
 
-  if (clusters.length <= 1) {
-    return null
-  }
-
   const currentClusterData = clusters.find((c) => c.name === currentCluster)
 
   return (

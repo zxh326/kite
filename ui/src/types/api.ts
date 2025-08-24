@@ -22,13 +22,6 @@ import {
 import { Ingress } from 'kubernetes-types/networking/v1'
 import { StorageClass } from 'kubernetes-types/storage/v1'
 
-// Cluster types
-export interface Cluster {
-  name: string
-  version: string
-  isDefault: boolean
-}
-
 export interface CustomResource {
   apiVersion: string
   kind: string
@@ -312,3 +305,19 @@ export interface RelatedResources {
   namespace?: string
   apiVersion?: string
 }
+
+export interface Cluster {
+  id: number
+  name: string
+  description?: string
+  version?: string
+  config?: string
+  enabled: boolean
+  inCluster: boolean
+  isDefault: boolean
+  createdAt: string
+  updatedAt: string
+  prometheusURL?: string
+}
+
+
