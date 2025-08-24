@@ -131,7 +131,7 @@ func importClustersFromKubeconfig(kubeconfig *clientcmdapi.Config) int64 {
 		}
 		cluster := model.Cluster{
 			Name:      contextName,
-			Config:    string(configStr),
+			Config:    model.SecretString(configStr),
 			IsDefault: contextName == kubeconfig.CurrentContext,
 		}
 		if _, err := model.GetClusterByName(contextName); err != nil {
@@ -174,7 +174,7 @@ func syncClusters(cm *ClusterManager) error {
 			shouldUpdate = true
 		}
 		// kubeconfig change
-		if currentExist && current.config != cluster.Config {
+		if currentExist && current.config != string(cluster.Config) {
 			klog.Infof("Kubeconfig changed for cluster %s, updating", cluster.Name)
 			shouldUpdate = true
 		}
@@ -198,7 +198,7 @@ func syncClusters(cm *ClusterManager) error {
 					}
 					cm.clusters[cluster.Name] = clientSet
 				} else {
-					clientSet, err := createClientSetFromConfig(cluster.Name, cluster.Config, cluster.PrometheusURL)
+					clientSet, err := createClientSetFromConfig(cluster.Name, string(cluster.Config), cluster.PrometheusURL)
 					if err != nil {
 						klog.Warningf("Failed to create client set for cluster %s: %v", cluster.Name, err)
 						continue

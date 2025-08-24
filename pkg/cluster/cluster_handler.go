@@ -102,7 +102,7 @@ func (cm *ClusterManager) CreateCluster(c *gin.Context) {
 	cluster := &model.Cluster{
 		Name:          req.Name,
 		Description:   req.Description,
-		Config:        req.Config,
+		Config:        model.SecretString(req.Config),
 		PrometheusURL: req.PrometheusURL,
 		InCluster:     req.InCluster,
 		IsDefault:     req.IsDefault,

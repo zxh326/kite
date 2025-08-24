@@ -319,5 +319,3 @@ export interface Cluster {
   updatedAt: string
   prometheusURL?: string
 }
-
-

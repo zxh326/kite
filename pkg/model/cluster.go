@@ -6,17 +6,16 @@ import (
 
 type Cluster struct {
 	Model
-	Name          string `json:"name" gorm:"type:varchar(100);uniqueIndex;not null"`
-	Description   string `json:"description" gorm:"type:text"`
-	Config        string `json:"config" gorm:"type:text"`
-	PrometheusURL string `json:"prometheus_url,omitempty" gorm:"type:varchar(255)"`
-	InCluster     bool   `json:"in_cluster" gorm:"type:boolean;default:false"`
-	IsDefault     bool   `json:"is_default" gorm:"type:boolean;default:false"`
-	Enable        bool   `json:"enable" gorm:"type:boolean;default:true"`
+	Name          string       `json:"name" gorm:"type:varchar(100);uniqueIndex;not null"`
+	Description   string       `json:"description" gorm:"type:text"`
+	Config        SecretString `json:"config" gorm:"type:text"`
+	PrometheusURL string       `json:"prometheus_url,omitempty" gorm:"type:varchar(255)"`
+	InCluster     bool         `json:"in_cluster" gorm:"type:boolean;default:false"`
+	IsDefault     bool         `json:"is_default" gorm:"type:boolean;default:false"`
+	Enable        bool         `json:"enable" gorm:"type:boolean;default:true"`
 }
 
 func AddCluster(cluster *Cluster) error {
-	cluster.Config = utils.EncryptString(cluster.Config)
 	return DB.Create(cluster).Error
 }
 
@@ -33,7 +32,6 @@ func GetClusterByID(id uint) (*Cluster, error) {
 	if err := DB.First(&cluster, id).Error; err != nil {
 		return nil, err
 	}
-	cluster.Config, _ = utils.DecryptString(cluster.Config)
 	return &cluster, nil
 }
 
@@ -66,10 +64,6 @@ func ListClusters() ([]*Cluster, error) {
 	var clusters []*Cluster
 	if err := DB.Find(&clusters).Error; err != nil {
 		return nil, err
-	}
-
-	for i := range clusters {
-		clusters[i].Config, _ = utils.DecryptString(clusters[i].Config)
 	}
 	return clusters, nil
 }

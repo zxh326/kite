@@ -1,16 +1,27 @@
 import { useState } from 'react'
-import {
-  IconServer,
-  IconPlus,
-  IconEdit,
-  IconTrash,
-} from '@tabler/icons-react'
-import { useTranslation } from 'react-i18next'
+import { IconEdit, IconPlus, IconServer, IconTrash } from '@tabler/icons-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
+import { Cluster } from '@/types/api'
+import {
+  ClusterCreateRequest,
+  ClusterUpdateRequest,
+  createCluster,
+  deleteCluster,
+  updateCluster,
+  useClusterList,
+} from '@/lib/api'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Table,
   TableBody,
@@ -19,33 +30,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 
 import { ClusterDialog } from './cluster-dialog'
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
-import { Cluster } from '@/types/api'
-import { 
-  useClusterList, 
-  createCluster, 
-  updateCluster, 
-  deleteCluster,
-  ClusterCreateRequest,
-  ClusterUpdateRequest
-} from '@/lib/api'
 
 export function ClusterManagement() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  
+
   // Use real API to fetch clusters
   const { data: clusters = [], isLoading, error } = useClusterList()
-  
+
   const [showClusterDialog, setShowClusterDialog] = useState(false)
   const [editingCluster, setEditingCluster] = useState<Cluster | null>(null)
   const [deletingCluster, setDeletingCluster] = useState<Cluster | null>(null)
@@ -55,26 +50,42 @@ export function ClusterManagement() {
     mutationFn: createCluster,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cluster-list'] })
-      toast.success(t('clusterManagement.messages.created', 'Cluster created successfully'))
+      toast.success(
+        t('clusterManagement.messages.created', 'Cluster created successfully')
+      )
       setShowClusterDialog(false)
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('clusterManagement.messages.createError', 'Failed to create cluster'))
+      toast.error(
+        error.message ||
+          t(
+            'clusterManagement.messages.createError',
+            'Failed to create cluster'
+          )
+      )
     },
   })
 
   // Update cluster mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: ClusterUpdateRequest }) => 
+    mutationFn: ({ id, data }: { id: number; data: ClusterUpdateRequest }) =>
       updateCluster(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cluster-list'] })
-      toast.success(t('clusterManagement.messages.updated', 'Cluster updated successfully'))
+      toast.success(
+        t('clusterManagement.messages.updated', 'Cluster updated successfully')
+      )
       setShowClusterDialog(false)
       setEditingCluster(null)
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('clusterManagement.messages.updateError', 'Failed to update cluster'))
+      toast.error(
+        error.message ||
+          t(
+            'clusterManagement.messages.updateError',
+            'Failed to update cluster'
+          )
+      )
     },
   })
 
@@ -83,11 +94,19 @@ export function ClusterManagement() {
     mutationFn: deleteCluster,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cluster-list'] })
-      toast.success(t('clusterManagement.messages.deleted', 'Cluster deleted successfully'))
+      toast.success(
+        t('clusterManagement.messages.deleted', 'Cluster deleted successfully')
+      )
       setDeletingCluster(null)
     },
     onError: (error: Error) => {
-      toast.error(error.message || t('clusterManagement.messages.deleteError', 'Failed to delete cluster'))
+      toast.error(
+        error.message ||
+          t(
+            'clusterManagement.messages.deleteError',
+            'Failed to delete cluster'
+          )
+      )
     },
   })
 
@@ -96,7 +115,7 @@ export function ClusterManagement() {
       // Update existing cluster - use the form data directly
       updateMutation.mutate({
         id: editingCluster.id,
-        data: clusterData
+        data: clusterData,
       })
     } else {
       // Create new cluster
@@ -112,7 +131,9 @@ export function ClusterManagement() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="text-muted-foreground">{t('common.loading', 'Loading...')}</div>
+        <div className="text-muted-foreground">
+          {t('common.loading', 'Loading...')}
+        </div>
       </div>
     )
   }
@@ -130,13 +151,19 @@ export function ClusterManagement() {
   const getClusterTypeBadge = (cluster: Cluster) => {
     if (cluster.inCluster) {
       return (
-        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+        <Badge
+          variant="outline"
+          className="bg-blue-50 text-blue-700 border-blue-200"
+        >
           {t('clusterManagement.type.inCluster', 'In-Cluster')}
         </Badge>
       )
     }
     return (
-      <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+      <Badge
+        variant="outline"
+        className="bg-gray-50 text-gray-700 border-gray-200"
+      >
         {t('clusterManagement.type.external', 'External')}
       </Badge>
     )
@@ -168,10 +195,13 @@ export function ClusterManagement() {
                 {t('clusterManagement.title', 'Cluster Management')}
               </CardTitle>
             </div>
-            <Button onClick={() => {
-              setEditingCluster(null)
-              setShowClusterDialog(true)
-            }} className="gap-2">
+            <Button
+              onClick={() => {
+                setEditingCluster(null)
+                setShowClusterDialog(true)
+              }}
+              className="gap-2"
+            >
               <IconPlus className="h-4 w-4" />
               {t('clusterManagement.actions.add', 'Add Cluster')}
             </Button>
@@ -182,11 +212,21 @@ export function ClusterManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('clusterManagement.table.name', 'Name')}</TableHead>
-                  <TableHead>{t('clusterManagement.table.type', 'Type')}</TableHead>
-                  <TableHead>{t('clusterManagement.table.status', 'Status')}</TableHead>
-                  <TableHead>{t('clusterManagement.table.prometheus', 'Prometheus')}</TableHead>
-                  <TableHead className="text-right">{t('clusterManagement.table.actions', 'Actions')}</TableHead>
+                  <TableHead>
+                    {t('clusterManagement.table.name', 'Name')}
+                  </TableHead>
+                  <TableHead>
+                    {t('clusterManagement.table.type', 'Type')}
+                  </TableHead>
+                  <TableHead>
+                    {t('clusterManagement.table.status', 'Status')}
+                  </TableHead>
+                  <TableHead>
+                    {t('clusterManagement.table.prometheus', 'Prometheus')}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {t('clusterManagement.table.actions', 'Actions')}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -195,9 +235,7 @@ export function ClusterManagement() {
                     <TableCell>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">
-                            {cluster.name}
-                            </span>
+                          <span className="font-medium">{cluster.name}</span>
                           {cluster.isDefault && (
                             <Badge variant="secondary">Default</Badge>
                           )}
@@ -212,9 +250,7 @@ export function ClusterManagement() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      {getClusterTypeBadge(cluster)}
-                    </TableCell>
+                    <TableCell>{getClusterTypeBadge(cluster)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         {getStatusBadge(cluster)}
@@ -259,13 +295,18 @@ export function ClusterManagement() {
               </TableBody>
             </Table>
           </div>
-          
+
           {clusters.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               <IconServer className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>{t('clusterManagement.empty.title', 'No clusters configured')}</p>
+              <p>
+                {t('clusterManagement.empty.title', 'No clusters configured')}
+              </p>
               <p className="text-sm mt-1">
-                {t('clusterManagement.empty.description', 'Add your first cluster to get started')}
+                {t(
+                  'clusterManagement.empty.description',
+                  'Add your first cluster to get started'
+                )}
               </p>
             </div>
           )}
@@ -292,7 +333,10 @@ export function ClusterManagement() {
         onConfirm={handleDeleteCluster}
         resourceName={deletingCluster?.name || ''}
         resourceType="cluster"
-        additionalNote={t('clusterManagement.deleteConfirmation', 'This action will only remove the current cluster\'s configuration in kite and will not delete any cluster resources.')}
+        additionalNote={t(
+          'clusterManagement.deleteConfirmation',
+          "This action will only remove the current cluster's configuration in kite and will not delete any cluster resources."
+        )}
       />
     </div>
   )

@@ -1264,7 +1264,7 @@ export const useLogsWebSocket = (
               break
           }
         } catch (err) {
-            console.error('Failed to parse WebSocket message:', err)
+          console.error('Failed to parse WebSocket message:', err)
         }
       }
     } catch (err) {
@@ -1346,7 +1346,10 @@ export const useClusterList = (options?: { staleTime?: number }) => {
 export const createCluster = async (
   clusterData: ClusterCreateRequest
 ): Promise<{ id: number; message: string }> => {
-  return await apiClient.post<{ id: number; message: string }>('/admin/clusters/', clusterData)
+  return await apiClient.post<{ id: number; message: string }>(
+    '/admin/clusters/',
+    clusterData
+  )
 }
 
 // Update cluster
@@ -1354,7 +1357,10 @@ export const updateCluster = async (
   id: number,
   clusterData: ClusterUpdateRequest
 ): Promise<{ message: string }> => {
-  return await apiClient.put<{ message: string }>(`/admin/clusters/${id}`, clusterData)
+  return await apiClient.put<{ message: string }>(
+    `/admin/clusters/${id}`,
+    clusterData
+  )
 }
 
 // Delete cluster

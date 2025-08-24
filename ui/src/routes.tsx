@@ -7,9 +7,9 @@ import { CRListPage } from './pages/cr-list-page'
 import { InitializationPage } from './pages/initialization'
 import { LoginPage } from './pages/login'
 import { Overview } from './pages/overview'
-import { SettingsPage } from './pages/settings'
 import { ResourceDetail } from './pages/resource-detail'
 import { ResourceList } from './pages/resource-list'
+import { SettingsPage } from './pages/settings'
 
 export const router = createBrowserRouter([
   {

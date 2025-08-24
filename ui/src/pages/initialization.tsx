@@ -327,7 +327,7 @@ export function InitializationPage() {
                     <Label htmlFor="kubeconfig">
                       {t('initialization.step2.kubeconfigRequired')}
                     </Label>
-                    
+
                     {/* File upload and text input toggle */}
                     <div className="flex items-center space-x-4 mb-3">
                       <button
@@ -339,7 +339,9 @@ export function InitializationPage() {
                             : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
                         }`}
                       >
-                        {t('initialization.step2.pasteMode', { defaultValue: 'Paste Content' })}
+                        {t('initialization.step2.pasteMode', {
+                          defaultValue: 'Paste Content',
+                        })}
                       </button>
                       <button
                         type="button"
@@ -350,7 +352,9 @@ export function InitializationPage() {
                             : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
                         }`}
                       >
-                        {t('initialization.step2.fileMode', { defaultValue: 'Upload File' })}
+                        {t('initialization.step2.fileMode', {
+                          defaultValue: 'Upload File',
+                        })}
                       </button>
                     </div>
 
@@ -368,8 +372,9 @@ export function InitializationPage() {
                             file:cursor-pointer cursor-pointer"
                         />
                         <p className="text-xs text-gray-500">
-                          {t('initialization.step2.fileHint', { 
-                            defaultValue: 'Select your kubeconfig file (usually located at ~/.kube/config)' 
+                          {t('initialization.step2.fileHint', {
+                            defaultValue:
+                              'Select your kubeconfig file (usually located at ~/.kube/config)',
                           })}
                         </p>
                       </div>
@@ -386,7 +391,7 @@ export function InitializationPage() {
                         required
                       />
                     )}
-                    
+
                     <p className="text-xs text-gray-500">
                       {t('initialization.step2.kubeconfigHint')}
                     </p>
