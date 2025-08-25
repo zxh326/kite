@@ -83,18 +83,6 @@ export function OAuthProviderDialog({
           issuer: provider.issuer || '',
           enabled: provider.enabled,
         })
-      } else {
-        setFormData({
-          name: '',
-          clientId: '',
-          clientSecret: '',
-          authUrl: '',
-          tokenUrl: '',
-          userInfoUrl: '',
-          scopes: 'openid,profile,email',
-          issuer: '',
-          enabled: true,
-        })
       }
     }
   }, [open, provider])
@@ -102,7 +90,6 @@ export function OAuthProviderDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    // 验证表单
     if (!validateForm()) {
       return
     }
@@ -130,7 +117,6 @@ export function OAuthProviderDialog({
         ...prev,
         [field]: e.target.value,
       }))
-      // 清除验证错误
       if (validationError) {
         setValidationError('')
       }

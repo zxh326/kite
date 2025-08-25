@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/model"
+	"github.com/zxh326/kite/pkg/rbac"
 )
 
 type createPasswordUser struct {
@@ -36,10 +37,18 @@ func CreateSuperUser(c *gin.Context) {
 		Name:     userreq.Name,
 		Provider: "password",
 	}
+
+	// FIXME: with transaction
 	if err := model.AddUser(user); err != nil {
 		c.JSON(500, gin.H{"error": "failed to create user"})
 		return
 	}
+	// Add admin role
+	if err := model.AddRoleAssignment("admin", model.SubjectTypeUser, user.Username); err != nil {
+		c.JSON(500, gin.H{"error": "failed to assign role"})
+		return
+	}
+	rbac.SyncNow <- struct{}{}
 	c.JSON(201, user)
 }
 

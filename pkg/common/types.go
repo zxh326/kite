@@ -49,12 +49,6 @@ type PasswordLoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-type AddClusterRequest struct {
-	Name          string `json:"name" binding:"required"`
-	Config        string `json:"config" binding:"required"`
-	PrometheusURL string `json:"prometheusURL"`
-}
-
 type ImportClustersRequest struct {
 	Config string `json:"config" binding:"required"`
 }

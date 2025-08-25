@@ -15,6 +15,7 @@ import {
   ResourceType,
   ResourceTypeMap,
   ResourceUsageHistory,
+  Role,
 } from '@/types/api'
 
 import { API_BASE_URL, apiClient } from './api-client'
@@ -1441,4 +1442,47 @@ export const fetchOAuthProvider = async (
   return fetchAPI<{ provider: OAuthProvider }>(
     `/admin/oauth-providers/${id}`
   ).then((response) => response.provider)
+}
+
+// RBAC API
+export const fetchRoleList = async (): Promise<Role[]> => {
+  return fetchAPI<{ roles: Role[] }>(`/admin/roles/`).then((resp) => resp.roles)
+}
+
+export const useRoleList = (options?: { staleTime?: number }) => {
+  return useQuery({
+    queryKey: ['role-list'],
+    queryFn: fetchRoleList,
+    staleTime: options?.staleTime || 30000,
+  })
+}
+
+export const createRole = async (data: Partial<Role>) => {
+  return await apiClient.post<{ role: Role }>(`/admin/roles/`, data)
+}
+
+export const updateRole = async (id: number, data: Partial<Role>) => {
+  return await apiClient.put<{ role: Role }>(`/admin/roles/${id}`, data)
+}
+
+export const deleteRole = async (id: number) => {
+  return await apiClient.delete<{ success: boolean }>(`/admin/roles/${id}`)
+}
+
+export const assignRole = async (
+  id: number,
+  data: { subjectType: 'user' | 'group'; subject: string }
+) => {
+  return await apiClient.post(`/admin/roles/${id}/assign`, data)
+}
+
+export const unassignRole = async (
+  id: number,
+  subjectType: 'user' | 'group',
+  subject: string
+) => {
+  const params = new URLSearchParams({ subjectType, subject })
+  return await apiClient.delete(
+    `/admin/roles/${id}/assign?${params.toString()}`
+  )
 }

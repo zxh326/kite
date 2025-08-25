@@ -83,10 +83,8 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 
 	// admin apis
 	adminAPI := r.Group("/api/v1/admin")
-	// TODO check admin middleware
 	{
 		adminAPI.POST("/create_super_user", handlers.CreateSuperUser)
-		// adminAPI.POST("/users", handlers.CreatePasswordUser)
 
 		oauthProviderAPI := adminAPI.Group("/oauth-providers")
 		{
@@ -104,6 +102,18 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 			clusterAPI.PUT("/:id", cm.UpdateCluster)
 			clusterAPI.DELETE("/:id", cm.DeleteCluster)
 			clusterAPI.POST("/import", cm.ImportClustersFromKubeconfig)
+		}
+
+		rbacAPI := adminAPI.Group("/roles")
+		{
+			rbacAPI.GET("/", rbac.ListRoles)
+			rbacAPI.POST("/", rbac.CreateRole)
+			rbacAPI.GET("/:id", rbac.GetRole)
+			rbacAPI.PUT("/:id", rbac.UpdateRole)
+			rbacAPI.DELETE("/:id", rbac.DeleteRole)
+
+			rbacAPI.POST("/:id/assign", rbac.AssignRole)
+			rbacAPI.DELETE("/:id/assign", rbac.UnassignRole)
 		}
 	}
 
@@ -160,15 +170,14 @@ func main() {
 	go func() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
-
 	common.LoadEnvs()
-	model.InitDB()
-	rbac.InitRBAC(common.RolesConfigPath)
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(middleware.Logger())
 	r.Use(middleware.CORS())
+	model.InitDB()
+	rbac.InitRBAC()
 
 	cm, err := cluster.NewClusterManager()
 	if err != nil {

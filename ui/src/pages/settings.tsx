@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { ClusterManagement } from '@/components/settings/cluster-management'
 import { OAuthProviderManagement } from '@/components/settings/oauth-provider-management'
+import { RBACManagement } from '@/components/settings/rbac-management'
 
 export function SettingsPage() {
   const { t } = useTranslation()
@@ -33,7 +34,7 @@ export function SettingsPage() {
           {
             value: 'rbac',
             label: t('settings.tabs.rbac', 'RBAC'),
-            content: <div />,
+            content: <RBACManagement />,
           },
           {
             value: 'users',

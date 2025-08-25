@@ -83,7 +83,7 @@ func (cm *ClusterManager) CreateCluster(c *gin.Context) {
 	if _, err := model.GetClusterByName(req.Name); err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "cluster already exists"})
 		return
-	} else if errors.Is(err, gorm.ErrRecordNotFound) {
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

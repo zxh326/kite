@@ -61,16 +61,6 @@ export function ClusterDialog({
         isDefault: cluster.isDefault,
         inCluster: cluster.inCluster,
       })
-    } else {
-      setFormData({
-        name: '',
-        description: '',
-        config: '',
-        prometheusURL: '',
-        enabled: true,
-        isDefault: false,
-        inCluster: false,
-      })
     }
   }, [cluster, open])
 

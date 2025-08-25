@@ -1,17 +1,13 @@
 package model
 
 import (
-	"database/sql/driver"
-	"fmt"
 	"log"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/glebarez/sqlite"
 	"github.com/zxh326/kite/pkg/common"
-	"github.com/zxh326/kite/pkg/utils"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -28,74 +24,6 @@ type Model struct {
 	ID        uint      `json:"id" gorm:"primarykey"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
-}
-
-type SecretString string
-
-// Scan implements the sql.Scanner interface for reading encrypted data from database
-func (s *SecretString) Scan(value interface{}) error {
-	if value == nil {
-		*s = ""
-		return nil
-	}
-	var encryptedStr string
-	switch v := value.(type) {
-	case string:
-		encryptedStr = v
-	case []byte:
-		encryptedStr = string(v)
-	default:
-		return fmt.Errorf("cannot scan %T into SecretString", value)
-	}
-	// If the string is empty, just set it directly
-	if encryptedStr == "" {
-		*s = ""
-		return nil
-	}
-
-	// Decrypt the string
-	decrypted, err := utils.DecryptString(encryptedStr)
-	if err != nil {
-		return fmt.Errorf("failed to decrypt SecretString: %w", err)
-	}
-	*s = SecretString(decrypted)
-	return nil
-}
-
-// Value implements the driver.Valuer interface for writing encrypted data to database
-func (s SecretString) Value() (driver.Value, error) {
-	if s == "" {
-		return "", nil
-	}
-	encrypted := utils.EncryptString(string(s))
-	if len(encrypted) > 17 && encrypted[:17] == "encryption_error:" {
-		return nil, fmt.Errorf("encryption failed: %s", encrypted[17:])
-	}
-	return encrypted, nil
-}
-
-type LowerCaseString string
-
-func (s *LowerCaseString) Scan(value interface{}) error {
-	if value == nil {
-		*s = ""
-		return nil
-	}
-	var str string
-	switch v := value.(type) {
-	case string:
-		str = v
-	case []byte:
-		str = string(v)
-	default:
-		return fmt.Errorf("cannot scan %T into LowerCaseString", value)
-	}
-	*s = LowerCaseString(strings.ToLower(str))
-	return nil
-}
-
-func (s LowerCaseString) Value() (driver.Value, error) {
-	return strings.ToLower(string(s)), nil
 }
 
 func InitDB() {
@@ -139,10 +67,21 @@ func InitDB() {
 	if DB == nil {
 		panic("database connection is nil, check your DB_TYPE and DB_DSN settings")
 	}
+
+	// For SQLite we must enable foreign key enforcement explicitly.
+	// SQLite has foreign key constraints defined in the schema but they are
+	// not enforced unless PRAGMA foreign_keys = ON is set on the connection.
+	if common.DBType == "sqlite" {
+		if err := DB.Exec("PRAGMA foreign_keys = ON").Error; err != nil {
+			panic("failed to enable sqlite foreign keys: " + err.Error())
+		}
+	}
 	models := []interface{}{
 		User{},
 		Cluster{},
 		OAuthProvider{},
+		Role{},
+		RoleAssignment{},
 	}
 	for _, model := range models {
 		err = DB.AutoMigrate(model)

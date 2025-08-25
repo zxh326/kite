@@ -222,7 +222,7 @@ func NewClusterManager() (*ClusterManager, error) {
 	cm := new(ClusterManager)
 	cm.clusters = make(map[string]*ClientSet)
 	go func() {
-		ticker := time.NewTicker(10 * time.Second)
+		ticker := time.NewTicker(1 * time.Minute)
 		defer ticker.Stop()
 		syncNow <- struct{}{}
 		for {

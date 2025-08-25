@@ -61,14 +61,19 @@ type GenericProvider struct {
 }
 
 // discoverOAuthEndpoints discovers OAuth endpoints from issuer's well-known configuration
+// TODO: cache well-known configuration
 func discoverOAuthEndpoints(issuer, providerName string) (*struct {
 	AuthURL     string
 	TokenURL    string
 	UserInfoURL string
 }, error) {
-	wellKnown, err := url.JoinPath(issuer, ".well-known", "openid-configuration")
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct well-known URL: %w", err)
+	wellKnown := issuer
+	var err error
+	if !strings.HasSuffix(issuer, "/.well-known/openid-configuration") {
+		wellKnown, err = url.JoinPath(issuer, ".well-known", "openid-configuration")
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct well-known URL: %w", err)
+		}
 	}
 
 	resp, err := http.Get(wellKnown)

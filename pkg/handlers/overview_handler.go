@@ -127,6 +127,9 @@ func InitCheck(c *gin.Context) {
 	// }
 	step := 0
 	uc, _ := model.CountUsers()
+	if uc == 0 {
+		c.SetCookie("auth_token", "", -1, "/", "", false, true)
+	}
 	if uc > 0 {
 		step++
 	}

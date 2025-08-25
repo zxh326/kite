@@ -334,3 +334,26 @@ export interface OAuthProvider {
   createdAt: string
   updatedAt: string
 }
+
+export interface RoleAssignment {
+  id: number
+  roleId: number
+  subjectType: 'user' | 'group'
+  subject: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Role {
+  id: number
+  name: string
+  description?: string
+  isSystem?: boolean
+  clusters: string[]
+  namespaces: string[]
+  resources: string[]
+  verbs: string[]
+  assignments?: RoleAssignment[]
+  createdAt: string
+  updatedAt: string
+}
