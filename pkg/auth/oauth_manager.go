@@ -25,6 +25,9 @@ func NewOAuthManager() *OAuthManager {
 }
 
 func getRequestHost(c *gin.Context) string {
+	if common.Host != "" {
+		return common.Host
+	}
 	proto := c.Request.Header.Get("X-Forwarded-Proto")
 	host := c.Request.Header.Get("X-Forwarded-Host")
 	if proto != "" && host != "" {

@@ -18,6 +18,7 @@ var (
 	Port            = "8080"
 	JwtSecret       = "kite-default-jwt-secret-key-change-in-production"
 	EnableAnalytics = false
+	Host            = ""
 
 	NodeTerminalImage = "busybox:latest"
 	WebhookUsername   = os.Getenv("WEBHOOK_USERNAME")
@@ -68,5 +69,8 @@ func LoadEnvs() {
 	if v := os.Getenv("ANONYMOUS_USER_ENABLED"); v == "true" {
 		AnonymousUserEnabled = true
 		klog.Warningf("Anonymous user is enabled, this is not secure for production!")
+	}
+	if v := os.Getenv("HOST"); v != "" {
+		Host = v
 	}
 }

@@ -151,14 +151,14 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		return
 	}
 
+	if err := model.FindWithSubOrUpsertUser(user); err != nil {
+		c.Redirect(http.StatusFound, "/login?error=user_upsert_failed&reason=user_upsert_failed&provider="+provider)
+		return
+	}
 	role := rbac.GetUserRoles(*user)
 	if len(role) == 0 {
 		klog.Warningf("OAuth Callback - Access denied for user: %s (provider: %s)", user.Key(), provider)
 		c.Redirect(http.StatusFound, "/login?error=insufficient_permissions&reason=insufficient_permissions&user="+user.Key()+"&provider="+provider)
-		return
-	}
-	if err := model.FindWithSubOrUpsertUser(user); err != nil {
-		c.Redirect(http.StatusFound, "/login?error=user_upsert_failed&reason=user_upsert_failed&provider="+provider)
 		return
 	}
 	if !user.Enabled {

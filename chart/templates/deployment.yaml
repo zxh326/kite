@@ -40,7 +40,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["/app/kite"]
           {{- if .Values.debug }}
-          args: ["-v", "5"]
+          args: ["-v", "1"]
           {{- end }}
           ports:
             - name: http
@@ -50,22 +50,6 @@ spec:
             - secretRef:
                 name: {{ include "kite.fullname" . }}-secret
           env:
-          {{- if .Values.multiCluster.defaultPrometheusUrl }}
-            - name: PROMETHEUS_URL
-              value: "{{ .Values.multiCluster.defaultPrometheusUrl }}"
-          {{- end }}
-          {{- range $cluster, $url := .Values.multiCluster.prometheus }}
-            - name: {{ printf "%s_PROMETHEUS_URL" (upper (replace "-" "_" $cluster)) }}
-              value: "{{ $url }}"
-          {{- end }}
-          {{- if .Values.oauth.enabled }}
-            - name: OAUTH_ENABLED
-              value: "{{ .Values.oauth.enabled }}"
-            - name: OAUTH_REDIRECT
-              value: "{{ .Values.oauth.redirect }}"
-            - name: OAUTH_PROVIDERS
-              value: "{{ join "," (keys .Values.oauth.providers) }}"
-          {{- end }}
           {{- with .Values.extraEnvs }}
           {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -82,39 +66,19 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           volumeMounts:
-          {{- if .Values.multiCluster.enabled }}
-            - name: kubeconfig
-              mountPath: /home/nonroot/.kube
-          {{- end }}
           {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
-            - name: {{ include "kite.fullname" . }}-roles
-              mountPath: /config
+          {{- if and (eq .Values.db.type "sqlite") .Values.db.sqlite.persistence.enabled }}
+            - name: {{ include "kite.fullname" . }}-sqlite-pvc
+              mountPath: {{ .Values.db.sqlite.persistence.mountPath }}
+          {{- end }}
       volumes:
-      {{- if .Values.multiCluster.enabled }}
-        - name: kubeconfig
-        {{- if .Values.multiCluster.kubeconfig.existingSecret }}
-          secret:
-            secretName: {{ .Values.multiCluster.kubeconfig.existingSecret }}
-            items:
-              - key: {{ .Values.multiCluster.kubeconfig.secretKey | default "kubeconfig" }}
-                path: {{ .Values.multiCluster.kubeconfig.secretKey | default "config" }}
-        {{- else if .Values.multiCluster.kubeconfig.fromContent }}
-          secret:
-            secretName: {{ include "kite.fullname" . }}-kubeconfig
-            items:
-              - key: kubeconfig
-                path: config
-        {{- end }}
+      {{- if and (eq .Values.db.type "sqlite") .Values.db.sqlite.persistence.enabled }}
+        - name: {{ include "kite.fullname" . }}-sqlite-pvc
+          persistentVolumeClaim:
+            claimName: {{ include "kite.fullname" . }}-sqlite-pvc
       {{- end }}
-      {{- with .Values.volumes }}
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-        - name: {{ include "kite.fullname" . }}-roles
-          configMap:
-            name: {{ include "kite.fullname" . }}-roles
-            defaultMode: 420
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
