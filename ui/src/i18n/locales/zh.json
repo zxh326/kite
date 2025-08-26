@@ -1,4 +1,5 @@
 {
+  "username": "用户名",
   "common": {
     "loading": "加载中...",
     "error": "错误",
@@ -18,7 +19,13 @@
     "actions": "操作",
     "refresh": "刷新",
     "language": "语言",
-    "close": "关闭"
+    "close": "关闭",
+    "enable": "启用",
+    "disable": "禁用",
+    "resetPassword": "重置密码",
+    "assign": "分配权限",
+    "password": "密码",
+    "version": "版本"
   },
   "nav": {
     "overview": "概览",
@@ -177,12 +184,16 @@
     "tryAgain": "重试"
   },
   "rbac": {
+    "title": "角色管理",
     "noPermissionCluster": "用户 {{user}} 没有权限在集群 {{cluster}} 上执行 {{verb}} {{resource}}",
     "noPermissionNamespace": "用户 {{user}} 没有权限在集群 {{cluster}} 的命名空间 {{namespace}} 中执行 {{verb}} {{resource}}",
     "accessDenied": "访问被拒绝",
     "insufficientPermissions": "您没有足够的权限执行此操作",
     "allNamespaces": "所有命名空间",
     "get": "获取",
+    "actions": {
+      "add": "添加角色"
+    },
     "verb": {
       "get": "获取",
       "create": "创建",
@@ -276,7 +287,7 @@
     },
     "empty": {
       "title": "暂无 OAuth 提供商配置",
-      "description": "添加您的第一个 OAuth 提供商以启用社交登录"
+      "description": "添加您的第一个 OAuth 提供商"
     },
     "messages": {
       "created": "OAuth 提供商创建成功",
@@ -306,6 +317,31 @@
       "scopes": "权限范围",
       "issuer": "签发者",
       "enabled": "启用"
+    }
+  },
+  "userManagement": {
+    "title": "用户管理",
+    "actions": {
+      "add": "添加密码用户"
+    },
+    "table": {
+      "username": "用户名",
+      "name": "名称",
+      "avatar": "头像",
+      "status": "状态",
+      "provider": "身份提供者",
+      "createdAt": "创建时间",
+      "lastLoginAt": "最后登录时间",
+      "roles": "角色"
+    },
+    "dialog": {
+      "editTitle": "编辑用户",
+      "resetPassword": "重置密码",
+      "assignRoles": "分配角色"
+    },
+    "empty": {
+      "title": "暂无用户",
+      "description": "添加您的第一个用户以开始使用"
     }
   },
   "initialization": {

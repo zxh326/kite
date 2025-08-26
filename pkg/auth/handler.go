@@ -24,9 +24,7 @@ func NewAuthHandler() *AuthHandler {
 
 func (h *AuthHandler) GetProviders(c *gin.Context) {
 	providers := h.manager.GetAvailableProviders()
-	if common.PasswordLoginEnabled {
-		providers = append(providers, "password")
-	}
+	providers = append(providers, "password")
 	c.JSON(http.StatusOK, gin.H{
 		"providers": providers,
 	})
@@ -84,14 +82,17 @@ func (h *AuthHandler) PasswordLogin(c *gin.Context) {
 		return
 	}
 
-	// Create user object
-	cuser := &common.User{
-		Username: user.Username,
-		Name:     user.Name,
-		Provider: "password",
+	if !user.Enabled {
+		c.JSON(http.StatusForbidden, gin.H{"error": "user disabled"})
+		return
 	}
 
-	jwtToken, err := h.manager.GenerateJWT(cuser, "")
+	if err := model.LoginUser(user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed login"})
+		return
+	}
+
+	jwtToken, err := h.manager.GenerateJWT(user, "")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate JWT"})
 		return
@@ -156,6 +157,14 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/login?error=insufficient_permissions&reason=insufficient_permissions&user="+user.Key()+"&provider="+provider)
 		return
 	}
+	if err := model.FindWithSubOrUpsertUser(user); err != nil {
+		c.Redirect(http.StatusFound, "/login?error=user_upsert_failed&reason=user_upsert_failed&provider="+provider)
+		return
+	}
+	if !user.Enabled {
+		c.Redirect(http.StatusFound, "/login?error=user_disabled&reason=user_disabled")
+		return
+	}
 
 	// Generate JWT with refresh token support
 	jwtToken, err := h.manager.GenerateJWT(user, tokenResp.RefreshToken)
@@ -192,25 +201,12 @@ func (h *AuthHandler) GetUser(c *gin.Context) {
 	})
 }
 
-var (
-	AnonymousUser = common.User{
-		ID:        "anonymous",
-		Username:  "anonymous",
-		Name:      "Anonymous",
-		AvatarURL: "",
-		Provider:  "none",
-	}
-)
-
 func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var tokenString string
 
-		if !common.OAuthEnabled && !common.PasswordLoginEnabled {
-			anonymous := AnonymousUser
-			anonymous.Roles = rbac.GetUserRoles(anonymous)
-			c.Set("user", anonymous)
-			c.Next()
+		if common.AnonymousUserEnabled {
+			c.Set("user", model.AnonymousUser)
 			return
 		}
 
@@ -265,17 +261,41 @@ func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 				return
 			}
 		}
-
-		u := common.User{
-			ID:         claims.UserID,
-			Username:   claims.Username,
-			Name:       claims.Name,
-			AvatarURL:  claims.AvatarURL,
-			Provider:   claims.Provider,
-			OIDCGroups: claims.OIDCGroups,
+		user, err := model.GetUserByID(claims.UserID)
+		if err != nil || !user.Enabled {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "user not found",
+			})
+			c.SetCookie("auth_token", "", -1, "/", "", false, true)
+			c.Abort()
+			return
 		}
-		u.Roles = rbac.GetUserRoles(u)
-		c.Set("user", u)
+		user.Roles = rbac.GetUserRoles(*user)
+		c.Set("user", *user)
+		c.Next()
+	}
+}
+
+func (h *AuthHandler) RequireAdmin() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, exists := c.Get("user")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Not authenticated",
+			})
+			c.Abort()
+			return
+		}
+
+		u := user.(model.User)
+		if !rbac.UserHasRole(u, model.DefaultAdminRole.Name) {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "Admin role required",
+			})
+			c.Abort()
+			return
+		}
+
 		c.Next()
 	}
 }

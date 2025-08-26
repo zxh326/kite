@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { IconEdit, IconPlus, IconServer, IconTrash } from '@tabler/icons-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { ColumnDef } from '@tanstack/react-table'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -16,36 +17,146 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 
+import { Action, ActionTable } from '../action-table'
 import { ClusterDialog } from './cluster-dialog'
 
 export function ClusterManagement() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
 
-  // Use real API to fetch clusters
   const { data: clusters = [], isLoading, error } = useClusterList()
 
   const [showClusterDialog, setShowClusterDialog] = useState(false)
   const [editingCluster, setEditingCluster] = useState<Cluster | null>(null)
   const [deletingCluster, setDeletingCluster] = useState<Cluster | null>(null)
 
-  // Create cluster mutation
+  const getClusterTypeBadge = useCallback(
+    (cluster: Cluster) => {
+      if (cluster.inCluster) {
+        return (
+          <Badge
+            variant="outline"
+            className="bg-blue-50 text-blue-700 border-blue-200"
+          >
+            {t('clusterManagement.type.inCluster', 'In-Cluster')}
+          </Badge>
+        )
+      }
+      return (
+        <Badge
+          variant="outline"
+          className="bg-gray-50 text-gray-700 border-gray-200"
+        >
+          {t('clusterManagement.type.external', 'External')}
+        </Badge>
+      )
+    },
+    [t]
+  )
+
+  const getStatusBadge = useCallback(
+    (cluster: Cluster) => {
+      if (!cluster.enabled) {
+        return (
+          <Badge variant="secondary">
+            {t('clusterManagement.status.disabled', 'Disabled')}
+          </Badge>
+        )
+      }
+      return (
+        <Badge variant="default">
+          {t('clusterManagement.status.enabled', 'Enabled')}
+        </Badge>
+      )
+    },
+    [t]
+  )
+
+  const columns = useMemo<ColumnDef<Cluster>[]>(
+    () => [
+      {
+        id: 'name',
+        header: t('clusterManagement.table.name', 'Name'),
+        cell: ({ row: { original: cluster } }) => (
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{cluster.name}</span>
+              {cluster.isDefault && <Badge variant="secondary">Default</Badge>}
+            </div>
+            {cluster.description && (
+              <div className="text-sm text-muted-foreground">
+                {cluster.description}
+              </div>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: 'version',
+        header: t('common.version', 'Version'),
+        cell: ({ row: { original: cluster } }) => (
+          <Badge variant="secondary">{cluster.version || '-'}</Badge>
+        ),
+      },
+      {
+        id: 'type',
+        header: t('clusterManagement.table.type', 'Type'),
+        cell: ({ row: { original: cluster } }) => getClusterTypeBadge(cluster),
+      },
+      {
+        id: 'status',
+        header: t('clusterManagement.table.status', 'Status'),
+        cell: ({ row: { original: cluster } }) => (
+          <div className="flex items-center gap-3">
+            {getStatusBadge(cluster)}
+          </div>
+        ),
+      },
+      {
+        id: 'Prometheus',
+        header: t('clusterManagement.table.Prometheus', 'Prometheus'),
+        cell: ({ row: { original: cluster } }) => (
+          <div className="text-sm text-muted-foreground">
+            {cluster.prometheusURL ? 'Yes' : 'No'}
+          </div>
+        ),
+      },
+    ],
+    [getClusterTypeBadge, getStatusBadge, t]
+  )
+
+  const actions = useMemo<Action<Cluster>[]>(
+    () => [
+      {
+        label: (
+          <>
+            <IconEdit className="h-4 w-4" />
+            {t('common.edit', 'Edit')}
+          </>
+        ),
+        onClick: (cluster) => {
+          setEditingCluster(cluster)
+          setShowClusterDialog(true)
+        },
+      },
+      {
+        label: (
+          <div className="inline-flex items-center gap-2 text-destructive">
+            <IconTrash className="h-4 w-4" />
+            {t('common.delete', 'Delete')}
+          </div>
+        ),
+        shouldDisable: (cluster) => cluster.isDefault,
+        onClick: (cluster) => {
+          setDeletingCluster(cluster)
+        },
+      },
+    ],
+    [t]
+  )
+
   const createMutation = useMutation({
     mutationFn: createCluster,
     onSuccess: () => {
@@ -148,42 +259,6 @@ export function ClusterManagement() {
     )
   }
 
-  const getClusterTypeBadge = (cluster: Cluster) => {
-    if (cluster.inCluster) {
-      return (
-        <Badge
-          variant="outline"
-          className="bg-blue-50 text-blue-700 border-blue-200"
-        >
-          {t('clusterManagement.type.inCluster', 'In-Cluster')}
-        </Badge>
-      )
-    }
-    return (
-      <Badge
-        variant="outline"
-        className="bg-gray-50 text-gray-700 border-gray-200"
-      >
-        {t('clusterManagement.type.external', 'External')}
-      </Badge>
-    )
-  }
-
-  const getStatusBadge = (cluster: Cluster) => {
-    if (!cluster.enabled) {
-      return (
-        <Badge variant="secondary">
-          {t('clusterManagement.status.disabled', 'Disabled')}
-        </Badge>
-      )
-    }
-    return (
-      <Badge variant="default">
-        {t('clusterManagement.status.enabled', 'Enabled')}
-      </Badge>
-    )
-  }
-
   return (
     <div className="space-y-6">
       <Card>
@@ -208,94 +283,7 @@ export function ClusterManagement() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    {t('clusterManagement.table.name', 'Name')}
-                  </TableHead>
-                  <TableHead>
-                    {t('clusterManagement.table.type', 'Type')}
-                  </TableHead>
-                  <TableHead>
-                    {t('clusterManagement.table.status', 'Status')}
-                  </TableHead>
-                  <TableHead>
-                    {t('clusterManagement.table.prometheus', 'Prometheus')}
-                  </TableHead>
-                  <TableHead className="text-right">
-                    {t('clusterManagement.table.actions', 'Actions')}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {clusters.map((cluster) => (
-                  <TableRow key={cluster.id}>
-                    <TableCell>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{cluster.name}</span>
-                          {cluster.isDefault && (
-                            <Badge variant="secondary">Default</Badge>
-                          )}
-                          {cluster.version && (
-                            <Badge variant="secondary">{cluster.version}</Badge>
-                          )}
-                        </div>
-                        {cluster.description && (
-                          <div className="text-sm text-muted-foreground">
-                            {cluster.description}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{getClusterTypeBadge(cluster)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        {getStatusBadge(cluster)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-muted-foreground">
-                        {cluster.prometheusURL ? 'Yes' : 'No'}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            •••
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setEditingCluster(cluster)
-                              setShowClusterDialog(true)
-                            }}
-                            className="gap-2"
-                          >
-                            <IconEdit className="h-4 w-4" />
-                            {t('clusterManagement.actions.edit', 'Edit')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setDeletingCluster(cluster)}
-                            disabled={cluster.isDefault}
-                            className="gap-2 text-destructive"
-                          >
-                            <IconTrash className="h-4 w-4" />
-                            {t('clusterManagement.actions.delete', 'Delete')}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
+          <ActionTable data={clusters} columns={columns} actions={actions} />
           {clusters.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               <IconServer className="h-12 w-12 mx-auto mb-4 opacity-50" />

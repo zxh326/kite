@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/model"
 	"github.com/zxh326/kite/pkg/rbac"
 	"golang.org/x/net/websocket"
 	corev1 "k8s.io/api/core/v1"
@@ -90,7 +91,7 @@ func (h *LogsHandler) HandleLogsWebSocket(c *gin.Context) {
 		ctx, cancel := context.WithCancel(c.Request.Context())
 		defer cancel()
 		cs := c.MustGet("cluster").(*cluster.ClientSet)
-		user := c.MustGet("user").(common.User)
+		user := c.MustGet("user").(model.User)
 		namespace := c.Param("namespace")
 		podName := c.Param("podName")
 		if namespace == "" || podName == "" {

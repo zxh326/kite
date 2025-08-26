@@ -4,6 +4,7 @@ import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { ClusterManagement } from '@/components/settings/cluster-management'
 import { OAuthProviderManagement } from '@/components/settings/oauth-provider-management'
 import { RBACManagement } from '@/components/settings/rbac-management'
+import { UserManagement } from '@/components/settings/user-management'
 
 export function SettingsPage() {
   const { t } = useTranslation()
@@ -39,7 +40,7 @@ export function SettingsPage() {
           {
             value: 'users',
             label: t('settings.tabs.users', 'User'),
-            content: <div />,
+            content: <UserManagement />,
           },
         ]}
       />

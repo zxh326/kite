@@ -169,7 +169,9 @@
       "generalError": "An unexpected error occurred during authentication.",
       "contactSupport": "Please try again or contact support if the issue persists.",
       "invalidCredentials": "Invalid username or password",
-      "unknownError": "An unknown error occurred"
+      "unknownError": "An unknown error occurred",
+      "userDisabled": "User Disabled",
+      "userDisabledMessage": "Your user account has been disabled. Please contact your administrator for more information."
     }
   },
   "cluster": {
@@ -273,14 +275,6 @@
       "issuer": "Issuer",
       "status": "Status",
       "actions": "Actions"
-    },
-    "status": {
-      "enabled": "Enabled",
-      "disabled": "Disabled"
-    },
-    "empty": {
-      "title": "No OAuth providers configured",
-      "description": "Add your first OAuth provider to enable social login"
     },
     "messages": {
       "created": "OAuth provider created successfully",

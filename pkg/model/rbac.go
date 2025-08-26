@@ -34,7 +34,7 @@ const (
 )
 
 var (
-	defaultAdminRole = Role{
+	DefaultAdminRole = Role{
 		Name:        "admin",
 		Description: "Administrator role with full access",
 		IsSystem:    true,
@@ -43,14 +43,14 @@ var (
 		Namespaces:  []string{"*"},
 		Verbs:       []string{"*"},
 	}
-	defaultViewerRole = Role{
+	DefaultViewerRole = Role{
 		Name:        "viewer",
 		Description: "Viewer role with read-only access",
 		IsSystem:    true,
 		Clusters:    []string{"*"},
 		Resources:   []string{"*"},
 		Namespaces:  []string{"*"},
-		Verbs:       []string{"get"},
+		Verbs:       []string{"get", "log"},
 	}
 )
 
@@ -78,10 +78,10 @@ func AddRoleAssignment(roleName string, subjectType, subject string) error {
 func InitDefaultRole() error {
 	var err error
 	// Create default roles if they don't exist
-	if err = DB.Where("name = ?", defaultAdminRole.Name).FirstOrCreate(&defaultAdminRole).Error; err != nil {
+	if err = DB.Where("name = ?", DefaultAdminRole.Name).FirstOrCreate(&DefaultAdminRole).Error; err != nil {
 		return err
 	}
-	if err = DB.Where("name = ?", defaultViewerRole.Name).FirstOrCreate(&defaultViewerRole).Error; err != nil {
+	if err = DB.Where("name = ?", DefaultViewerRole.Name).FirstOrCreate(&DefaultViewerRole).Error; err != nil {
 		return err
 	}
 	return nil

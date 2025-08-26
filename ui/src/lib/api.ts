@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   Cluster,
   clusterScopeResources,
+  FetchUserListResponse,
   ImageTagInfo,
   OAuthProvider,
   OverviewData,
@@ -16,6 +17,7 @@ import {
   ResourceTypeMap,
   ResourceUsageHistory,
   Role,
+  UserItem,
 } from '@/types/api'
 
 import { API_BASE_URL, apiClient } from './api-client'
@@ -1079,12 +1081,13 @@ export interface CreateUserRequest {
 export const createSuperUser = async (
   userData: CreateUserRequest
 ): Promise<void> => {
-  await apiClient.post('/admin/create_super_user', userData)
+  await apiClient.post('/admin/users/create_super_user', userData)
 }
 
 // Cluster import for initial setup
 export interface ImportClustersRequest {
   config: string
+  inCluster?: boolean
 }
 
 export const importClusters = async (
@@ -1485,4 +1488,49 @@ export const unassignRole = async (
   return await apiClient.delete(
     `/admin/roles/${id}/assign?${params.toString()}`
   )
+}
+
+export const fetchUserList = async (
+  page = 1,
+  size = 20
+): Promise<FetchUserListResponse> => {
+  const params = new URLSearchParams({ page: String(page), size: String(size) })
+  return fetchAPI<FetchUserListResponse>(`/admin/users/?${params.toString()}`)
+}
+
+export const updateUser = async (id: number, data: Partial<UserItem>) => {
+  return apiClient.put<{ user: UserItem }>(`/admin/users/${id}`, data)
+}
+
+export const deleteUser = async (id: number) => {
+  return apiClient.delete<{ success: boolean }>(`/admin/users/${id}`)
+}
+
+export const createPasswordUser = async (data: {
+  username: string
+  name?: string
+  password: string
+}) => {
+  return apiClient.post<{ user: UserItem }>(`/admin/users/`, data)
+}
+
+export const resetUserPassword = async (id: number, password: string) => {
+  return apiClient.post<{ success: boolean }>(
+    `/admin/users/${id}/reset_password`,
+    { password }
+  )
+}
+
+export const setUserEnabled = async (id: number, enabled: boolean) => {
+  return apiClient.post<{ success: boolean }>(`/admin/users/${id}/enable`, {
+    enabled,
+  })
+}
+
+export const useUserList = (page = 1, size = 20) => {
+  return useQuery({
+    queryKey: ['user-list', page, size],
+    queryFn: () => fetchUserList(page, size),
+    staleTime: 20000,
+  })
 }

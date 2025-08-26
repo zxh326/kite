@@ -18,7 +18,7 @@ import (
 
 func (cm *ClusterManager) GetClusters(c *gin.Context) {
 	result := make([]common.ClusterInfo, 0, len(cm.clusters))
-	user := c.MustGet("user").(common.User)
+	user := c.MustGet("user").(model.User)
 	for name, cluster := range cm.clusters {
 		if !rbac.CanAccessCluster(user, name) {
 			continue
@@ -224,9 +224,8 @@ func (cm *ClusterManager) ImportClustersFromKubeconfig(c *gin.Context) {
 		return
 	}
 
-	kubeconfig, err := clientcmd.Load([]byte(clusterReq.Config))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if !clusterReq.InCluster && clusterReq.Config == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "config is required when inCluster is false"})
 		return
 	}
 
@@ -237,6 +236,31 @@ func (cm *ClusterManager) ImportClustersFromKubeconfig(c *gin.Context) {
 	}
 	if cc > 0 {
 		c.JSON(http.StatusForbidden, gin.H{"error": "import not allowed when clusters exist"})
+		return
+	}
+
+	if clusterReq.InCluster {
+		// In-cluster config
+		cluster := &model.Cluster{
+			Name:        "in-cluster",
+			InCluster:   true,
+			Description: "Kubernetes in-cluster config",
+			IsDefault:   true,
+			Enable:      true,
+		}
+		if err := model.AddCluster(cluster); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		// wait for sync to complete
+		time.Sleep(1 * time.Second)
+		c.JSON(http.StatusCreated, gin.H{"message": fmt.Sprintf("imported %d clusters successfully", 1)})
+		return
+	}
+
+	kubeconfig, err := clientcmd.Load([]byte(clusterReq.Config))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

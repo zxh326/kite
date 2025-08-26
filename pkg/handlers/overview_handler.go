@@ -27,8 +27,11 @@ func GetOverview(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	user := c.MustGet("user").(model.User)
+	if len(user.Roles) == 0 {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+	}
 
-	// TODO: if prometheus is enabled, get data from prometheus
 	// Get nodes
 	nodes := &v1.NodeList{}
 	if err := cs.K8sClient.List(ctx, nodes, &client.ListOptions{}); err != nil {
@@ -127,16 +130,17 @@ func InitCheck(c *gin.Context) {
 	// }
 	step := 0
 	uc, _ := model.CountUsers()
-	if uc == 0 {
+	if uc == 0 && !common.AnonymousUserEnabled {
 		c.SetCookie("auth_token", "", -1, "/", "", false, true)
+		c.JSON(http.StatusOK, gin.H{"initialized": false, "step": step})
 	}
-	if uc > 0 {
+	if uc > 0 || common.AnonymousUserEnabled {
 		step++
 	}
 	cc, _ := model.CountClusters()
 	if cc > 0 {
 		step++
 	}
-	initialized := uc > 0 && cc > 0
+	initialized := step == 2
 	c.JSON(http.StatusOK, gin.H{"initialized": initialized, "step": step})
 }

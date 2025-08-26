@@ -357,3 +357,22 @@ export interface Role {
   createdAt: string
   updatedAt: string
 }
+
+export interface UserItem {
+  id: number
+  username: string
+  provider: string
+  createdAt: string
+  lastLoginAt?: string
+  enabled?: boolean
+  avatar_url?: string
+  name?: string
+  roles?: Role[]
+}
+
+export interface FetchUserListResponse {
+  users: UserItem[]
+  total: number
+  page: number
+  size: number
+}

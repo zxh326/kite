@@ -83,9 +83,12 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 
 	// admin apis
 	adminAPI := r.Group("/api/v1/admin")
+	// Initialize the setup API without authentication.
+	// Once users are configured, this API cannot be used.
+	adminAPI.POST("/users/create_super_user", handlers.CreateSuperUser)
+	adminAPI.POST("/clusters/import", cm.ImportClustersFromKubeconfig)
+	adminAPI.Use(authHandler.RequireAuth(), authHandler.RequireAdmin())
 	{
-		adminAPI.POST("/create_super_user", handlers.CreateSuperUser)
-
 		oauthProviderAPI := adminAPI.Group("/oauth-providers")
 		{
 			oauthProviderAPI.GET("/", authHandler.ListOAuthProviders)
@@ -101,7 +104,6 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 			clusterAPI.POST("/", cm.CreateCluster)
 			clusterAPI.PUT("/:id", cm.UpdateCluster)
 			clusterAPI.DELETE("/:id", cm.DeleteCluster)
-			clusterAPI.POST("/import", cm.ImportClustersFromKubeconfig)
 		}
 
 		rbacAPI := adminAPI.Group("/roles")
@@ -114,6 +116,16 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 
 			rbacAPI.POST("/:id/assign", rbac.AssignRole)
 			rbacAPI.DELETE("/:id/assign", rbac.UnassignRole)
+		}
+
+		userAPI := adminAPI.Group("/users")
+		{
+			userAPI.GET("/", handlers.ListUsers)
+			userAPI.POST("/", handlers.CreatePasswordUser)
+			userAPI.PUT(":id", handlers.UpdateUser)
+			userAPI.DELETE(":id", handlers.DeleteUser)
+			userAPI.POST(":id/reset_password", handlers.ResetPassword)
+			userAPI.POST(":id/enable", handlers.SetUserEnabled)
 		}
 	}
 

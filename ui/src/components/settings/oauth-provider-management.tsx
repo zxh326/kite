@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { IconEdit, IconKey, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { ColumnDef } from '@tanstack/react-table'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -16,22 +17,9 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 
+import { Action, ActionTable } from '../action-table'
 import { OAuthProviderDialog } from './oauth-provider-dialog'
 
 export function OAuthProviderManagement() {
@@ -47,6 +35,95 @@ export function OAuthProviderManagement() {
   )
   const [deletingProvider, setDeletingProvider] =
     useState<OAuthProvider | null>(null)
+  const getStatusBadge = useCallback(
+    (provider: OAuthProvider) => {
+      if (!provider.enabled) {
+        return (
+          <Badge variant="secondary">{t('common.disabled', 'Disabled')}</Badge>
+        )
+      }
+      return <Badge variant="default">{t('common.enabled', 'Enabled')}</Badge>
+    },
+    [t]
+  )
+
+  const columns = useMemo<ColumnDef<OAuthProvider>[]>(
+    () => [
+      {
+        id: 'name',
+        header: t('common.name', 'Name'),
+        cell: ({ row: { original: provider } }) => (
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{provider.name}</span>
+            </div>
+            {provider.scopes && (
+              <div className="text-sm text-muted-foreground">
+                Scopes: {provider.scopes}
+              </div>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: 'clientId',
+        header: t('oauthManagement.table.clientId', 'Client ID'),
+        cell: ({ row: { original: provider } }) => (
+          <code className="text-sm bg-muted px-2 py-1 rounded">
+            {provider.clientId}
+          </code>
+        ),
+      },
+      {
+        id: 'issuer',
+        header: t('oauthManagement.table.issuer', 'Issuer'),
+        cell: ({ row: { original: provider } }) => (
+          <div className="text-sm text-muted-foreground">
+            {provider.issuer || '-'}
+          </div>
+        ),
+      },
+      {
+        id: 'status',
+        header: t('common.status', 'Status'),
+        cell: ({ row: { original: provider } }) => (
+          <div className="flex items-center gap-3">
+            {getStatusBadge(provider)}
+          </div>
+        ),
+      },
+    ],
+    [getStatusBadge, t]
+  )
+
+  const actions = useMemo<Action<OAuthProvider>[]>(
+    () => [
+      {
+        label: (
+          <>
+            <IconEdit className="h-4 w-4" />
+            {t('common.edit', 'Edit')}
+          </>
+        ),
+        onClick: (provider) => {
+          setEditingProvider(provider)
+          setShowProviderDialog(true)
+        },
+      },
+      {
+        label: (
+          <div className="inline-flex items-center gap-2 text-destructive">
+            <IconTrash className="h-4 w-4" />
+            {t('common.delete', 'Delete')}
+          </div>
+        ),
+        onClick: (provider) => {
+          setDeletingProvider(provider)
+        },
+      },
+    ],
+    [t]
+  )
 
   // Create provider mutation
   const createMutation = useMutation({
@@ -175,21 +252,6 @@ export function OAuthProviderManagement() {
     )
   }
 
-  const getStatusBadge = (provider: OAuthProvider) => {
-    if (!provider.enabled) {
-      return (
-        <Badge variant="secondary">
-          {t('oauthManagement.status.disabled', 'Disabled')}
-        </Badge>
-      )
-    }
-    return (
-      <Badge variant="default">
-        {t('oauthManagement.status.enabled', 'Enabled')}
-      </Badge>
-    )
-  }
-
   return (
     <div className="space-y-6">
       <Card>
@@ -214,90 +276,7 @@ export function OAuthProviderManagement() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    {t('oauthManagement.table.name', 'Name')}
-                  </TableHead>
-                  <TableHead>
-                    {t('oauthManagement.table.clientId', 'Client ID')}
-                  </TableHead>
-                  <TableHead>
-                    {t('oauthManagement.table.issuer', 'Issuer')}
-                  </TableHead>
-                  <TableHead>
-                    {t('oauthManagement.table.status', 'Status')}
-                  </TableHead>
-                  <TableHead className="text-right">
-                    {t('oauthManagement.table.actions', 'Actions')}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {providers.map((provider) => (
-                  <TableRow key={provider.id}>
-                    <TableCell>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{provider.name}</span>
-                        </div>
-                        {provider.scopes && (
-                          <div className="text-sm text-muted-foreground">
-                            Scopes: {provider.scopes}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <code className="text-sm bg-muted px-2 py-1 rounded">
-                        {provider.clientId}
-                      </code>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-muted-foreground">
-                        {provider.issuer || '-'}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        {getStatusBadge(provider)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            •••
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setEditingProvider(provider)
-                              setShowProviderDialog(true)
-                            }}
-                            className="gap-2"
-                          >
-                            <IconEdit className="h-4 w-4" />
-                            {t('oauthManagement.actions.edit', 'Edit')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setDeletingProvider(provider)}
-                            className="gap-2 text-destructive"
-                          >
-                            <IconTrash className="h-4 w-4" />
-                            {t('oauthManagement.actions.delete', 'Delete')}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <ActionTable actions={actions} data={providers} columns={columns} />
 
           {providers.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
@@ -311,7 +290,7 @@ export function OAuthProviderManagement() {
               <p className="text-sm mt-1">
                 {t(
                   'oauthManagement.empty.description',
-                  'Add your first OAuth provider to enable social login'
+                  'Add your first OAuth provider'
                 )}
               </p>
             </div>

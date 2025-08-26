@@ -111,6 +111,7 @@ export function InitializationPage() {
   // Cluster form state
   const [kubeconfig, setKubeconfig] = useState('')
   const [isFileMode, setIsFileMode] = useState(false)
+  const [isInCluster, setIsInCluster] = useState(false)
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -174,14 +175,14 @@ export function InitializationPage() {
     e.preventDefault()
     setError(null)
 
-    if (!kubeconfig.trim()) {
+    if (!isInCluster && !kubeconfig.trim()) {
       setError(t('initialization.step2.configRequired'))
       return
     }
 
     setIsSubmitting(true)
     try {
-      await importClusters({ config: kubeconfig })
+      await importClusters({ config: kubeconfig, inCluster: isInCluster })
       toast.success(t('initialization.step2.importSuccess'))
       await refetch()
       // Will redirect to home page when initialized becomes true
@@ -329,13 +330,15 @@ export function InitializationPage() {
                       {t('initialization.step2.kubeconfigRequired')}
                     </Label>
 
-                    {/* File upload and text input toggle */}
                     <div className="flex items-center space-x-4 mb-3">
                       <button
                         type="button"
-                        onClick={() => setIsFileMode(false)}
+                        onClick={() => {
+                          setIsInCluster(false)
+                          setIsFileMode(false)
+                        }}
                         className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                          !isFileMode
+                          !isFileMode && !isInCluster
                             ? 'bg-blue-100 text-blue-700 border border-blue-300'
                             : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
                         }`}
@@ -346,9 +349,12 @@ export function InitializationPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setIsFileMode(true)}
+                        onClick={() => {
+                          setIsInCluster(false)
+                          setIsFileMode(true)
+                        }}
                         className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                          isFileMode
+                          isFileMode && !isInCluster
                             ? 'bg-blue-100 text-blue-700 border border-blue-300'
                             : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
                         }`}
@@ -357,9 +363,34 @@ export function InitializationPage() {
                           defaultValue: 'Upload File',
                         })}
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsInCluster(true)
+                          setIsFileMode(false)
+                        }}
+                        className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                          isInCluster
+                            ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                            : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+                        }`}
+                      >
+                        {t('initialization.step2.inClusterMode', {
+                          defaultValue: 'In-Cluster',
+                        })}
+                      </button>
                     </div>
 
-                    {isFileMode ? (
+                    {isInCluster ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600">
+                          {t('initialization.step2.inClusterHint', {
+                            defaultValue:
+                              'Import clusters from inside the running Kite instance. No kubeconfig required.',
+                          })}
+                        </p>
+                      </div>
+                    ) : isFileMode ? (
                       <div className="space-y-2">
                         <input
                           type="file"
@@ -389,7 +420,6 @@ export function InitializationPage() {
                         onChange={(e) => setKubeconfig(e.target.value)}
                         rows={8}
                         className="font-mono text-sm"
-                        required
                       />
                     )}
 
@@ -399,7 +429,9 @@ export function InitializationPage() {
                   </div>
                   <Button
                     type="submit"
-                    disabled={isSubmitting || !kubeconfig.trim()}
+                    disabled={
+                      isSubmitting || (!isInCluster && !kubeconfig.trim())
+                    }
                     className="w-full"
                   >
                     {isSubmitting ? (

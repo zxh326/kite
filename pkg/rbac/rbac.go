@@ -6,11 +6,12 @@ import (
 	"strings"
 
 	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/model"
 	"k8s.io/klog/v2"
 )
 
 // CanAccess checks if user/oidcGroup can access resource with verb in cluster/namespace
-func CanAccess(user common.User, resource, verb, cluster, namespace string) bool {
+func CanAccess(user model.User, resource, verb, cluster, namespace string) bool {
 	roles := GetUserRoles(user)
 	for _, role := range roles {
 		if match(role.Clusters, cluster) &&
@@ -27,7 +28,7 @@ func CanAccess(user common.User, resource, verb, cluster, namespace string) bool
 	return false
 }
 
-func CanAccessCluster(user common.User, name string) bool {
+func CanAccessCluster(user model.User, name string) bool {
 	roles := GetUserRoles(user)
 	for _, role := range roles {
 		if match(role.Clusters, name) {
@@ -37,7 +38,7 @@ func CanAccessCluster(user common.User, name string) bool {
 	return false
 }
 
-func CanAccessNamespace(user common.User, cluster, name string) bool {
+func CanAccessNamespace(user model.User, cluster, name string) bool {
 	roles := GetUserRoles(user)
 	for _, role := range roles {
 		if match(role.Clusters, cluster) && match(role.Namespaces, name) {
@@ -48,7 +49,7 @@ func CanAccessNamespace(user common.User, cluster, name string) bool {
 }
 
 // GetUserRoles returns all roles for a user/oidcGroups
-func GetUserRoles(user common.User) []common.Role {
+func GetUserRoles(user model.User) []common.Role {
 	if user.Roles != nil {
 		return user.Roles
 	}
@@ -115,4 +116,14 @@ func NoAccess(user, verb, resource, ns, cluster string) string {
 	}
 	return fmt.Sprintf("user %s does not have permission to %s %s in namespace %s on cluster %s",
 		user, verb, resource, ns, cluster)
+}
+
+func UserHasRole(user model.User, roleName string) bool {
+	roles := GetUserRoles(user)
+	for _, role := range roles {
+		if role.Name == roleName {
+			return true
+		}
+	}
+	return false
 }

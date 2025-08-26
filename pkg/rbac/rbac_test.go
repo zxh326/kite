@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/model"
 )
 
 func TestCanAccess(t *testing.T) {
@@ -229,7 +230,7 @@ func TestCanAccess(t *testing.T) {
 				Roles:       tc.roles,
 				RoleMapping: tc.mappings,
 			}
-			result := CanAccess(common.User{Username: tc.user, OIDCGroups: tc.oidcGroups}, tc.resource, tc.verb, tc.cluster, tc.namespace)
+			result := CanAccess(model.User{Username: tc.user, OIDCGroups: tc.oidcGroups}, tc.resource, tc.verb, tc.cluster, tc.namespace)
 
 			if result != tc.expected {
 				t.Errorf("Expected CanAccess to return %v but got %v", tc.expected, result)

@@ -109,6 +109,11 @@ export function LoginPage() {
           message: t('login.errors.callbackError'),
           details: t('login.errors.contactSupport'),
         }
+      case 'user_disabled':
+        return {
+          title: t('login.errors.userDisabled', 'User Disabled'),
+          message: t('login.errors.userDisabledMessage'),
+        }
       default:
         return {
           title: t('login.errors.authenticationError'),

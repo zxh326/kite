@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/zxh326/kite/pkg/common"
 	"github.com/zxh326/kite/pkg/model"
 	"k8s.io/klog/v2"
 )
@@ -18,7 +17,7 @@ import (
 type OAuthProvider interface {
 	GetAuthURL(state string) string
 	ExchangeCodeForToken(code string) (*TokenResponse, error)
-	GetUserInfo(accessToken string) (*common.User, error)
+	GetUserInfo(accessToken string) (*model.User, error)
 	RefreshToken(refreshToken string) (*TokenResponse, error)
 	GetProviderName() string
 }
@@ -42,7 +41,7 @@ type TokenResponse struct {
 
 // Claims represents JWT claims with refresh token support
 type Claims struct {
-	UserID       string   `json:"user_id"`
+	UserID       uint     `json:"user_id"`
 	Username     string   `json:"username"`
 	Name         string   `json:"name"`
 	AvatarURL    string   `json:"avatar_url"`
@@ -225,7 +224,7 @@ func (g *GenericProvider) RefreshToken(refreshToken string) (*TokenResponse, err
 	return &tokenResp, nil
 }
 
-func (g *GenericProvider) GetUserInfo(accessToken string) (*common.User, error) {
+func (g *GenericProvider) GetUserInfo(accessToken string) (*model.User, error) {
 	req, err := http.NewRequest("GET", g.UserInfoURL, nil)
 	if err != nil {
 		return nil, err
@@ -250,14 +249,15 @@ func (g *GenericProvider) GetUserInfo(accessToken string) (*common.User, error) 
 	klog.V(1).Infof("User info from %s: %v", g.Name, userInfo)
 
 	// Map common fields - this might need customization per provider
-	user := &common.User{
+	user := &model.User{
 		Provider: g.Name,
 	}
 
+	user.Sub = ""
 	if id, ok := userInfo["id"]; ok {
-		user.ID = fmt.Sprintf("%v", id)
+		user.Sub = fmt.Sprintf("%v", id)
 	} else if sub, ok := userInfo["sub"]; ok {
-		user.ID = fmt.Sprintf("%v", sub)
+		user.Sub = fmt.Sprintf("%v", sub)
 	}
 	if username, ok := userInfo["username"]; ok {
 		user.Username = fmt.Sprintf("%v", username)

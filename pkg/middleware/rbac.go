@@ -7,12 +7,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/model"
 	"github.com/zxh326/kite/pkg/rbac"
 )
 
 func RBACMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		user := c.MustGet("user").(common.User)
+		user := c.MustGet("user").(model.User)
 		cs := c.MustGet("cluster").(*cluster.ClientSet)
 
 		verbs := method2verb(c.Request.Method)
@@ -21,7 +22,7 @@ func RBACMiddleware() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid resource URL"})
 			return
 		}
-		if resource == "namespaces" && user.Roles != nil && verbs == "get" {
+		if resource == "namespaces" && verbs == "get" {
 			// if user has roles, allow access to list namespaces resource
 			// don't worry about security here, we will filter namespaces in the list namespace handler
 			// this is just to allow users to list namespaces they have access to

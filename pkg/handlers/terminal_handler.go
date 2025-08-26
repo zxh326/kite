@@ -8,6 +8,7 @@ import (
 	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
 	"github.com/zxh326/kite/pkg/kube"
+	"github.com/zxh326/kite/pkg/model"
 	"github.com/zxh326/kite/pkg/rbac"
 	"golang.org/x/net/websocket"
 	"k8s.io/klog/v2"
@@ -35,7 +36,7 @@ func (h *TerminalHandler) HandleTerminalWebSocket(c *gin.Context) {
 		return
 	}
 
-	user := c.MustGet("user").(common.User)
+	user := c.MustGet("user").(model.User)
 
 	websocket.Handler(func(ws *websocket.Conn) {
 		ctx, cancel := context.WithCancel(c.Request.Context())

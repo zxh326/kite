@@ -69,7 +69,7 @@ func (om *OAuthManager) GenerateState() string {
 	return base64.URLEncoding.EncodeToString(b)
 }
 
-func (om *OAuthManager) GenerateJWT(user *common.User, refreshToken string) (string, error) {
+func (om *OAuthManager) GenerateJWT(user *model.User, refreshToken string) (string, error) {
 	now := time.Now()
 	expirationTime := now.Add(common.JWTExpirationSeconds * time.Second)
 
@@ -153,8 +153,10 @@ func (om *OAuthManager) RefreshJWT(c *gin.Context, tokenString string) (string, 
 
 	// If no refresh token available, just generate a new JWT with existing claims
 	// This is for providers like GitHub that don't expire tokens
-	user := &common.User{
-		ID:         claims.UserID,
+	user := &model.User{
+		Model: model.Model{
+			ID: claims.UserID,
+		},
 		Username:   claims.Username,
 		Name:       claims.Name,
 		AvatarURL:  claims.AvatarURL,
