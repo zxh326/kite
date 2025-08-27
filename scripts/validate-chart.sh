@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-CHART_DIR="chart"
+CHART_DIR="charts/kite"
 TEMP_DIR=$(mktemp -d)
 
 echo "🔍 Validating Helm Chart..."
