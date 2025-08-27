@@ -78,7 +78,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile.binary
-          push: false
+          push: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
@@ -86,12 +86,12 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           labels: runnumber=${{ github.run_id }}
 
-      # - name: Package binaries
-      #   run: make package-binaries
+      - name: Package binaries
+        run: make package-binaries
 
-      # - name: Upload binary packages to release
-      #   run: |
-      #     echo "Uploading all kite binary packages..."
-      #     gh release upload ${{ github.event.release.tag_name }} bin/kite-*-${{ github.event.release.tag_name }}.tar.gz --clobber
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload binary packages to release
+        run: |
+          echo "Uploading all kite binary packages..."
+          gh release upload ${{ github.event.release.tag_name }} bin/kite-*-${{ github.event.release.tag_name }}.tar.gz --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
