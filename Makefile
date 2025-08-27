@@ -38,8 +38,27 @@ build: frontend backend ## Build both frontend and backend
 
 cross-compile: frontend ## Cross-compile for multiple architectures
 	@echo "🔄 Cross-compiling for multiple architectures..."
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o $(BINARY_NAME)-amd64 .
-	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o $(BINARY_NAME)-arm64 .
+	mkdir -p bin
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bin/$(BINARY_NAME)-amd64 .
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bin/$(BINARY_NAME)-arm64 .
+	# GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bin/$(BINARY_NAME)-darwin-amd64 .
+	# GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bin/$(BINARY_NAME)-darwin-arm64 .
+
+package-release:
+	@echo "🔄 Packaging..."
+	tar -czvf bin/$(BINARY_NAME)-$(shell git describe --tags --match 'v*' | grep -oE 'v[0-9]+\.[0-9][0-9]*(\.[0-9]+)?').tar.gz bin/*
+
+package-binaries: ## Package each kite binary file separately
+	@echo "🔄 Packaging kite binaries separately..."
+	@VERSION=$$(git describe --tags --match 'v*' | grep -oE 'v[0-9]+\.[0-9][0-9]*(\.[0-9]+)?'); \
+	for file in bin/kite-*; do \
+		if [ -f "$$file" ]; then \
+			filename=$$(basename "$$file"); \
+			echo "📦 Packaging $$filename with version $$VERSION..."; \
+			tar -czvf "bin/$$filename-$$VERSION.tar.gz" "$$file"; \
+		fi; \
+	done
+	@echo "✅ All kite binaries packaged successfully!"
 
 frontend: ## Build frontend only
 	@echo "📦 Building frontend..."

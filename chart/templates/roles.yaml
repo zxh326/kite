@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "kite.fullname" . }}-roles
-  labels:
-    {{- include "kite.labels" . | nindent 4 }}
-data:
-  roles.yaml: |-
-{{- .Values.roleConfig | toYaml | nindent 4 }}
