@@ -4,9 +4,8 @@ on:
   push:
     branches:
       - main
-      - helm-chart
     paths:
-      - "chart/**"
+      - "charts/**"
   workflow_dispatch:
 
 permissions:
