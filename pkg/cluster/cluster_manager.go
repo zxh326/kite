@@ -50,6 +50,12 @@ func createClientSetInCluster(name, prometheusURL string) (*ClientSet, error) {
 			klog.Warningf("Failed to create Prometheus client, some features may not work as expected, err: %v", err)
 		}
 	}
+	v, err := cs.K8sClient.ClientSet.Discovery().ServerVersion()
+	if err != nil {
+		klog.Warningf("Failed to get server version for cluster %s: %v", name, err)
+	} else {
+		cs.Version = v.String()
+	}
 	klog.Infof("Loaded in-cluster K8s client")
 	return cs, nil
 }

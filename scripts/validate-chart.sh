@@ -86,8 +86,9 @@ db:
     type: sqlite
     sqlite:
         persistence:
-            enabled: true
-            size: 1Gi
+            pvc:
+                enabled: true
+                size: 1Gi
 EOF
 
 if helm template test-release "$CHART_DIR" -f "$TEMP_DIR/test-values-sqlite.yaml" > "$TEMP_DIR/rendered-custom-sqlite.yaml"; then
@@ -97,9 +98,11 @@ else
         exit 1
 fi
 
+
 # Content checks for sqlite rendering
 echo "📋 Verifying rendered content for sqlite persistence..."
 RENDERED_SQLITE="$TEMP_DIR/rendered-custom-sqlite.yaml"
+cat "$RENDERED_SQLITE"
 fail() { echo "❌ $1"; rm -rf "$TEMP_DIR"; exit 1; }
 
 # Ensure a PVC resource was generated for sqlite
@@ -107,8 +110,8 @@ if ! grep -E -q "kind:\s*PersistentVolumeClaim" "$RENDERED_SQLITE"; then
     fail "PersistentVolumeClaim not found in sqlite rendered output"
 fi
 
-# Ensure the PVC name or claim reference contains 'sqlite-pvc'
-if ! grep -E -q "sqlite-pvc" "$RENDERED_SQLITE"; then
+# Ensure the PVC name or claim reference contains 'kite-storage'
+if ! grep -E -q "kite-storage" "$RENDERED_SQLITE"; then
     fail "sqlite PVC name or reference not found in rendered output"
 fi
 

@@ -69,15 +69,23 @@ spec:
           {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- if and (eq .Values.db.type "sqlite") .Values.db.sqlite.persistence.enabled }}
-            - name: {{ include "kite.fullname" . }}-sqlite-pvc
+          {{- if and (eq .Values.db.type "sqlite")}}
+            - name: {{ include "kite.fullname" . }}-storage
               mountPath: {{ .Values.db.sqlite.persistence.mountPath }}
           {{- end }}
       volumes:
-      {{- if and (eq .Values.db.type "sqlite") .Values.db.sqlite.persistence.enabled }}
-        - name: {{ include "kite.fullname" . }}-sqlite-pvc
+      {{- if eq .Values.db.type "sqlite"}} 
+        - name: {{ include "kite.fullname" . }}-storage
+      {{- if .Values.db.sqlite.persistence.pvc.enabled }}
           persistentVolumeClaim:
-            claimName: {{ include "kite.fullname" . }}-sqlite-pvc
+            claimName: {{ include "kite.fullname" . }}-storage
+      {{- else if .Values.db.sqlite.persistence.hostPath.enabled }}
+          hostPath:
+            path: {{ .Values.db.sqlite.persistence.hostPath.path }}
+            type: {{ .Values.db.sqlite.persistence.hostPath.type }}
+      {{- else }}
+          emptyDir: {}
+      {{- end }}
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

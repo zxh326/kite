@@ -54,16 +54,20 @@ db:
     # If true, the chart will create a PVC and mount it into the pod for the sqlite DB file.
     # Set to false to use ephemeral storage (not recommended for production).
     persistence:
-      enabled: false
-      # Use an existing PVC by name (optional). If set, the chart will not create a PVC.
-      existingClaim: ""
-      # StorageClass to request for the PVC (optional)
-      storageClass: ""
-      # accessModes for the PVC
-      accessModes:
-        - ReadWriteOnce
-      # requested size
-      size: 1Gi
+      pvc:
+        enabled: false
+        existingClaim: ""
+        # StorageClass to request for the PVC (optional)
+        storageClass: ""
+        # accessModes for the PVC
+        accessModes:
+          - ReadWriteOnce
+        # requested size
+        size: 1Gi
+      hostPath:
+        enabled: false
+        path: /path/to/host/dir
+        type: DirectoryOrCreate
       # where to mount inside the container
       mountPath: /data
       # sqlite filename inside the mountPath
