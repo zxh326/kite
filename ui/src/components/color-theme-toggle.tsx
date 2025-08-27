@@ -1,4 +1,4 @@
-import { Palette } from 'lucide-react'
+import { Check, Palette } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -18,7 +18,7 @@ const colorThemeIcons = {
 }
 
 export function ColorThemeToggle() {
-  const { setColorTheme } = useColorTheme()
+  const { colorTheme, setColorTheme } = useColorTheme()
 
   return (
     <DropdownMenu>
@@ -29,16 +29,27 @@ export function ColorThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center" className="w-20">
-        {Object.entries(colorThemeIcons).map(([key, icon]) => (
-          <DropdownMenuItem
-            key={key}
-            onClick={() => setColorTheme(key as ColorTheme)}
-            className="flex items-center gap-2"
-          >
-            {icon}
-            <span>{key}</span>
-          </DropdownMenuItem>
-        ))}
+        {Object.entries(colorThemeIcons).map(([key, icon]) => {
+          const isSelected = key === colorTheme
+
+          return (
+            <DropdownMenuItem
+              key={key}
+              onClick={() => setColorTheme(key as ColorTheme)}
+              role="menuitemradio"
+              aria-checked={isSelected}
+              className={`flex items-center justify-between gap-2 ${
+                isSelected ? 'font-medium text-foreground' : ''
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                {icon}
+                <span className="capitalize">{key}</span>
+              </div>
+              {isSelected && <Check className="h-4 w-4 text-primary" />}
+            </DropdownMenuItem>
+          )
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   )

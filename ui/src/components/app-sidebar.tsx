@@ -178,16 +178,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="data-[slot=sidebar-menu-button]:!p-1.5 hover:bg-accent/50 transition-colors"
             >
               <Link to="/" onClick={handleMenuItemClick}>
                 <img src={Icon} alt="Kite Logo" className="ml-1 h-8 w-8" />
-                <span className="text-base font-semibold">Kite</span>
+                <span className="text-base font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                  Kite
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+      
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
@@ -196,6 +199,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 tooltip={t('nav.overview')}
                 asChild
                 isActive={isActive('/')}
+                className="transition-all duration-200 hover:bg-accent/60 active:scale-95 data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:shadow-sm"
               >
                 <Link to="/" onClick={handleMenuItemClick}>
                   <IconLayoutDashboard className="text-sidebar-primary" />
@@ -210,9 +214,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <Collapsible defaultOpen className="group/collapsible" key={group}>
             <SidebarGroup>
               <SidebarGroupLabel asChild>
-                <CollapsibleTrigger>
-                  {group}
-                  <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors group-data-[state=open]:text-foreground">
+                  <span className="uppercase tracking-wide text-xs font-bold">
+                    {group}
+                  </span>
+                  <ChevronDown className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
                 </CollapsibleTrigger>
               </SidebarGroupLabel>
               <CollapsibleContent>
@@ -224,6 +230,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           tooltip={item.title}
                           asChild
                           isActive={isActive(item.url)}
+                          className="transition-all duration-200 hover:bg-accent/50 active:scale-95 data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:shadow-sm data-[active=true]:border-l-2 data-[active=true]:border-l-primary"
                         >
                           <Link to={item.url} onClick={handleMenuItemClick}>
                             {item.icon && (
@@ -241,8 +248,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </Collapsible>
         ))}
       </SidebarContent>
-      <SidebarFooter>
-        <div className="flex items-center gap-2 rounded-md px-2 py-1.5 bg-muted/60 border border-border/80">
+      
+      <SidebarFooter >
+        <div className="flex items-center gap-2 rounded-md px-2 py-1.5 bg-gradient-to-r from-muted/40 to-muted/20 border border-border/60 backdrop-blur-sm">
           <ClusterSelector />
         </div>
       </SidebarFooter>
