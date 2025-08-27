@@ -1131,6 +1131,7 @@ export const useLogsWebSocket = (
     previous?: boolean
     sinceSeconds?: number
     enabled?: boolean
+    labelSelector?: string
   }
 ) => {
   const [logs, setLogs] = useState<string[]>([])
@@ -1199,6 +1200,9 @@ export const useLogsWebSocket = (
       }
       if (options?.sinceSeconds !== undefined) {
         params.append('sinceSeconds', options.sinceSeconds.toString())
+      }
+      if (options?.labelSelector) {
+        params.append('labelSelector', options.labelSelector)
       }
 
       const currentCluster = localStorage.getItem('current-cluster')

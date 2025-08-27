@@ -666,6 +666,7 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
                           deployment.spec?.template?.spec?.initContainers,
                           deployment.spec?.template?.spec?.containers
                         )}
+                        labelSelector={labelSelector}
                       />
                     </div>
                   ),

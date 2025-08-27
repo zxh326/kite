@@ -50,6 +50,7 @@ interface LogViewerProps {
   namespace: string
   podName?: string
   pods?: Pod[]
+  labelSelector?: string
   containers: SimpleContainer
   onClose?: () => void
 }
@@ -60,6 +61,7 @@ export function LogViewer({
   pods,
   containers,
   onClose,
+  labelSelector,
 }: LogViewerProps) {
   const [selectedContainer, setSelectedContainer] = useState<
     string | undefined
@@ -91,7 +93,7 @@ export function LogViewer({
   const [logStartIndex, setLogStartIndex] = useState(0)
 
   const [selectPodName, setSelectPodName] = useState<string | undefined>(
-    podName || pods?.[0]?.metadata?.name || ''
+    podName || pods?.[0]?.metadata?.name || undefined
   )
 
   const { t } = useTranslation()
@@ -159,6 +161,7 @@ export function LogViewer({
       timestamps,
       previous,
       enabled: true,
+      labelSelector,
     })
 
   const handleClearLogs = useCallback(() => {
@@ -289,7 +292,8 @@ export function LogViewer({
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${selectPodName}-${selectedContainer || 'pod'}-logs.txt`
+    const podFileName = selectPodName || 'all-pods'
+    a.download = `${podFileName}-${selectedContainer || 'pod'}-logs.txt`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -421,9 +425,9 @@ export function LogViewer({
                     ? -1
                     : 1
                 )}
-                showAllOption={false}
+                showAllOption={true}
                 selectedPod={selectPodName}
-                onPodChange={setSelectPodName}
+                onPodChange={(v) => setSelectPodName(v)}
               />
             )}
 
