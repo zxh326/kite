@@ -213,6 +213,20 @@
       "users": "用户"
     }
   },
+  "settingsHint": {
+    "title": "完成设置",
+    "description": "配置基本设置以获得最佳体验",
+    "p8s": {
+      "description": "配置 Prometheus"
+    },
+    "oauth": {
+      "description": "设置 OAuth 提供商进行身份验证"
+    },
+    "rbac": {
+      "description": "配置角色和权限"
+    },
+    "viewAll": "查看所有设置"
+  },
   "clusterManagement": {
     "title": "集群管理",
     "actions": {
@@ -351,7 +365,7 @@
     "description": "配置您的管理员用户并连接您的集群",
     "step1": {
       "title": "创建超级管理员用户",
-      "description": "设置您的管理员账户",
+      "description": "如果您希望匿名使用，请将 `ANONYMOUS_USER_ENABLED` 环境变量设置为 true",
       "username": "用户名",
       "usernameRequired": "用户名 *",
       "usernamePlaceholder": "输入管理员用户名",

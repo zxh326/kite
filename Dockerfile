@@ -24,7 +24,7 @@ COPY . .
 COPY --from=frontend-builder /app/static ./static
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o kite .
 
-FROM gcr.io/distroless/static:nonroot
+FROM gcr.io/distroless/static
 
 WORKDIR /app
 

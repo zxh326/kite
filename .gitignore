@@ -40,3 +40,6 @@ values-*.yaml
 docs/.vitepress/dist
 docs/node_modules
 docs/.vitepress/cache
+
+kite
+!charts/kite

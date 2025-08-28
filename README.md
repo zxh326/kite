@@ -30,17 +30,20 @@ _Comprehensive cluster overview with real-time metrics and resource statistics_
 ### 🎯 **Modern User Experience**
 
 - 🌓 **Multi-Theme Support** - Dark/light/color themes with system preference detection
-- 🔍 **Advanced Search** - Global search with across all resources
+- 🔍 **Advanced Search** - Global search across all resources
+- 🌐 **Internationalization** - Support for English and Chinese languages
+- 📱 **Responsive Design** - Optimized for desktop, tablet, and mobile devices
 
 ### 🏘️ **Multi-Cluster Management**
 
-- 🔄 **Seamless Cluster Switching** - Switch between multiple Kubernetes clusters with a single click
+- 🔄 **Seamless Cluster Switching** - Switch between multiple Kubernetes clusters
 - 📊 **Per-Cluster Monitoring** - Independent Prometheus configuration for each cluster
 - ⚙️ **Kubeconfig Integration** - Automatic discovery of clusters from your kubeconfig file
+- 🔐 **Cluster Access Control** - Fine-grained permissions for cluster access management
 
 ### 🔍 **Comprehensive Resource Management**
 
-- 📋 **Full Resource Coverage** - Pods, Deployments, Services, ConfigMaps, Secrets, PVs, PVCs, and more
+- 📋 **Full Resource Coverage** - Pods, Deployments, Services, ConfigMaps, Secrets, PVs, PVCs, Nodes, and more
 - 📄 **Live YAML Editing** - Built-in Monaco editor with syntax highlighting and validation
 - 📊 **Detailed Resource Views** - In-depth information with containers, volumes, events, and conditions
 - 🔗 **Resource Relationships** - Visualize connections between related resources (e.g., Deployment → Pods)
@@ -53,13 +56,15 @@ _Comprehensive cluster overview with real-time metrics and resource statistics_
 - 📊 **Real-time Metrics** - CPU, memory, and network usage charts powered by Prometheus
 - 📋 **Cluster Overview** - Comprehensive cluster health and resource statistics
 - 📝 **Live Logs** - Stream pod logs in real-time with filtering and search capabilities
-- 💻 **Web Terminal** - Execute commands directly in pods through the browser
+- 💻 **Web/Node Terminal** - Execute commands directly in pods/nodes through the browser
+- 📈 **Node Monitoring** - Detailed node-level performance metrics and utilization
+- 📊 **Pod Monitoring** - Individual pod resource usage and performance tracking
 
-### 🔐 **Authentication**
+### 🔐 **Security**
 
-- 🛡️ **OAuth Integration** - Support for GitHub and custom OAuth providers
-- 🔑 **Username/Password** - Simple authentication using environment variables
-- 🔒 **Role Based Access Control** - Fine-grained access control for users and groups
+- 🛡️ **OAuth Integration** - Supports OAuth management in the UI
+- 🔒 **Role-Based Access Control** - Supports user permission management in the UI
+- 👥 **User Management** - Comprehensive user management and role allocation in the UI
 
 ---
 
@@ -71,14 +76,8 @@ For detailed instructions, please refer to the [documentation](https://kite.zzde
 
 To run Kite using Docker, you can use the pre-built image:
 
-> NOTE: example role config all users has viewer perminsion
-
-> See [Roles Configuration](https://kite.zzde.me/config/rbac-config.html) for more details on configuring roles and permissions.
-
 ```bash
-# download example roles config
-wget https://raw.githubusercontent.com/zxh326/kite/refs/heads/main/docs/roles.yaml
-docker run --rm -p 8080:8080 -v ./roles.yaml:/config/roles.yaml -v ~/.kube/config:/home/nonroot/.kube/config ghcr.io/zxh326/kite:latest
+docker run --rm -p 8080:8080 ghcr.io/zxh326/kite:latest
 ```
 
 ### Deploy in Kubernetes
@@ -143,3 +142,11 @@ docker run --rm -p 8080:8080 -v ./roles.yaml:/config/roles.yaml -v ~/.kube/confi
 ## 🔍 Troubleshooting
 
 For troubleshooting, please refer to the [documentation](https://kite.zzde.me).
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our contributing guidelines for details on how to get involved.
+
+## 📄 License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.

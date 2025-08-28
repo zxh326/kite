@@ -79,7 +79,7 @@ function InitStep({
             {title}
           </h3>
           <p
-            className={`text-sm ${
+            className={`text-xs text-muted-foreground ${
               completed
                 ? 'text-green-600'
                 : isActive

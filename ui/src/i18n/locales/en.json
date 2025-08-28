@@ -208,6 +208,20 @@
       "users": "User"
     }
   },
+  "settingsHint": {
+    "title": "Complete Your Setup",
+    "description": "Configure essential settings to get the most out of Kite",
+    "p8s": {
+      "description": "Configure Prometheus"
+    },
+    "oauth": {
+      "description": "Set up OAuth providers for authentication"
+    },
+    "rbac": {
+      "description": "Configure roles and permissions"
+    },
+    "viewAll": "View All Settings"
+  },
   "clusterManagement": {
     "title": "Cluster Management",
     "actions": {
@@ -313,7 +327,7 @@
     "description": "Configure your admin user and connect cluster",
     "step1": {
       "title": "Create Super Admin User",
-      "description": "Set up your administrator account",
+      "description": "If you want to use it anonymously, please set the `ANONYMOUS_USER_ENABLED` env variable to true",
       "username": "Username",
       "usernameRequired": "Username *",
       "usernamePlaceholder": "Enter admin username",

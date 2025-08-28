@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { Plus, Settings } from 'lucide-react'
-
 import { useAuth } from '@/contexts/auth-context'
+import { Plus, Settings } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+
 import { useIsMobile } from '@/hooks/use-mobile'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import { useNavigate } from 'react-router-dom'
 
 import { CreateResourceDialog } from './create-resource-dialog'
 import { DynamicBreadcrumb } from './dynamic-breadcrumb'
@@ -44,7 +44,7 @@ export function SiteHeader() {
                   orientation="vertical"
                   className="mx-2 data-[orientation=vertical]:h-4"
                 />
-                {user?.roles?.some(role => role.name === 'admin') && (
+                {user?.roles?.some((role) => role.name === 'admin') && (
                   <Button
                     variant="ghost"
                     size="icon"

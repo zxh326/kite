@@ -105,8 +105,8 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	var listOpts []client.ListOption
+	namespace := c.Param("namespace")
 	if !h.isClusterScoped {
-		namespace := c.Param("namespace")
 		if namespace != "" && namespace != "_all" {
 			listOpts = append(listOpts, client.InNamespace(namespace))
 		}
@@ -195,6 +195,9 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 		}
 		// for namespaces, we need to ensure user has permission to view them
 		if h.Name() == "namespaces" && !rbac.CanAccessNamespace(user, cs.Name, obj.GetName()) {
+			continue
+		}
+		if namespace == "_all" && obj.GetNamespace() != "" && !rbac.CanAccessNamespace(user, cs.Name, obj.GetNamespace()) {
 			continue
 		}
 		filterItems = append(filterItems, items[i])

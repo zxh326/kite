@@ -46,8 +46,6 @@ export function UserMenu() {
     }
   }
 
-
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -113,7 +111,7 @@ export function UserMenu() {
           </DropdownMenuSubContent>
         </DropdownMenuSub>
 
-        {user.provider !== 'none' && (
+        {user.provider !== 'Anonymous' && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem

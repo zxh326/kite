@@ -190,7 +190,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
@@ -230,7 +230,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           tooltip={item.title}
                           asChild
                           isActive={isActive(item.url)}
-                          className="transition-all duration-200 hover:bg-accent/50 active:scale-95 data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:shadow-sm data-[active=true]:border-l-2 data-[active=true]:border-l-primary"
                         >
                           <Link to={item.url} onClick={handleMenuItemClick}>
                             {item.icon && (
@@ -248,8 +247,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </Collapsible>
         ))}
       </SidebarContent>
-      
-      <SidebarFooter >
+
+      <SidebarFooter>
         <div className="flex items-center gap-2 rounded-md px-2 py-1.5 bg-gradient-to-r from-muted/40 to-muted/20 border border-border/60 backdrop-blur-sm">
           <ClusterSelector />
         </div>

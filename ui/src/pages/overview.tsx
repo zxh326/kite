@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useAuth } from '@/contexts/auth-context'
 import { useTranslation } from 'react-i18next'
 
 import { useOverview, useResourceUsageHistory } from '@/lib/api'
@@ -7,9 +8,19 @@ import ResourceUtilizationChart from '@/components/chart/resource-utilization'
 import { ClusterStatsCards } from '@/components/cluster-stats-cards'
 import { RecentEvents } from '@/components/recent-events'
 import { ResourceCharts } from '@/components/resources-charts'
+import { SettingsHint } from '@/components/settings-hint'
 
 export function Overview() {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const [isDismissed] = useState(() => {
+    const dismissed = localStorage.getItem('settings-hint-dismissed')
+    if (dismissed === 'true') {
+      return true
+    }
+    return false
+  })
+
   const [timeRange] = useState('30m')
   const { data: overview, isLoading, error, isError } = useOverview()
 
@@ -39,6 +50,9 @@ export function Overview() {
       </div>
 
       <ClusterStatsCards stats={overview} isLoading={isLoading} />
+      {!isDismissed &&
+        user?.provider !== 'Anonymous' &&
+        user?.roles?.some((role) => role.name === 'admin') && <SettingsHint />}
 
       <div className="grid grid-cols-1 gap-4 @5xl/main:grid-cols-2">
         <ResourceCharts
