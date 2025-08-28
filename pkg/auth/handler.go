@@ -151,6 +151,11 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		return
 	}
 
+	if user.Sub == "" {
+		c.Redirect(http.StatusFound, "/login?error=user_info_failed&reason=user_info_failed&provider="+provider)
+		return
+	}
+
 	if err := model.FindWithSubOrUpsertUser(user); err != nil {
 		c.Redirect(http.StatusFound, "/login?error=user_upsert_failed&reason=user_upsert_failed&provider="+provider)
 		return

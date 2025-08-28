@@ -58,6 +58,9 @@ func GetUserByID(id uint) (*User, error) {
 }
 
 func FindWithSubOrUpsertUser(user *User) error {
+	if user.Sub == "" {
+		return errors.New("user sub is empty")
+	}
 	var existingUser User
 	user.LastLoginAt = time.Now()
 	if err := DB.Where("sub = ?", user.Sub).First(&existingUser).Error; err != nil {
