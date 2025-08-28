@@ -15,6 +15,7 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zxh326/kite/internal"
 	"github.com/zxh326/kite/pkg/auth"
 	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
@@ -190,6 +191,7 @@ func main() {
 	r.Use(middleware.CORS())
 	model.InitDB()
 	rbac.InitRBAC()
+	internal.LoadConfigFromEnv()
 
 	cm, err := cluster.NewClusterManager()
 	if err != nil {

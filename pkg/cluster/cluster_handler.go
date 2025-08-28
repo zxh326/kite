@@ -265,7 +265,7 @@ func (cm *ClusterManager) ImportClustersFromKubeconfig(c *gin.Context) {
 		return
 	}
 
-	importedCount := importClustersFromKubeconfig(kubeconfig)
+	importedCount := ImportClustersFromKubeconfig(kubeconfig)
 	syncNow <- struct{}{}
 	// wait for sync to complete
 	time.Sleep(1 * time.Second)

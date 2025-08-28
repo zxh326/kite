@@ -39,13 +39,8 @@ func CreateSuperUser(c *gin.Context) {
 		Provider: "password",
 	}
 
-	if err := model.AddUser(user); err != nil {
-		c.JSON(500, gin.H{"error": "failed to create user"})
-		return
-	}
-	// Add admin role
-	if err := model.AddRoleAssignment("admin", model.SubjectTypeUser, user.Username); err != nil {
-		c.JSON(500, gin.H{"error": "failed to assign role"})
+	if err := model.AddSuperUser(user); err != nil {
+		c.JSON(500, gin.H{"error": "failed to create super user"})
 		return
 	}
 	rbac.SyncNow <- struct{}{}

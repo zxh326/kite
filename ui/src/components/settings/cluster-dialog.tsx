@@ -199,7 +199,7 @@ export function ClusterDialog({
                   'Paste your kubeconfig content here...'
                 )}
                 rows={8}
-                className="font-mono text-sm"
+                className="text-sm"
                 required={!isEditMode && !formData.inCluster}
               />
             </div>

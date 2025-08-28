@@ -113,7 +113,7 @@ func (cm *ClusterManager) GetClientSet(clusterName string) (*ClientSet, error) {
 	return nil, fmt.Errorf("cluster not found: %s", clusterName)
 }
 
-func importClustersFromKubeconfig(kubeconfig *clientcmdapi.Config) int64 {
+func ImportClustersFromKubeconfig(kubeconfig *clientcmdapi.Config) int64 {
 	if len(kubeconfig.Contexts) == 0 {
 		return 0
 	}

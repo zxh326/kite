@@ -33,31 +33,32 @@ func InitDB() {
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
 		logger.Config{
 			SlowThreshold: time.Second,
-			LogLevel:      logger.Info,
+			LogLevel:      logger.Silent,
 			Colorful:      false,
 		},
 	)
 
 	var err error
 	once.Do(func() {
+		cfg := &gorm.Config{
+			Logger: newLogger,
+		}
 		if common.DBType == "sqlite" {
-			DB, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{
-				Logger: newLogger,
-			})
+			DB, err = gorm.Open(sqlite.Open(dsn), cfg)
 			if err != nil {
 				panic("failed to connect database: " + err.Error())
 			}
 		}
 
 		if common.DBType == "mysql" {
-			DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+			DB, err = gorm.Open(mysql.Open(dsn), cfg)
 			if err != nil {
 				panic("failed to connect database: " + err.Error())
 			}
 		}
 
 		if common.DBType == "postgres" {
-			DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+			DB, err = gorm.Open(postgres.Open(dsn), cfg)
 			if err != nil {
 				panic("failed to connect database: " + err.Error())
 			}

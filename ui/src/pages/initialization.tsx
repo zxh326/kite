@@ -419,7 +419,7 @@ export function InitializationPage() {
                         value={kubeconfig}
                         onChange={(e) => setKubeconfig(e.target.value)}
                         rows={8}
-                        className="font-mono text-sm"
+                        className="text-sm"
                       />
                     )}
 

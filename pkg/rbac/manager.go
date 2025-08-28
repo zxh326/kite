@@ -63,7 +63,6 @@ func loadRolesFromDB() error {
 	rwlock.Lock()
 	RBACConfig = cfg
 	rwlock.Unlock()
-	klog.V(1).Info("RBAC loaded from database")
 	return nil
 }
 

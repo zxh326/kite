@@ -202,7 +202,7 @@ export function SecretDetail(props: { namespace: string; name: string }) {
                         <Label className="text-xs text-muted-foreground">
                           Keys
                         </Label>
-                        <p className="text-sm font-mono text-xs">
+                        <p className="text-sm text-xs">
                           {Object.keys(secret.data || {}).length}
                         </p>
                       </div>
@@ -210,7 +210,7 @@ export function SecretDetail(props: { namespace: string; name: string }) {
                         <Label className="text-xs text-muted-foreground">
                           Size
                         </Label>
-                        <p className="text-sm font-mono text-xs">
+                        <p className="text-sm text-xs">
                           {Object.values(secret.data || {}).reduce(
                             (total, value) => total + value.length,
                             0
@@ -222,7 +222,7 @@ export function SecretDetail(props: { namespace: string; name: string }) {
                         <Label className="text-xs text-muted-foreground">
                           UID
                         </Label>
-                        <p className="text-sm font-mono text-xs">
+                        <p className="text-sm text-xs">
                           {secret.metadata!.uid}
                         </p>
                       </div>

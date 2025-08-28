@@ -134,6 +134,19 @@ func CheckPassword(hashedPassword, plainPassword string) bool {
 	return utils.CheckPasswordHash(plainPassword, hashedPassword)
 }
 
+func AddSuperUser(user *User) error {
+	if user == nil {
+		return errors.New("user is nil")
+	}
+	if err := AddUser(user); err != nil {
+		return err
+	}
+	if err := AddRoleAssignment("admin", SubjectTypeUser, user.Username); err != nil {
+		return err
+	}
+	return nil
+}
+
 var (
 	AnonymousUser = User{
 		Model: Model{
