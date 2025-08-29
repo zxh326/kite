@@ -51,11 +51,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	klog.V(1).Infof("OAuth Login - Provider: %s, State: %s", provider, state)
 
-	// Store state and provider in cookies with better settings
-	// Using SameSite=Lax to allow cross-site requests during OAuth flow
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("oauth_state", state, 600, "/", "", false, true)
-	c.SetCookie("oauth_provider", provider, 600, "/", "", false, true)
+	// Store state and provider in cookies with SameSite=Lax and Secure when appropriate
+	setCookieSecure(c, "oauth_state", state, 600)
+	setCookieSecure(c, "oauth_provider", provider, 600)
 
 	authURL := oauthProvider.GetAuthURL(state)
 	c.JSON(http.StatusOK, gin.H{
@@ -98,14 +96,13 @@ func (h *AuthHandler) PasswordLogin(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("auth_token", jwtToken, common.JWTExpirationSeconds, "/", "", false, true)
+	setCookieSecure(c, "auth_token", jwtToken, common.CookieExpirationSeconds)
 
 	c.Status(http.StatusNoContent)
 }
 
 func (h *AuthHandler) Callback(c *gin.Context) {
 	code := c.Query("code")
-	// Get provider from cookie
 	provider, err := c.Cookie("oauth_provider")
 	if err != nil {
 		klog.Error("OAuth Callback - No provider found in cookie: ", err)
@@ -113,11 +110,24 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		return
 	}
 
+	stateParam := c.Query("state")
+	cookieState, stateErr := c.Cookie("oauth_state")
+
 	klog.V(1).Infof("OAuth Callback - Using provider: %s\n", provider)
 
-	// Clear cookies
-	c.SetCookie("oauth_state", "", -1, "/", "", false, true)
-	c.SetCookie("oauth_provider", "", -1, "/", "", false, true)
+	// Validate state to protect against CSRF and authorization code injection
+	if stateErr != nil || stateParam == "" || cookieState == "" || stateParam != cookieState {
+		klog.Warningf("OAuth Callback - state mismatch or missing (cookieState=%v, stateParam=%v, err=%v)", cookieState, stateParam, stateErr)
+		// Clear oauth cookies
+		setCookieSecure(c, "oauth_state", "", -1)
+		setCookieSecure(c, "oauth_provider", "", -1)
+		c.Redirect(http.StatusFound, "/login?error=invalid_state&reason=state_mismatch")
+		return
+	}
+
+	// Clear oauth cookies now that state is validated
+	setCookieSecure(c, "oauth_state", "", -1)
+	setCookieSecure(c, "oauth_provider", "", -1)
 
 	if code == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -178,14 +188,14 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		return
 	}
 
-	// Set JWT as HTTP-only cookie
-	c.SetCookie("auth_token", jwtToken, common.JWTExpirationSeconds, "/", "", false, true)
+	// Set JWT as HTTP-only cookie with secure/samesite settings
+	setCookieSecure(c, "auth_token", jwtToken, common.CookieExpirationSeconds)
 
 	c.Redirect(http.StatusFound, "/dashboard")
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {
-	c.SetCookie("auth_token", "", -1, "/", "", false, true)
+	setCookieSecure(c, "auth_token", "", -1)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Logged out successfully",
@@ -212,32 +222,19 @@ func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 
 		if common.AnonymousUserEnabled {
 			c.Set("user", model.AnonymousUser)
+			c.Next()
 			return
 		}
 
-		// Try to get token from cookie first
 		if cookie, err := c.Cookie("auth_token"); err == nil {
 			tokenString = cookie
-		} else {
-			// Fallback to Authorization header
-			authHeader := c.GetHeader("Authorization")
-			if authHeader == "" {
-				c.JSON(http.StatusUnauthorized, gin.H{
-					"error": "No authorization token provided",
-				})
-				c.Abort()
-				return
-			}
-
-			if strings.HasPrefix(authHeader, "Bearer ") {
-				tokenString = authHeader[7:]
-			} else {
-				c.JSON(http.StatusUnauthorized, gin.H{
-					"error": "Invalid authorization header format",
-				})
-				c.Abort()
-				return
-			}
+		}
+		if tokenString == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid or expired token",
+			})
+			c.Abort()
+			return
 		}
 
 		// Validate and potentially refresh the token
@@ -249,19 +246,18 @@ func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 				c.JSON(http.StatusUnauthorized, gin.H{
 					"error": "Invalid or expired token",
 				})
+				setCookieSecure(c, "auth_token", "", -1)
 				c.Abort()
 				return
 			}
-
-			// Update the cookie with refreshed token
-			c.SetCookie("auth_token", refreshedToken, common.JWTExpirationSeconds, "/", "", false, true)
-
+			setCookieSecure(c, "auth_token", refreshedToken, common.CookieExpirationSeconds)
 			// Validate the refreshed token
 			claims, err = h.manager.ValidateJWT(refreshedToken)
 			if err != nil {
 				c.JSON(http.StatusUnauthorized, gin.H{
 					"error": "Failed to validate refreshed token",
 				})
+				setCookieSecure(c, "auth_token", "", -1)
 				c.Abort()
 				return
 			}
@@ -271,7 +267,7 @@ func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "user not found",
 			})
-			c.SetCookie("auth_token", "", -1, "/", "", false, true)
+			setCookieSecure(c, "auth_token", "", -1)
 			c.Abort()
 			return
 		}
@@ -325,7 +321,7 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	}
 
 	// Update the cookie with the new token
-	c.SetCookie("auth_token", newToken, common.JWTExpirationSeconds, "/", "", false, true)
+	setCookieSecure(c, "auth_token", newToken, common.CookieExpirationSeconds)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -486,4 +482,25 @@ func (h *AuthHandler) GetOAuthProvider(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"provider": provider,
 	})
+}
+
+// setCookieSecure sets a cookie with SameSite=Lax and HttpOnly=true. It marks Secure=true
+// when the request is over TLS or X-Forwarded-Proto indicates https, or when
+// common.Host appears to be an https scheme.
+func setCookieSecure(c *gin.Context, name, value string, maxAge int) {
+	// Determine if secure should be set
+	secure := false
+	// If HOST is configured and starts with https:// assume secure
+	if strings.HasPrefix(common.Host, "https://") {
+		secure = true
+	}
+	// If request uses TLS or X-Forwarded-Proto header indicates https
+	if c.Request != nil && (c.Request.TLS != nil || strings.EqualFold(c.Request.Header.Get("X-Forwarded-Proto"), "https")) {
+		secure = true
+	}
+
+	// Set SameSite to Lax for OAuth flows while still providing CSRF protection
+	c.SetSameSite(http.SameSiteLaxMode)
+	// The SetCookie function signature is (name, value string, maxAge int, path, domain string, secure, httpOnly bool)
+	c.SetCookie(name, value, maxAge+60*60, "/", "", secure, true)
 }

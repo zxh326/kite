@@ -117,14 +117,29 @@ func (om *OAuthManager) ValidateJWT(tokenString string) (*Claims, error) {
 }
 
 func (om *OAuthManager) RefreshJWT(c *gin.Context, tokenString string) (string, error) {
-	claims, err := om.ValidateJWT(tokenString)
+	// We need to accept expired tokens here so we can extract claims and refresh using
+	// the stored refresh token. Parse the token while skipping claims validation but
+	// still validate the signature.
+	var claims Claims
+	token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(om.jwtSecret), nil
+	}, jwt.WithoutClaimsValidation())
 	if err != nil {
 		return "", err
 	}
 
+	// Ensure signature was valid
+	if token == nil || !token.Valid {
+		return "", fmt.Errorf("invalid token signature")
+	}
+
 	// Check if token is close to expiration (within 1 hour)
 	if time.Until(claims.ExpiresAt.Time) > time.Hour {
-		return tokenString, nil // Token is still valid for more than 1 hour
+		// Token not close to expiry - return original token
+		return tokenString, nil
 	}
 
 	// If we have a refresh token, try to refresh the OAuth token

@@ -30,6 +30,8 @@ var (
 	KiteEncryptKey = "kite-default-encryption-key-change-in-production"
 
 	AnonymousUserEnabled = false
+
+	CookieExpirationSeconds = 2 * JWTExpirationSeconds // double jwt
 )
 
 func LoadEnvs() {
