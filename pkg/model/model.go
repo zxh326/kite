@@ -83,11 +83,16 @@ func InitDB() {
 		OAuthProvider{},
 		Role{},
 		RoleAssignment{},
+		ResourceHistory{},
 	}
 	for _, model := range models {
 		err = DB.AutoMigrate(model)
 		if err != nil {
 			panic("failed to migrate database: " + err.Error())
 		}
+	}
+
+	if err := (&ResourceHistory{}).AfterMigrate(DB); err != nil {
+		panic("failed to create resource history indexes: " + err.Error())
 	}
 }

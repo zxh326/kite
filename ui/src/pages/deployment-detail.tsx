@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   IconLoader,
   IconRefresh,
@@ -15,8 +15,6 @@ import { toast } from 'sonner'
 
 import {
   deleteResource,
-  restartDeployment,
-  scaleDeployment,
   updateResource,
   useResource,
   useResources,
@@ -44,6 +42,7 @@ import { LogViewer } from '@/components/log-viewer'
 import { PodMonitoring } from '@/components/pod-monitoring'
 import { PodTable } from '@/components/pod-table'
 import { RelatedResourcesTable } from '@/components/related-resource-table'
+import { ResourceHistoryTable } from '@/components/resource-history-table'
 import { Terminal } from '@/components/terminal'
 import { VolumeTable } from '@/components/volume-table'
 import { YamlEditor } from '@/components/yaml-editor'
@@ -120,6 +119,45 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
     refetchDeployment()
   }
 
+  const handleRestart = useCallback(async () => {
+    if (!deployment) return
+
+    try {
+      const updatedDeployment = { ...deployment } as Deployment
+
+      if (!updatedDeployment.spec!.template?.metadata?.annotations) {
+        updatedDeployment!.spec!.template!.metadata!.annotations = {}
+      }
+      updatedDeployment.spec!.template!.metadata!.annotations![
+        'kite.kubernetes.io/restartedAt'
+      ] = new Date().toISOString()
+      await updateResource('deployments', name, namespace, updatedDeployment)
+      toast.success('Deployment restart initiated')
+      setIsRestartPopoverOpen(false)
+      setRefreshInterval(1000)
+    } catch (error) {
+      console.error('Failed to restart deployment:', error)
+      toast.error(translateError(error, t))
+    }
+  }, [t, deployment, name, namespace])
+
+  const handleScale = useCallback(async () => {
+    if (!deployment) return
+
+    try {
+      const updatedDeployment = { ...deployment } as Deployment
+
+      updatedDeployment.spec!.replicas = scaleReplicas
+      await updateResource('deployments', name, namespace, updatedDeployment)
+      toast.success(`Deployment scaled to ${scaleReplicas} replicas`)
+      setIsScalePopoverOpen(false)
+      setRefreshInterval(1000)
+    } catch (error) {
+      console.error('Failed to restart deployment:', error)
+      toast.error(translateError(error, t))
+    }
+  }, [t, deployment, name, namespace, scaleReplicas])
+
   const handleSaveYaml = async (content: Deployment) => {
     setIsSavingYaml(true)
     try {
@@ -136,31 +174,6 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
 
   const handleYamlChange = (content: string) => {
     setYamlContent(content)
-  }
-
-  const handleScale = async () => {
-    try {
-      await scaleDeployment(namespace, name, scaleReplicas)
-      // Show success toast
-      toast.success(`Deployment scaled to ${scaleReplicas} replicas`)
-      // Close the popover
-      setIsScalePopoverOpen(false)
-      setRefreshInterval(1000) // Set a short refresh interval to see changes
-    } catch (error) {
-      console.error('Failed to scale deployment:', error)
-      toast.error(translateError(error, t))
-    }
-  }
-
-  const handleRestart = async () => {
-    try {
-      await restartDeployment(namespace, name)
-      toast.success('Deployment restarted successfully')
-      setRefreshInterval(1000) // Set a short refresh interval to see changes
-    } catch (error) {
-      console.error('Failed to restart deployment:', error)
-      toast.error(translateError(error, t))
-    }
   }
 
   const handleDelete = async () => {
@@ -684,6 +697,18 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
                 resource={'deployments'}
                 name={name}
                 namespace={namespace}
+              />
+            ),
+          },
+          {
+            value: 'history',
+            label: 'History',
+            content: (
+              <ResourceHistoryTable
+                resourceType="deployments"
+                name={name}
+                namespace={namespace}
+                currentResource={deployment}
               />
             ),
           },

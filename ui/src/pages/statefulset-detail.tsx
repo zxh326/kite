@@ -43,6 +43,7 @@ import { LogViewer } from '@/components/log-viewer'
 import { PodMonitoring } from '@/components/pod-monitoring'
 import { PodTable } from '@/components/pod-table'
 import { RelatedResourcesTable } from '@/components/related-resource-table'
+import { ResourceHistoryTable } from '@/components/resource-history-table'
 import { Terminal } from '@/components/terminal'
 import { VolumeTable } from '@/components/volume-table'
 import { YamlEditor } from '@/components/yaml-editor'
@@ -683,6 +684,18 @@ export function StatefulSetDetail(props: { namespace: string; name: string }) {
                 resource="statefulsets"
                 name={name}
                 namespace={namespace}
+              />
+            ),
+          },
+          {
+            value: 'history',
+            label: 'History',
+            content: (
+              <ResourceHistoryTable
+                resourceType="statefulsets"
+                name={name}
+                namespace={namespace}
+                currentResource={statefulset}
               />
             ),
           },

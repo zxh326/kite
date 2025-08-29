@@ -19,6 +19,7 @@ import { ErrorMessage } from '@/components/error-message'
 import { EventTable } from '@/components/event-table'
 import { LabelsAnno } from '@/components/lables-anno'
 import { RelatedResourcesTable } from '@/components/related-resource-table'
+import { ResourceHistoryTable } from '@/components/resource-history-table'
 import { YamlEditor } from '@/components/yaml-editor'
 
 export function SecretDetail(props: { namespace: string; name: string }) {
@@ -202,7 +203,7 @@ export function SecretDetail(props: { namespace: string; name: string }) {
                         <Label className="text-xs text-muted-foreground">
                           Keys
                         </Label>
-                        <p className="text-sm text-xs">
+                        <p className="text-sm">
                           {Object.keys(secret.data || {}).length}
                         </p>
                       </div>
@@ -210,7 +211,7 @@ export function SecretDetail(props: { namespace: string; name: string }) {
                         <Label className="text-xs text-muted-foreground">
                           Size
                         </Label>
-                        <p className="text-sm text-xs">
+                        <p className="text-sm">
                           {Object.values(secret.data || {}).reduce(
                             (total, value) => total + value.length,
                             0
@@ -222,9 +223,7 @@ export function SecretDetail(props: { namespace: string; name: string }) {
                         <Label className="text-xs text-muted-foreground">
                           UID
                         </Label>
-                        <p className="text-sm text-xs">
-                          {secret.metadata!.uid}
-                        </p>
+                        <p className="text-sm">{secret.metadata!.uid}</p>
                       </div>
                       <div>
                         <Label className="text-xs text-muted-foreground">
@@ -306,6 +305,18 @@ export function SecretDetail(props: { namespace: string; name: string }) {
                 resource="secrets"
                 name={secret.metadata!.name!}
                 namespace={secret.metadata!.namespace}
+              />
+            ),
+          },
+          {
+            value: 'history',
+            label: 'History',
+            content: (
+              <ResourceHistoryTable
+                resourceType="secrets"
+                name={name}
+                namespace={namespace}
+                currentResource={secret}
               />
             ),
           },
