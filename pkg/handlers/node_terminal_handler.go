@@ -13,6 +13,7 @@ import (
 	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
 	"github.com/zxh326/kite/pkg/kube"
+	"github.com/zxh326/kite/pkg/model"
 	"github.com/zxh326/kite/pkg/rbac"
 	"github.com/zxh326/kite/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
@@ -38,7 +39,7 @@ func (h *NodeTerminalHandler) HandleNodeTerminalWebSocket(c *gin.Context) {
 		return
 	}
 
-	user := c.MustGet("user").(common.User)
+	user := c.MustGet("user").(model.User)
 
 	websocket.Handler(func(conn *websocket.Conn) {
 		defer func() {

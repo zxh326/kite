@@ -23,7 +23,7 @@ func ClusterMiddleware(cm *cluster.ClusterManager) gin.HandlerFunc {
 		}
 		cluster, err := cm.GetClientSet(clusterName)
 		if err != nil {
-			c.JSON(404, gin.H{"error": "Cluster not found"})
+			c.JSON(404, gin.H{"error": err.Error()})
 			c.Abort()
 			return
 		}

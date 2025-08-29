@@ -9,6 +9,7 @@ import (
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
+	"k8s.io/klog/v2"
 )
 
 type Client struct {
@@ -167,6 +168,7 @@ func (c *Client) queryRange(ctx context.Context, query string, start, end time.T
 
 	result, warnings, err := c.client.QueryRange(ctx, query, r)
 	if err != nil {
+		klog.Error("queryRange", "error", err)
 		return nil, err
 	}
 	if len(warnings) > 0 {

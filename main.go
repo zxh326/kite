@@ -15,12 +15,14 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zxh326/kite/internal"
 	"github.com/zxh326/kite/pkg/auth"
 	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
 	"github.com/zxh326/kite/pkg/handlers"
 	"github.com/zxh326/kite/pkg/handlers/resources"
 	"github.com/zxh326/kite/pkg/middleware"
+	"github.com/zxh326/kite/pkg/model"
 	"github.com/zxh326/kite/pkg/rbac"
 	"github.com/zxh326/kite/pkg/utils"
 	"k8s.io/klog/v2"
@@ -66,7 +68,7 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 			"status": "ok",
 		})
 	})
-
+	r.GET("/api/v1/init_check", handlers.InitCheck)
 	// Auth routes (no auth required)
 	authHandler := auth.NewAuthHandler()
 	authGroup := r.Group("/api/auth")
@@ -80,12 +82,60 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 		authGroup.GET("/user", authHandler.RequireAuth(), authHandler.GetUser)
 	}
 
+	// admin apis
+	adminAPI := r.Group("/api/v1/admin")
+	// Initialize the setup API without authentication.
+	// Once users are configured, this API cannot be used.
+	adminAPI.POST("/users/create_super_user", handlers.CreateSuperUser)
+	adminAPI.POST("/clusters/import", cm.ImportClustersFromKubeconfig)
+	adminAPI.Use(authHandler.RequireAuth(), authHandler.RequireAdmin())
+	{
+		oauthProviderAPI := adminAPI.Group("/oauth-providers")
+		{
+			oauthProviderAPI.GET("/", authHandler.ListOAuthProviders)
+			oauthProviderAPI.POST("/", authHandler.CreateOAuthProvider)
+			oauthProviderAPI.GET("/:id", authHandler.GetOAuthProvider)
+			oauthProviderAPI.PUT("/:id", authHandler.UpdateOAuthProvider)
+			oauthProviderAPI.DELETE("/:id", authHandler.DeleteOAuthProvider)
+		}
+
+		clusterAPI := adminAPI.Group("/clusters")
+		{
+			clusterAPI.GET("/", cm.GetClusterList)
+			clusterAPI.POST("/", cm.CreateCluster)
+			clusterAPI.PUT("/:id", cm.UpdateCluster)
+			clusterAPI.DELETE("/:id", cm.DeleteCluster)
+		}
+
+		rbacAPI := adminAPI.Group("/roles")
+		{
+			rbacAPI.GET("/", rbac.ListRoles)
+			rbacAPI.POST("/", rbac.CreateRole)
+			rbacAPI.GET("/:id", rbac.GetRole)
+			rbacAPI.PUT("/:id", rbac.UpdateRole)
+			rbacAPI.DELETE("/:id", rbac.DeleteRole)
+
+			rbacAPI.POST("/:id/assign", rbac.AssignRole)
+			rbacAPI.DELETE("/:id/assign", rbac.UnassignRole)
+		}
+
+		userAPI := adminAPI.Group("/users")
+		{
+			userAPI.GET("/", handlers.ListUsers)
+			userAPI.POST("/", handlers.CreatePasswordUser)
+			userAPI.PUT(":id", handlers.UpdateUser)
+			userAPI.DELETE(":id", handlers.DeleteUser)
+			userAPI.POST(":id/reset_password", handlers.ResetPassword)
+			userAPI.POST(":id/enable", handlers.SetUserEnabled)
+		}
+	}
+
 	// API routes group (protected)
 	api := r.Group("/api/v1")
+	api.GET("/clusters", authHandler.RequireAuth(), cm.GetClusters)
 	api.Use(authHandler.RequireAuth(), middleware.ClusterMiddleware(cm))
 	{
 		api.GET("/overview", handlers.GetOverview)
-		api.GET("/clusters", cm.GetClusters)
 
 		promHandler := handlers.NewPromHandler()
 		api.GET("/prometheus/resource-usage-history", promHandler.GetResourceUsageHistory)
@@ -133,14 +183,15 @@ func main() {
 	go func() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
-
 	common.LoadEnvs()
-	rbac.InitRBAC(common.RolesConfigPath)
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(middleware.Logger())
 	r.Use(middleware.CORS())
+	model.InitDB()
+	rbac.InitRBAC()
+	internal.LoadConfigFromEnv()
 
 	cm, err := cluster.NewClusterManager()
 	if err != nil {

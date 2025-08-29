@@ -2,9 +2,7 @@ package common
 
 import (
 	"os"
-	"strings"
 
-	"github.com/zxh326/kite/pkg/utils"
 	"k8s.io/klog/v2"
 )
 
@@ -18,45 +16,25 @@ const (
 
 var (
 	Port            = "8080"
-	JwtSecret       = ""
-	OAuthEnabled    = false
-	OAuthProviders  = ""
-	OAuthAllowUsers = []string{} // Deprecated, use rbac config instead
+	JwtSecret       = "kite-default-jwt-secret-key-change-in-production"
 	EnableAnalytics = false
+	Host            = ""
 
 	NodeTerminalImage = "busybox:latest"
+	WebhookUsername   = os.Getenv("WEBHOOK_USERNAME")
+	WebhookPassword   = os.Getenv("WEBHOOK_PASSWORD")
+	WebhookEnabled    = WebhookUsername != "" && WebhookPassword != ""
+	DBType            = "sqlite"
+	DBDSN             = "dev.db"
 
-	WebhookUsername = os.Getenv("WEBHOOK_USERNAME")
-	WebhookPassword = os.Getenv("WEBHOOK_PASSWORD")
-	WebhookEnabled  = WebhookUsername != "" && WebhookPassword != ""
+	KiteEncryptKey = "kite-default-encryption-key-change-in-production"
 
-	KiteUsername         = os.Getenv("KITE_USERNAME")
-	KitePassword         = os.Getenv("KITE_PASSWORD")
-	PasswordLoginEnabled = KiteUsername != "" && KitePassword != ""
-
-	Readonly = false
-
-	RolesConfigPath = "/config/roles.yaml"
+	AnonymousUserEnabled = false
 )
 
 func LoadEnvs() {
 	if secret := os.Getenv("JWT_SECRET"); secret != "" {
 		JwtSecret = secret
-	} else {
-		klog.Warning("JWT_SECRET is not set, using random secret key, restart server will lose all sessions.")
-		JwtSecret = utils.RandomString(32)
-	}
-
-	if enabled := os.Getenv("OAUTH_ENABLED"); enabled == "true" {
-		OAuthEnabled = true
-		if providers := os.Getenv("OAUTH_PROVIDERS"); providers != "" {
-			OAuthProviders = providers
-		} else {
-			klog.Warning("OAUTH_PROVIDERS is not set, OAuth will not work as expected")
-		}
-		if allowUsers := os.Getenv("OAUTH_ALLOW_USERS"); allowUsers != "" {
-			OAuthAllowUsers = strings.Split(allowUsers, ",")
-		}
 	}
 
 	if port := os.Getenv("PORT"); port != "" {
@@ -71,11 +49,28 @@ func LoadEnvs() {
 		NodeTerminalImage = nodeTerminalImage
 	}
 
-	if !OAuthEnabled && !PasswordLoginEnabled {
-		klog.Warning("OAuth and Password login are both disabled, DO NOT USE IN PRODUCTION!!!")
+	if dbDSN := os.Getenv("DB_DSN"); dbDSN != "" {
+		DBDSN = dbDSN
 	}
 
-	if rolePath := os.Getenv("ROLES_CONFIG_PATH"); rolePath != "" {
-		RolesConfigPath = rolePath
+	if dbType := os.Getenv("DB_TYPE"); dbType != "" {
+		if dbType != "sqlite" && dbType != "mysql" && dbType != "postgres" {
+			klog.Fatalf("Invalid DB_TYPE: %s, must be one of sqlite, mysql, postgres", dbType)
+		}
+		DBType = dbType
+	}
+
+	if key := os.Getenv("KITE_ENCRYPT_KEY"); key != "" {
+		KiteEncryptKey = key
+	} else {
+		klog.Warningf("KITE_ENCRYPT_KEY is not set, using default key, this is not secure for production!")
+	}
+
+	if v := os.Getenv("ANONYMOUS_USER_ENABLED"); v == "true" {
+		AnonymousUserEnabled = true
+		klog.Warningf("Anonymous user is enabled, this is not secure for production!")
+	}
+	if v := os.Getenv("HOST"); v != "" {
+		Host = v
 	}
 }

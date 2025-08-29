@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/auth-context'
-import { LogOut } from 'lucide-react'
+import { Check, LogOut, Palette } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -8,11 +8,24 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ColorTheme, useColorTheme } from '@/components/color-theme-provider'
+
+const colorThemeIcons = {
+  blue: <div className="h-4 w-4 rounded-full bg-blue-500"></div>,
+  red: <div className="h-4 w-4 rounded-full bg-red-500"></div>,
+  green: <div className="h-4 w-4 rounded-full bg-green-500"></div>,
+  violet: <div className="h-4 w-4 rounded-full bg-violet-500"></div>,
+  'eye-care': <div className="h-4 w-4 rounded-full bg-amber-400"></div>,
+}
 
 export function UserMenu() {
   const { user, logout } = useAuth()
+  const { colorTheme, setColorTheme } = useColorTheme()
 
   if (!user) return null
 
@@ -66,7 +79,39 @@ export function UserMenu() {
           </div>
         </div>
 
-        {user.provider !== 'none' && (
+        <DropdownMenuSeparator />
+
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <Palette className="mr-2 h-4 w-4" />
+            <span>Color Theme</span>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            {Object.entries(colorThemeIcons).map(([key, icon]) => {
+              const isSelected = key === colorTheme
+
+              return (
+                <DropdownMenuItem
+                  key={key}
+                  onClick={() => setColorTheme(key as ColorTheme)}
+                  role="menuitemradio"
+                  aria-checked={isSelected}
+                  className={`flex items-center justify-between gap-2 cursor-pointer ${
+                    isSelected ? 'font-medium text-foreground' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {icon}
+                    <span className="capitalize">{key}</span>
+                  </div>
+                  {isSelected && <Check className="h-4 w-4 text-primary" />}
+                </DropdownMenuItem>
+              )
+            })}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+
+        {user.provider !== 'Anonymous' && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem

@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/model"
 	"github.com/zxh326/kite/pkg/rbac"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
@@ -27,7 +28,7 @@ type ApplyResourceRequest struct {
 // ApplyResource applies a YAML resource to the cluster
 func (h *ResourceApplyHandler) ApplyResource(c *gin.Context) {
 	cs := c.MustGet("cluster").(*cluster.ClientSet)
-	user := c.MustGet("user").(common.User)
+	user := c.MustGet("user").(model.User)
 
 	var req ApplyResourceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

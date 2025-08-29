@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import githubIcon from '@/assets/github.svg'
-import { Plus } from 'lucide-react'
+import { useAuth } from '@/contexts/auth-context'
+import { Plus, Settings } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 import { useIsMobile } from '@/hooks/use-mobile'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 
-import { ColorThemeToggle } from './color-theme-toggle'
 import { CreateResourceDialog } from './create-resource-dialog'
 import { DynamicBreadcrumb } from './dynamic-breadcrumb'
 import { LanguageToggle } from './language-toggle'
@@ -17,6 +17,8 @@ import { UserMenu } from './user-menu'
 
 export function SiteHeader() {
   const isMobile = useIsMobile()
+  const navigate = useNavigate()
+  const { user } = useAuth()
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
 
   return (
@@ -42,31 +44,22 @@ export function SiteHeader() {
                   orientation="vertical"
                   className="mx-2 data-[orientation=vertical]:h-4"
                 />
-                <Button
-                  variant="ghost"
-                  asChild
-                  size="sm"
-                  className="hidden sm:flex"
-                >
-                  <a
-                    href="https://github.com/zxh326/kite"
-                    aria-label="GitHub"
-                    target="_blank"
-                    className="dark:text-foreground"
+                {user?.roles?.some((role) => role.name === 'admin') && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate('/settings')}
+                    className="hidden sm:flex"
                   >
-                    <img
-                      src={githubIcon}
-                      alt="GitHub"
-                      className="h-5 w-5 dark:invert"
-                    />
-                  </a>
-                </Button>
-                <ColorThemeToggle />
+                    <Settings className="h-5 w-5" />
+                    <span className="sr-only">Settings</span>
+                  </Button>
+                )}
                 <LanguageToggle />
                 <ModeToggle />
-                <UserMenu />
               </>
             )}
+            <UserMenu />
           </div>
         </div>
       </header>

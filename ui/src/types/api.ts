@@ -22,13 +22,6 @@ import {
 import { Ingress } from 'kubernetes-types/networking/v1'
 import { StorageClass } from 'kubernetes-types/storage/v1'
 
-// Cluster types
-export interface Cluster {
-  name: string
-  version: string
-  isDefault: boolean
-}
-
 export interface CustomResource {
   apiVersion: string
   kind: string
@@ -311,4 +304,75 @@ export interface RelatedResources {
   name: string
   namespace?: string
   apiVersion?: string
+}
+
+export interface Cluster {
+  id: number
+  name: string
+  description?: string
+  version?: string
+  config?: string
+  enabled: boolean
+  inCluster: boolean
+  isDefault: boolean
+  createdAt: string
+  updatedAt: string
+  prometheusURL?: string
+}
+
+export interface OAuthProvider {
+  id: number
+  name: string
+  clientId: string
+  clientSecret: string
+  authUrl?: string
+  tokenUrl?: string
+  userInfoUrl?: string
+  scopes?: string
+  issuer?: string
+  enabled: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface RoleAssignment {
+  id: number
+  roleId: number
+  subjectType: 'user' | 'group'
+  subject: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Role {
+  id: number
+  name: string
+  description?: string
+  isSystem?: boolean
+  clusters: string[]
+  namespaces: string[]
+  resources: string[]
+  verbs: string[]
+  assignments?: RoleAssignment[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface UserItem {
+  id: number
+  username: string
+  provider: string
+  createdAt: string
+  lastLoginAt?: string
+  enabled?: boolean
+  avatar_url?: string
+  name?: string
+  roles?: Role[]
+}
+
+export interface FetchUserListResponse {
+  users: UserItem[]
+  total: number
+  page: number
+  size: number
 }

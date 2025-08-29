@@ -4,8 +4,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
 import {
+  Cluster,
   clusterScopeResources,
+  FetchUserListResponse,
   ImageTagInfo,
+  OAuthProvider,
   OverviewData,
   PodMetrics,
   RelatedResources,
@@ -13,6 +16,8 @@ import {
   ResourceType,
   ResourceTypeMap,
   ResourceUsageHistory,
+  Role,
+  UserItem,
 } from '@/types/api'
 
 import { API_BASE_URL, apiClient } from './api-client'
@@ -1046,6 +1051,51 @@ export function useRelatedResources(
   })
 }
 
+// Initialize API types
+export interface InitCheckResponse {
+  initialized: boolean
+  step: number
+}
+
+// Initialize API function
+export const fetchInitCheck = (): Promise<InitCheckResponse> => {
+  return fetchAPI<InitCheckResponse>('/init_check')
+}
+
+export const useInitCheck = () => {
+  return useQuery({
+    queryKey: ['init-check'],
+    queryFn: fetchInitCheck,
+    staleTime: 0, // Always fresh
+    refetchInterval: 0, // No auto-refresh
+  })
+}
+
+// User registration for initial setup
+export interface CreateUserRequest {
+  username: string
+  password: string
+  name?: string
+}
+
+export const createSuperUser = async (
+  userData: CreateUserRequest
+): Promise<void> => {
+  await apiClient.post('/admin/users/create_super_user', userData)
+}
+
+// Cluster import for initial setup
+export interface ImportClustersRequest {
+  config: string
+  inCluster?: boolean
+}
+
+export const importClusters = async (
+  request: ImportClustersRequest
+): Promise<void> => {
+  await apiClient.post('/admin/clusters/import', request)
+}
+
 // WebSocket implementation for logs streaming
 export const useLogsWebSocket = (
   namespace: string,
@@ -1269,4 +1319,218 @@ export const useLogsWebSocket = (
     refetch,
     stopStreaming,
   }
+}
+
+export interface ClusterCreateRequest {
+  name: string
+  description?: string
+  config?: string
+  prometheusURL?: string
+  inCluster?: boolean
+  isDefault?: boolean
+}
+
+export interface ClusterUpdateRequest extends ClusterCreateRequest {
+  enabled?: boolean
+}
+
+// Get cluster list for management
+export const fetchClusterList = (): Promise<Cluster[]> => {
+  return fetchAPI<Cluster[]>('/admin/clusters/')
+}
+
+export const useClusterList = (options?: { staleTime?: number }) => {
+  return useQuery({
+    queryKey: ['cluster-list'],
+    queryFn: fetchClusterList,
+    staleTime: options?.staleTime || 30000, // 30 seconds cache
+  })
+}
+
+// Create cluster
+export const createCluster = async (
+  clusterData: ClusterCreateRequest
+): Promise<{ id: number; message: string }> => {
+  return await apiClient.post<{ id: number; message: string }>(
+    '/admin/clusters/',
+    clusterData
+  )
+}
+
+// Update cluster
+export const updateCluster = async (
+  id: number,
+  clusterData: ClusterUpdateRequest
+): Promise<{ message: string }> => {
+  return await apiClient.put<{ message: string }>(
+    `/admin/clusters/${id}`,
+    clusterData
+  )
+}
+
+// Delete cluster
+export const deleteCluster = async (
+  id: number
+): Promise<{ message: string }> => {
+  return await apiClient.delete<{ message: string }>(`/admin/clusters/${id}`)
+}
+
+// OAuth Provider Management
+export interface OAuthProviderCreateRequest {
+  name: string
+  clientId: string
+  clientSecret: string
+  authUrl?: string
+  tokenUrl?: string
+  userInfoUrl?: string
+  scopes?: string
+  issuer?: string
+  enabled?: boolean
+}
+
+export interface OAuthProviderUpdateRequest
+  extends Omit<OAuthProviderCreateRequest, 'clientSecret'> {
+  clientSecret?: string // Optional when updating
+}
+
+// Get OAuth provider list for management
+export const fetchOAuthProviderList = (): Promise<OAuthProvider[]> => {
+  return fetchAPI<{ providers: OAuthProvider[] }>(
+    '/admin/oauth-providers/'
+  ).then((response) => response.providers)
+}
+
+export const useOAuthProviderList = (options?: { staleTime?: number }) => {
+  return useQuery({
+    queryKey: ['oauth-provider-list'],
+    queryFn: fetchOAuthProviderList,
+    staleTime: options?.staleTime || 30000, // 30 seconds cache
+  })
+}
+
+// Create OAuth provider
+export const createOAuthProvider = async (
+  providerData: OAuthProviderCreateRequest
+): Promise<{ provider: OAuthProvider }> => {
+  return await apiClient.post<{ provider: OAuthProvider }>(
+    '/admin/oauth-providers/',
+    providerData
+  )
+}
+
+// Update OAuth provider
+export const updateOAuthProvider = async (
+  id: number,
+  providerData: OAuthProviderUpdateRequest
+): Promise<{ provider: OAuthProvider }> => {
+  return await apiClient.put<{ provider: OAuthProvider }>(
+    `/admin/oauth-providers/${id}`,
+    providerData
+  )
+}
+
+// Delete OAuth provider
+export const deleteOAuthProvider = async (
+  id: number
+): Promise<{ success: boolean; message: string }> => {
+  return await apiClient.delete<{ success: boolean; message: string }>(
+    `/admin/oauth-providers/${id}`
+  )
+}
+
+// Get single OAuth provider
+export const fetchOAuthProvider = async (
+  id: number
+): Promise<OAuthProvider> => {
+  return fetchAPI<{ provider: OAuthProvider }>(
+    `/admin/oauth-providers/${id}`
+  ).then((response) => response.provider)
+}
+
+// RBAC API
+export const fetchRoleList = async (): Promise<Role[]> => {
+  return fetchAPI<{ roles: Role[] }>(`/admin/roles/`).then((resp) => resp.roles)
+}
+
+export const useRoleList = (options?: { staleTime?: number }) => {
+  return useQuery({
+    queryKey: ['role-list'],
+    queryFn: fetchRoleList,
+    staleTime: options?.staleTime || 30000,
+  })
+}
+
+export const createRole = async (data: Partial<Role>) => {
+  return await apiClient.post<{ role: Role }>(`/admin/roles/`, data)
+}
+
+export const updateRole = async (id: number, data: Partial<Role>) => {
+  return await apiClient.put<{ role: Role }>(`/admin/roles/${id}`, data)
+}
+
+export const deleteRole = async (id: number) => {
+  return await apiClient.delete<{ success: boolean }>(`/admin/roles/${id}`)
+}
+
+export const assignRole = async (
+  id: number,
+  data: { subjectType: 'user' | 'group'; subject: string }
+) => {
+  return await apiClient.post(`/admin/roles/${id}/assign`, data)
+}
+
+export const unassignRole = async (
+  id: number,
+  subjectType: 'user' | 'group',
+  subject: string
+) => {
+  const params = new URLSearchParams({ subjectType, subject })
+  return await apiClient.delete(
+    `/admin/roles/${id}/assign?${params.toString()}`
+  )
+}
+
+export const fetchUserList = async (
+  page = 1,
+  size = 20
+): Promise<FetchUserListResponse> => {
+  const params = new URLSearchParams({ page: String(page), size: String(size) })
+  return fetchAPI<FetchUserListResponse>(`/admin/users/?${params.toString()}`)
+}
+
+export const updateUser = async (id: number, data: Partial<UserItem>) => {
+  return apiClient.put<{ user: UserItem }>(`/admin/users/${id}`, data)
+}
+
+export const deleteUser = async (id: number) => {
+  return apiClient.delete<{ success: boolean }>(`/admin/users/${id}`)
+}
+
+export const createPasswordUser = async (data: {
+  username: string
+  name?: string
+  password: string
+}) => {
+  return apiClient.post<{ user: UserItem }>(`/admin/users/`, data)
+}
+
+export const resetUserPassword = async (id: number, password: string) => {
+  return apiClient.post<{ success: boolean }>(
+    `/admin/users/${id}/reset_password`,
+    { password }
+  )
+}
+
+export const setUserEnabled = async (id: number, enabled: boolean) => {
+  return apiClient.post<{ success: boolean }>(`/admin/users/${id}/enable`, {
+    enabled,
+  })
+}
+
+export const useUserList = (page = 1, size = 20) => {
+  return useQuery({
+    queryKey: ['user-list', page, size],
+    queryFn: () => fetchUserList(page, size),
+    staleTime: 20000,
+  })
 }

@@ -1,4 +1,5 @@
 {
+  "username": "用户名",
   "common": {
     "loading": "加载中...",
     "error": "错误",
@@ -18,7 +19,13 @@
     "actions": "操作",
     "refresh": "刷新",
     "language": "语言",
-    "close": "关闭"
+    "close": "关闭",
+    "enable": "启用",
+    "disable": "禁用",
+    "resetPassword": "重置密码",
+    "assign": "分配权限",
+    "password": "密码",
+    "version": "版本"
   },
   "nav": {
     "overview": "概览",
@@ -38,7 +45,8 @@
     "nodes": "节点",
     "namespaces": "命名空间",
     "customResources": "自定义资源",
-    "customResourceDefinitions": "自定义资源定义"
+    "customResourceDefinitions": "自定义资源定义",
+    "settings": "设置"
   },
   "overview": {
     "title": "概览",
@@ -139,7 +147,7 @@
     "tryAgainHint": "您可以尝试使用具有所需权限的其他账户登录。",
     "noLoginMethods": "未配置登录方式",
     "configureAuth": "请在您的环境中配置身份验证提供程序",
-    "footer": "© {{year}} Kite. 为 Kubernetes 爱好者而构建。",
+    "footer": "© {{year}} Kite. 版权所有。",
     "documentation": "文档",
     "errors": {
       "accessDenied": "访问被拒绝",
@@ -176,12 +184,16 @@
     "tryAgain": "重试"
   },
   "rbac": {
+    "title": "角色管理",
     "noPermissionCluster": "用户 {{user}} 没有权限在集群 {{cluster}} 上执行 {{verb}} {{resource}}",
     "noPermissionNamespace": "用户 {{user}} 没有权限在集群 {{cluster}} 的命名空间 {{namespace}} 中执行 {{verb}} {{resource}}",
     "accessDenied": "访问被拒绝",
     "insufficientPermissions": "您没有足够的权限执行此操作",
     "allNamespaces": "所有命名空间",
     "get": "获取",
+    "actions": {
+      "add": "添加角色"
+    },
     "verb": {
       "get": "获取",
       "create": "创建",
@@ -189,6 +201,203 @@
       "delete": "删除",
       "log": "查看日志",
       "exec": "exec"
+    }
+  },
+  "settings": {
+    "title": "设置",
+    "description": "管理集群、角色和权限",
+    "tabs": {
+      "clusters": "集群",
+      "oauth": "OAuth",
+      "rbac": "权限控制",
+      "users": "用户"
+    }
+  },
+  "settingsHint": {
+    "title": "完成设置",
+    "description": "配置基本设置以获得最佳体验",
+    "p8s": {
+      "description": "配置 Prometheus"
+    },
+    "oauth": {
+      "description": "设置 OAuth 提供商进行身份验证"
+    },
+    "rbac": {
+      "description": "配置角色和权限"
+    },
+    "viewAll": "查看所有设置"
+  },
+  "clusterManagement": {
+    "title": "集群管理",
+    "actions": {
+      "add": "添加集群",
+      "edit": "编辑",
+      "delete": "删除"
+    },
+    "table": {
+      "name": "名称",
+      "type": "类型",
+      "status": "状态",
+      "prometheus": "Prometheus",
+      "actions": "操作"
+    },
+    "type": {
+      "inCluster": "集群内",
+      "external": "外部"
+    },
+    "status": {
+      "enabled": "已启用",
+      "disabled": "已禁用"
+    },
+    "empty": {
+      "title": "暂无集群配置",
+      "description": "添加您的第一个集群以开始使用"
+    },
+    "messages": {
+      "created": "集群创建成功",
+      "updated": "集群更新成功",
+      "deleted": "集群删除成功",
+      "createError": "创建集群失败",
+      "updateError": "更新集群失败",
+      "deleteError": "删除集群失败"
+    },
+    "errors": {
+      "loadFailed": "加载集群失败"
+    },
+    "deleteConfirmation": "此操作只会移除 kite 中的集群配置，不会删除任何集群资源。",
+    "dialog": {
+      "createTitle": "添加集群",
+      "editTitle": "编辑集群",
+      "name": "名称",
+      "namePlaceholder": "输入集群名称",
+      "description": "描述",
+      "descriptionPlaceholder": "输入集群描述（可选）",
+      "type": "类型",
+      "config": "配置",
+      "configPlaceholder": "在此粘贴 kubeconfig 内容...",
+      "prometheusUrl": "Prometheus URL",
+      "prometheusUrlPlaceholder": "https://prometheus.example.com",
+      "enabled": "启用",
+      "isDefault": "设为默认"
+    }
+  },
+  "oauthManagement": {
+    "title": "OAuth 提供商管理",
+    "actions": {
+      "add": "添加提供商",
+      "edit": "编辑",
+      "delete": "删除"
+    },
+    "table": {
+      "name": "名称",
+      "clientId": "客户端 ID",
+      "issuer": "签发者",
+      "status": "状态",
+      "actions": "操作"
+    },
+    "status": {
+      "enabled": "已启用",
+      "disabled": "已禁用"
+    },
+    "empty": {
+      "title": "暂无 OAuth 提供商配置",
+      "description": "添加您的第一个 OAuth 提供商"
+    },
+    "messages": {
+      "created": "OAuth 提供商创建成功",
+      "updated": "OAuth 提供商更新成功",
+      "deleted": "OAuth 提供商删除成功",
+      "createError": "创建 OAuth 提供商失败",
+      "updateError": "更新 OAuth 提供商失败",
+      "deleteError": "删除 OAuth 提供商失败"
+    },
+    "errors": {
+      "loadFailed": "加载 OAuth 提供商失败"
+    },
+    "deleteConfirmation": "此操作将移除 OAuth 提供商配置，用户将无法再使用该提供商登录。",
+    "dialog": {
+      "createTitle": "添加 OAuth 提供商",
+      "editTitle": "编辑 OAuth 提供商",
+      "name": "名称",
+      "namePlaceholder": "例如：github, google",
+      "clientId": "客户端 ID",
+      "clientIdPlaceholder": "OAuth 客户端 ID",
+      "clientSecret": "客户端密钥",
+      "clientSecretRequired": "OAuth 客户端密钥",
+      "clientSecretPlaceholder": "留空以保持当前密钥",
+      "authUrl": "授权 URL",
+      "tokenUrl": "令牌 URL",
+      "userInfoUrl": "用户信息 URL",
+      "scopes": "权限范围",
+      "issuer": "签发者",
+      "enabled": "启用"
+    }
+  },
+  "userManagement": {
+    "title": "用户管理",
+    "actions": {
+      "add": "添加密码用户"
+    },
+    "table": {
+      "username": "用户名",
+      "name": "名称",
+      "avatar": "头像",
+      "status": "状态",
+      "provider": "身份提供者",
+      "createdAt": "创建时间",
+      "lastLoginAt": "最后登录时间",
+      "roles": "角色"
+    },
+    "dialog": {
+      "editTitle": "编辑用户",
+      "resetPassword": "重置密码",
+      "assignRoles": "分配角色"
+    },
+    "empty": {
+      "title": "暂无用户",
+      "description": "添加您的第一个用户以开始使用"
+    }
+  },
+  "initialization": {
+    "title": "初始化设置",
+    "welcome": "欢迎！让我们来设置您的 Kite Dashboard",
+    "subtitle": "完成以下步骤开始使用",
+    "description": "配置您的管理员用户并连接您的集群",
+    "step1": {
+      "title": "创建超级管理员用户",
+      "description": "如果您希望匿名使用，请将 `ANONYMOUS_USER_ENABLED` 环境变量设置为 true",
+      "username": "用户名",
+      "usernameRequired": "用户名 *",
+      "usernamePlaceholder": "输入管理员用户名",
+      "displayName": "显示名称",
+      "displayNamePlaceholder": "输入显示名称（可选）",
+      "password": "密码",
+      "passwordRequired": "密码 *",
+      "passwordPlaceholder": "输入密码",
+      "confirmPassword": "确认密码",
+      "confirmPasswordRequired": "确认密码 *",
+      "confirmPasswordPlaceholder": "确认密码",
+      "creating": "创建用户中...",
+      "createButton": "创建超级管理员用户",
+      "passwordMismatch": "密码不匹配",
+      "createSuccess": "超级管理员用户创建成功",
+      "createError": "创建用户失败"
+    },
+    "step2": {
+      "title": "导入 Kubernetes 集群",
+      "description": "从您的 kubeconfig 中导入 Kubernetes 集群",
+      "kubeconfig": "Kubeconfig 文件",
+      "kubeconfigRequired": "Kubeconfig 文件 *",
+      "kubeconfigPlaceholder": "在此粘贴您的 kubeconfig 文件内容...",
+      "kubeconfigHint": "您可以在 ~/.kube/config 找到您的 kubeconfig 文件，或从集群提供商处获取",
+      "pasteMode": "粘贴内容",
+      "fileMode": "上传文件",
+      "fileHint": "选择您的 kubeconfig 文件（通常位于 ~/.kube/config）",
+      "importing": "导入集群中...",
+      "importButton": "导入集群",
+      "importSuccess": "集群导入成功",
+      "importError": "导入集群失败",
+      "configRequired": "请提供 kubeconfig 文件"
     }
   }
 }

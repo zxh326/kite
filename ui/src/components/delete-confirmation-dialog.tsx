@@ -21,6 +21,7 @@ interface DeleteConfirmationDialogProps {
   onConfirm: () => void
   isDeleting?: boolean
   namespace?: string
+  additionalNote?: string
 }
 
 export function DeleteConfirmationDialog({
@@ -31,6 +32,7 @@ export function DeleteConfirmationDialog({
   onConfirm,
   isDeleting = false,
   namespace,
+  additionalNote,
 }: DeleteConfirmationDialogProps) {
   const [confirmationInput, setConfirmationInput] = useState('')
 
@@ -69,6 +71,9 @@ export function DeleteConfirmationDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {additionalNote && (
+            <p className="mt-2 text-muted-foreground">{additionalNote}</p>
+          )}
           <div className="rounded-lg bg-destructive/5 p-4 border border-destructive/20">
             <div className="text-sm">
               <p className="font-medium text-destructive mb-2">

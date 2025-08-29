@@ -145,7 +145,7 @@
     "tryAgainHint": "You can try logging in with a different account that has the required permissions.",
     "noLoginMethods": "No login methods configured",
     "configureAuth": "Please configure authentication providers in your environment",
-    "footer": "© {{year}} Kite. Built for Kubernetes enthusiasts.",
+    "footer": "© {{year}} Kite. All rights reserved.",
     "documentation": "Documentation",
     "errors": {
       "accessDenied": "Access Denied",
@@ -169,7 +169,9 @@
       "generalError": "An unexpected error occurred during authentication.",
       "contactSupport": "Please try again or contact support if the issue persists.",
       "invalidCredentials": "Invalid username or password",
-      "unknownError": "An unknown error occurred"
+      "unknownError": "An unknown error occurred",
+      "userDisabled": "User Disabled",
+      "userDisabledMessage": "Your user account has been disabled. Please contact your administrator for more information."
     }
   },
   "cluster": {
@@ -194,6 +196,174 @@
       "delete": "Delete",
       "log": "View Logs",
       "exec": "Execute"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage clusters, roles and permissions",
+    "tabs": {
+      "clusters": "Cluster",
+      "oauth": "OAuth",
+      "rbac": "RBAC",
+      "users": "User"
+    }
+  },
+  "settingsHint": {
+    "title": "Complete Your Setup",
+    "description": "Configure essential settings to get the most out of Kite",
+    "p8s": {
+      "description": "Configure Prometheus"
+    },
+    "oauth": {
+      "description": "Set up OAuth providers for authentication"
+    },
+    "rbac": {
+      "description": "Configure roles and permissions"
+    },
+    "viewAll": "View All Settings"
+  },
+  "clusterManagement": {
+    "title": "Cluster Management",
+    "actions": {
+      "add": "Add Cluster",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "table": {
+      "name": "Name",
+      "type": "Type",
+      "status": "Status",
+      "prometheus": "Prometheus",
+      "actions": "Actions"
+    },
+    "type": {
+      "inCluster": "In-Cluster",
+      "external": "External"
+    },
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "empty": {
+      "title": "No clusters configured",
+      "description": "Add your first cluster to get started"
+    },
+    "messages": {
+      "created": "Cluster created successfully",
+      "updated": "Cluster updated successfully",
+      "deleted": "Cluster deleted successfully",
+      "createError": "Failed to create cluster",
+      "updateError": "Failed to update cluster",
+      "deleteError": "Failed to delete cluster"
+    },
+    "errors": {
+      "loadFailed": "Failed to load clusters"
+    },
+    "deleteConfirmation": "This action will only remove the current cluster's configuration in kite and will not delete any cluster resources.",
+    "dialog": {
+      "createTitle": "Add Cluster",
+      "editTitle": "Edit Cluster",
+      "name": "Name",
+      "namePlaceholder": "Enter cluster name",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter cluster description (optional)",
+      "type": "Type",
+      "config": "Configuration",
+      "configPlaceholder": "Paste kubeconfig content here...",
+      "prometheusUrl": "Prometheus URL",
+      "prometheusUrlPlaceholder": "https://prometheus.example.com",
+      "enabled": "Enabled",
+      "isDefault": "Set as Default"
+    }
+  },
+  "oauthManagement": {
+    "title": "OAuth Provider Management",
+    "actions": {
+      "add": "Add Provider",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "table": {
+      "name": "Name",
+      "clientId": "Client ID",
+      "issuer": "Issuer",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "messages": {
+      "created": "OAuth provider created successfully",
+      "updated": "OAuth provider updated successfully",
+      "deleted": "OAuth provider deleted successfully",
+      "createError": "Failed to create OAuth provider",
+      "updateError": "Failed to update OAuth provider",
+      "deleteError": "Failed to delete OAuth provider"
+    },
+    "errors": {
+      "loadFailed": "Failed to load OAuth providers"
+    },
+    "deleteConfirmation": "This action will remove the OAuth provider configuration. Users will no longer be able to login using this provider.",
+    "dialog": {
+      "createTitle": "Add OAuth Provider",
+      "editTitle": "Edit OAuth Provider",
+      "name": "Name",
+      "namePlaceholder": "e.g., github, google",
+      "clientId": "Client ID",
+      "clientIdPlaceholder": "OAuth Client ID",
+      "clientSecret": "Client Secret",
+      "clientSecretRequired": "OAuth Client Secret",
+      "clientSecretPlaceholder": "Leave empty to keep current secret",
+      "authUrl": "Authorization URL",
+      "tokenUrl": "Token URL",
+      "userInfoUrl": "User Info URL",
+      "scopes": "Scopes",
+      "issuer": "Issuer",
+      "enabled": "Enabled"
+    }
+  },
+  "initialization": {
+    "title": "Initial Setup",
+    "welcome": "Welcome! Let's set up your Kite dashboard",
+    "subtitle": "Complete the following steps to get started",
+    "description": "Configure your admin user and connect cluster",
+    "step1": {
+      "title": "Create Super Admin User",
+      "description": "If you want to use it anonymously, please set the `ANONYMOUS_USER_ENABLED` env variable to true",
+      "username": "Username",
+      "usernameRequired": "Username *",
+      "usernamePlaceholder": "Enter admin username",
+      "displayName": "Display Name",
+      "displayNamePlaceholder": "Enter display name (optional)",
+      "password": "Password",
+      "passwordRequired": "Password *",
+      "passwordPlaceholder": "Enter password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordRequired": "Confirm Password *",
+      "confirmPasswordPlaceholder": "Confirm password",
+      "creating": "Creating User...",
+      "createButton": "Create Super Admin User",
+      "passwordMismatch": "Passwords do not match",
+      "createSuccess": "Super admin user created successfully",
+      "createError": "Failed to create user"
+    },
+    "step2": {
+      "title": "Import Kubernetes Cluster",
+      "description": "Connect your Kubernetes cluster",
+      "kubeconfig": "Kubeconfig File",
+      "kubeconfigRequired": "Kubeconfig File *",
+      "kubeconfigPlaceholder": "Paste your kubeconfig file content here...",
+      "kubeconfigHint": "You can find your kubeconfig file at ~/.kube/config or get it from your cluster provider",
+      "pasteMode": "Paste Content",
+      "fileMode": "Upload File",
+      "fileHint": "Select your kubeconfig file (usually located at ~/.kube/config)",
+      "importing": "Importing Clusters...",
+      "importButton": "Import Clusters",
+      "importSuccess": "Clusters imported successfully",
+      "importError": "Failed to import clusters",
+      "configRequired": "Please provide a kubeconfig file"
+    },
+    "completion": {
+      "title": "Setup Complete!",
+      "message": "You will be redirected to the dashboard shortly..."
     }
   }
 }

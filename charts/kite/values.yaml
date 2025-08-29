@@ -21,93 +21,58 @@ fullnameOverride: ""
 
 debug: false
 
-# Multi-cluster configuration using kubeconfig
-multiCluster:
-  # Enable multi-cluster mode by mounting kubeconfig
-  enabled: false
+# Set to true to enable the anonymous user with full-admin access
+# be careful with this setting in production
+anonymousUserEnabled: false
+
+# This is the key used for signing JWT tokens
+# change this in production
+jwtSecret: "kite-default-jwt-secret-key-change-in-production"
+
+# This is the key used for encrypting sensitive data
+# change this in production
+encryptKey: "kite-default-encryption-key-change-in-production"
+
+## Hostname for the application
+host: ""
+
+# Database configuration
+# type: sqlite | postgres | mysql
+# - sqlite: embedded DB (default). If you choose sqlite and want data to survive pod restarts,
+#   enable persistence below so a PVC will be used to store the sqlite file.
+# - postgres/mysql: connection fields for external DBs.
+db:
+  # supported values: sqlite, postgres, mysql
+  type: sqlite
+  # full DSN string for MySQL/Postgres.
+  # when type is mysql/postgres, is required
+  # Example: "mysql://user:password@tcp(host:port)/dbname"
+  dsn: ""
   
-  # Kubeconfig configuration options
-  kubeconfig:
-    # Create a secret from kubeconfig content
-    # If enabled, you need to provide the kubeconfig content
-    fromContent: false
-    
-    # The kubeconfig file content (plain text)
-    # Only used when fromContent is true
-    # use can specify the kubeconfig content with helm set-file flag:
-    #   helm install kite . --set-file multiCluster.kubeconfig.content=/path/to/kubeconfig
-    content: ""
-        
-    # Use existing secret containing kubeconfig
-    # If specified, fromContent will be ignored
-    existingSecret: ""
+  # sqlite-specific options
+  sqlite:
+    # If true, the chart will create a PVC and mount it into the pod for the sqlite DB file.
+    # Set to false to use ephemeral storage (not recommended for production).
+    persistence:
+      pvc:
+        enabled: false
+        existingClaim: ""
+        # StorageClass to request for the PVC (optional)
+        storageClass: ""
+        # accessModes for the PVC
+        accessModes:
+          - ReadWriteOnce
+        # requested size
+        size: 1Gi
+      hostPath:
+        enabled: false
+        path: /path/to/host/dir
+        type: DirectoryOrCreate
+      # where to mount inside the container
+      mountPath: /data
+      # sqlite filename inside the mountPath
+      filename: kite.db
 
-    # Key name in the secret that contains kubeconfig
-    # Only used when existingSecret is specified
-    secretKey: "kubeconfig"
-
-  # Prometheus configuration for each cluster
-  # Key should be the cluster/context name, value should be the prometheus URL
-  prometheus:
-    # Example cluster configurations:
-    # production: "https://prometheus.production.example.com"
-    # staging: "https://prometheus.staging.example.com"
-    # cluster-1: "http://prometheus.cluster-1.svc.cluster.local:9090"
-  # Default Prometheus URL for clusters that don't have specific configuration
-  defaultPrometheusUrl: ""
-
-roleConfig:
-  roles:
-    - name: admin
-      description: Administrator role with full access.
-      clusters:
-        - '*'
-      resources:
-        - '*'
-      namespaces:
-        - '*'
-      verbs:
-        - '*'
-    - name: viewer
-      description: Viewer role with read-only access
-      clusters:
-        - '*'
-      resources:
-        - '*'
-      namespaces:
-        - '*'
-      verbs:
-        - 'get'
-  roleMapping:
-    # map specific users to the admin role
-    # - name: admin
-    #   oidcGroups:
-    #     - admins
-    # - name: viewer
-    #   users:
-    #     - 'zxh326'
-
-# update 
-jwtSecret: "your_jwt_secret_key_here"
-
-basicAuth:
-  enabled: true
-  username: "kite"
-  password: "password"
-
-oauth:
-  enabled: false
-  # This is the redirect URL for OAuth callbacks.
-  # change this to your application's URL.
-  redirect: "http://localhost:8080/api/auth/callback"
-  providers:
-    # <any_provider>:
-    #   clientId: ""
-    #   clientSecret: ""
-    #   authUrl:
-    #   tokenUrl:
-    #   userInfoUrl: "*"
-    #   scopes: ""
 
 extraEnvs:
   # - name: "EXAMPLE_ENV"

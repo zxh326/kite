@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Footer } from '@/components/footer'
 import { LanguageToggle } from '@/components/language-toggle'
 
 export function LoginPage() {
@@ -32,12 +33,12 @@ export function LoginPage() {
     return <Navigate to="/" replace />
   }
 
-  const handleLogin = async (provider: string = 'github') => {
+  const handleLogin = async (provider: string) => {
     setLoginLoading(provider)
     try {
       await login(provider)
     } catch (error) {
-      console.error('Login failed:', error)
+      console.error('Login error:', error)
       setLoginLoading(null)
     }
   }
@@ -107,6 +108,11 @@ export function LoginPage() {
           title: t('login.errors.authenticationError'),
           message: t('login.errors.callbackError'),
           details: t('login.errors.contactSupport'),
+        }
+      case 'user_disabled':
+        return {
+          title: t('login.errors.userDisabled', 'User Disabled'),
+          message: t('login.errors.userDisabledMessage'),
         }
       default:
         return {
@@ -297,31 +303,7 @@ export function LoginPage() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 bg-white">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
-            <p className="text-sm text-gray-500">
-              {t('login.footer', { year: new Date().getFullYear() })}
-            </p>
-            <div className="flex space-x-6 text-sm text-gray-500">
-              <a
-                href="https://github.com/zxh326/kite"
-                target="_blank"
-                className="hover:text-gray-700 transition-colors"
-              >
-                {t('login.documentation')}
-              </a>
-              <a
-                href="https://github.com/zxh326/kite"
-                target="_blank"
-                className="hover:text-gray-700 transition-colors"
-              >
-                GitHub
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }

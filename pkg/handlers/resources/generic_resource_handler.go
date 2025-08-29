@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/model"
 	"github.com/zxh326/kite/pkg/rbac"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -104,8 +105,8 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	var listOpts []client.ListOption
+	namespace := c.Param("namespace")
 	if !h.isClusterScoped {
-		namespace := c.Param("namespace")
 		if namespace != "" && namespace != "_all" {
 			listOpts = append(listOpts, client.InNamespace(namespace))
 		}
@@ -179,7 +180,7 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 		return t1.After(t2.Time)
 	})
 
-	user := c.MustGet("user").(common.User)
+	user := c.MustGet("user").(model.User)
 	filterItems := make([]runtime.Object, 0, len(items))
 	for i := range items {
 		obj, err := meta.Accessor(items[i])
@@ -194,6 +195,9 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 		}
 		// for namespaces, we need to ensure user has permission to view them
 		if h.Name() == "namespaces" && !rbac.CanAccessNamespace(user, cs.Name, obj.GetName()) {
+			continue
+		}
+		if namespace == "_all" && obj.GetNamespace() != "" && !rbac.CanAccessNamespace(user, cs.Name, obj.GetNamespace()) {
 			continue
 		}
 		filterItems = append(filterItems, items[i])
