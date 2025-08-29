@@ -399,5 +399,26 @@
       "importError": "导入集群失败",
       "configRequired": "请提供 kubeconfig 文件"
     }
+  },
+  "resourceHistory": {
+    "title": "资源历史",
+    "operator": "操作人",
+    "operationTime": "操作时间",
+    "operationType": "操作类型",
+    "status": "状态",
+    "actions": "操作",
+    "viewDiff": "查看差异",
+    "yamlDiff": "YAML 差异",
+    "loadingHistory": "加载历史记录中...",
+    "failedToLoadHistory": "加载历史记录失败",
+    "noHistoryFound": "未找到历史记录",
+    "create": "创建",
+    "update": "更新",
+    "delete": "删除",
+    "apply": "应用",
+    "success": "成功",
+    "failed": "失败",
+    "previousVsModified": "前一个版本 vs 修改版本",
+    "currentVsModified": "当前版本 vs 修改版本"
   }
 }

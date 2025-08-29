@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"math"
 	"net/http"
 	"reflect"
 	"sort"
@@ -20,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
 )
 
 type GenericResourceHandler[T client.Object, V client.ObjectList] struct {
@@ -44,6 +46,40 @@ func NewGenericResourceHandler[T client.Object, V client.ObjectList](
 		enableSearch:    enableSearch,
 		objectType:      reflect.TypeOf(obj).Elem(),
 		listType:        reflect.TypeOf(list).Elem(),
+	}
+}
+
+func (h *GenericResourceHandler[T, V]) ToYAML(obj T) string {
+	if reflect.ValueOf(obj).IsNil() {
+		return ""
+	}
+	obj.SetManagedFields(nil)
+	yamlBytes, err := yaml.Marshal(obj)
+	if err != nil {
+		return ""
+	}
+	return string(yamlBytes)
+}
+
+// recordHistory 记录操作历史
+func (h *GenericResourceHandler[T, V]) recordHistory(c *gin.Context, opType string, prev, curr T, success bool, errMsg string) {
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	user := c.MustGet("user").(model.User)
+
+	history := model.ResourceHistory{
+		ClusterName:   cs.Name,
+		ResourceType:  h.name,
+		ResourceName:  curr.GetName(),
+		Namespace:     curr.GetNamespace(),
+		OperationType: opType,
+		ResourceYAML:  h.ToYAML(curr),
+		PreviousYAML:  h.ToYAML(prev),
+		Success:       success,
+		ErrorMessage:  errMsg,
+		OperatorID:    user.ID,
+	}
+	if err := model.DB.Create(&history).Error; err != nil {
+		klog.Errorf("Failed to create resource history: %v", err)
 	}
 }
 
@@ -217,11 +253,21 @@ func (h *GenericResourceHandler[T, V]) Create(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
+
+	var success bool
+	var errMsg string
+	var empty T
+	defer func() {
+		h.recordHistory(c, "create", empty, resource, success, errMsg)
+	}()
+
 	if err := cs.K8sClient.Create(ctx, resource); err != nil {
+		success, errMsg = false, err.Error()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	success = true
 	c.JSON(http.StatusCreated, resource)
 }
 
@@ -234,6 +280,19 @@ func (h *GenericResourceHandler[T, V]) Update(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	oldObj := reflect.New(h.objectType).Interface().(T)
+	if err := cs.K8sClient.Get(c.Request.Context(), types.NamespacedName{Name: name, Namespace: c.Param("namespace")}, oldObj); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var success bool
+	var errMsg string
+	defer func() {
+		h.recordHistory(c, "update", oldObj, resource, success, errMsg)
+	}()
+
 	resource.SetName(name)
 	if !h.isClusterScoped {
 		namespace := c.Param("namespace")
@@ -244,10 +303,12 @@ func (h *GenericResourceHandler[T, V]) Update(c *gin.Context) {
 
 	ctx := c.Request.Context()
 	if err := cs.K8sClient.Update(ctx, resource); err != nil {
+		errMsg = err.Error()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	success = true
 	c.JSON(http.StatusOK, resource)
 }
 
@@ -265,12 +326,19 @@ func (h *GenericResourceHandler[T, V]) Delete(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
+	var success bool
+	var errMsg string
+	var empty T
+	defer func() {
+		h.recordHistory(c, "delete", resource, empty, success, errMsg)
+	}()
 
 	if err := cs.K8sClient.Get(ctx, namespacedName, resource); err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
 		}
+		errMsg = err.Error()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -289,10 +357,12 @@ func (h *GenericResourceHandler[T, V]) Delete(c *gin.Context) {
 	}
 
 	if err := cs.K8sClient.Delete(ctx, resource, deleteOptions); err != nil {
+		errMsg = err.Error()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	success = true
 	c.JSON(http.StatusOK, gin.H{"message": "deleted successfully"})
 }
 
@@ -341,3 +411,52 @@ func (h *GenericResourceHandler[T, V]) Search(c *gin.Context, q string, limit in
 }
 
 func (h *GenericResourceHandler[T, V]) registerCustomRoutes(group *gin.RouterGroup) {}
+
+func (h *GenericResourceHandler[T, V]) ListHistory(c *gin.Context) {
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	namespace := c.Param("namespace")
+	resourceName := c.Param("name")
+	pageSize, err := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid pageSize parameter"})
+		return
+	}
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid page parameter"})
+		return
+	}
+
+	// Get total count
+	var total int64
+	if err := model.DB.Model(&model.ResourceHistory{}).Where("cluster_name = ? AND resource_type = ? AND resource_name = ? AND namespace = ?", cs.Name, h.name, resourceName, namespace).Count(&total).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get paginated history
+	history := []model.ResourceHistory{}
+	if err := model.DB.Preload("Operator").Where("cluster_name = ? AND resource_type = ? AND resource_name = ? AND namespace = ?", cs.Name, h.name, resourceName, namespace).Order("created_at DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&history).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Calculate pagination info
+	totalPages := int(math.Ceil(float64(total) / float64(pageSize)))
+	hasNextPage := page < totalPages
+	hasPrevPage := page > 1
+
+	response := gin.H{
+		"data": history,
+		"pagination": gin.H{
+			"page":        page,
+			"pageSize":    pageSize,
+			"total":       total,
+			"totalPages":  totalPages,
+			"hasNextPage": hasNextPage,
+			"hasPrevPage": hasPrevPage,
+		},
+	}
+
+	c.JSON(http.StatusOK, response)
+}

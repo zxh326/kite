@@ -18,6 +18,7 @@ import { ErrorMessage } from '@/components/error-message'
 import { EventTable } from '@/components/event-table'
 import { LabelsAnno } from '@/components/lables-anno'
 import { RelatedResourcesTable } from '@/components/related-resource-table'
+import { ResourceHistoryTable } from '@/components/resource-history-table'
 import { YamlEditor } from '@/components/yaml-editor'
 
 export function SimpleResourceDetail<T extends ResourceType>(props: {
@@ -247,6 +248,18 @@ export function SimpleResourceDetail<T extends ResourceType>(props: {
                 resource={resourceType}
                 namespace={namespace}
                 name={name}
+              />
+            ),
+          },
+          {
+            value: 'history',
+            label: 'History',
+            content: (
+              <ResourceHistoryTable
+                resourceType={resourceType}
+                name={name}
+                namespace={namespace}
+                currentResource={data}
               />
             ),
           },

@@ -376,3 +376,37 @@ export interface FetchUserListResponse {
   page: number
   size: number
 }
+
+// Resource History types
+export interface ResourceHistory {
+  id: number
+  clusterName: string
+  resourceType: string
+  resourceName: string
+  namespace: string
+  operationType: string
+  resourceYaml: string
+  previousYaml: string
+  success: boolean
+  errorMessage: string
+  operatorId: number
+  operator: {
+    id: number
+    username: string
+    email: string
+  }
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ResourceHistoryResponse {
+  data: ResourceHistory[]
+  pagination: {
+    page: number
+    pageSize: number
+    total: number
+    totalPages: number
+    hasNextPage: boolean
+    hasPrevPage: boolean
+  }
+}

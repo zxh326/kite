@@ -31,6 +31,7 @@ type resourceHandler interface {
 	GetResource(c *gin.Context, namespace, name string) (interface{}, error)
 
 	registerCustomRoutes(group *gin.RouterGroup)
+	ListHistory(c *gin.Context)
 }
 
 type Restartable interface {
@@ -68,7 +69,7 @@ func RegisterRoutes(group *gin.RouterGroup) {
 		"clusterrolebindings":    NewGenericResourceHandler[*rbacv1.ClusterRoleBinding, *rbacv1.ClusterRoleBindingList]("clusterrolebindings", true, false),
 		"podmetrics":             NewGenericResourceHandler[*metricsv1.PodMetrics, *metricsv1.PodMetricsList]("metrics.k8s.io", false, false),
 		"nodemetrics":            NewGenericResourceHandler[*metricsv1.NodeMetrics, *metricsv1.NodeMetricsList]("metrics.k8s.io", false, false),
-		"gateways":               NewGenericResourceHandler[*gatewayapiv1.Gateway, *gatewayapiv1.GatewayList]("gateways", false, true),
+		"gatewssays":             NewGenericResourceHandler[*gatewayapiv1.Gateway, *gatewayapiv1.GatewayList]("gateways", false, true),
 		"httproutes":             NewGenericResourceHandler[*gatewayapiv1.HTTPRoute, *gatewayapiv1.HTTPRouteList]("httproutes", false, true),
 	}
 
@@ -122,6 +123,7 @@ func registerClusterScopeRoutes(group *gin.RouterGroup, handler resourceHandler)
 	group.POST("/_all", handler.Create)
 	group.PUT("/_all/:name", handler.Update)
 	group.DELETE("/_all/:name", handler.Delete)
+	group.GET("/_all/:name/history", handler.ListHistory)
 }
 
 func registerNamespaceScopeRoutes(group *gin.RouterGroup, handler resourceHandler) {
@@ -131,6 +133,7 @@ func registerNamespaceScopeRoutes(group *gin.RouterGroup, handler resourceHandle
 	group.POST("/:namespace", handler.Create)
 	group.PUT("/:namespace/:name", handler.Update)
 	group.DELETE("/:namespace/:name", handler.Delete)
+	group.GET("/:namespace/:name/history", handler.ListHistory)
 }
 
 var SearchFuncs = map[string]func(c *gin.Context, query string, limit int64) ([]common.SearchResult, error){}

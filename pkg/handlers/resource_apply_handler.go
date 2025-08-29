@@ -9,9 +9,12 @@ import (
 	"github.com/zxh326/kite/pkg/common"
 	"github.com/zxh326/kite/pkg/model"
 	"github.com/zxh326/kite/pkg/rbac"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	syaml "sigs.k8s.io/yaml"
 )
 
 type ResourceApplyHandler struct {
@@ -56,16 +59,58 @@ func (h *ResourceApplyHandler) ApplyResource(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	// Try to create the resource
-	if err := cs.K8sClient.Create(ctx, obj); err != nil {
-		klog.Errorf("Failed to create resource: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create resource: " + err.Error()})
+	existingObj := &unstructured.Unstructured{}
+	existingObj.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
+	existingObj.SetName(obj.GetName())
+	existingObj.SetNamespace(obj.GetNamespace())
+
+	err = cs.K8sClient.Get(ctx, client.ObjectKey{
+		Name:      obj.GetName(),
+		Namespace: obj.GetNamespace(),
+	}, existingObj)
+
+	defer func() {
+		previousYAML := []byte{}
+		if existingObj.GetResourceVersion() != "" {
+			previousYAML, _ = syaml.Marshal(existingObj)
+		}
+		model.DB.Create(&model.ResourceHistory{
+			ClusterName:   cs.Name,
+			ResourceType:  obj.GetKind(),
+			ResourceName:  obj.GetName(),
+			Namespace:     obj.GetNamespace(),
+			OperationType: "apply",
+			ResourceYAML:  req.YAML,
+			PreviousYAML:  string(previousYAML),
+			OperatorID:    user.ID,
+			Success:       err == nil,
+			ErrorMessage:  err.Error(),
+		})
+	}()
+
+	switch {
+	case apierrors.IsNotFound(err):
+		if err := cs.K8sClient.Create(ctx, obj); err != nil {
+			klog.Errorf("Failed to create resource: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create resource: " + err.Error()})
+			return
+		}
+	case err == nil:
+		obj.SetResourceVersion(existingObj.GetResourceVersion())
+		if err := cs.K8sClient.Update(ctx, obj); err != nil {
+			klog.Errorf("Failed to update resource: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update resource: " + err.Error()})
+			return
+		}
+	default:
+		klog.Errorf("Failed to get resource: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get resource: " + err.Error()})
 		return
 	}
 
-	klog.Infof("Successfully created resource: %s/%s", obj.GetKind(), obj.GetName())
-	c.JSON(http.StatusCreated, gin.H{
-		"message":   "Resource created successfully",
+	klog.Infof("Successfully applied resource: %s/%s", obj.GetKind(), obj.GetName())
+	c.JSON(http.StatusOK, gin.H{
+		"message":   "Resource applied successfully",
 		"kind":      obj.GetKind(),
 		"name":      obj.GetName(),
 		"namespace": obj.GetNamespace(),

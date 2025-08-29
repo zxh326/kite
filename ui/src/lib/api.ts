@@ -12,6 +12,7 @@ import {
   OverviewData,
   PodMetrics,
   RelatedResources,
+  ResourceHistoryResponse,
   ResourcesTypeMap,
   ResourceType,
   ResourceTypeMap,
@@ -1532,5 +1533,41 @@ export const useUserList = (page = 1, size = 20) => {
     queryKey: ['user-list', page, size],
     queryFn: () => fetchUserList(page, size),
     staleTime: 20000,
+  })
+}
+
+// Resource History API
+export const fetchResourceHistory = (
+  resourceType: string,
+  namespace: string,
+  name: string,
+  page: number = 1,
+  pageSize: number = 10
+): Promise<ResourceHistoryResponse> => {
+  const endpoint = `/${resourceType}/${namespace}/${name}/history?page=${page}&pageSize=${pageSize}`
+  return fetchAPI<ResourceHistoryResponse>(endpoint)
+}
+
+export const useResourceHistory = (
+  resourceType: string,
+  namespace: string,
+  name: string,
+  page: number = 1,
+  pageSize: number = 10,
+  options?: { enabled?: boolean; staleTime?: number }
+) => {
+  return useQuery({
+    queryKey: [
+      'resource-history',
+      resourceType,
+      namespace,
+      name,
+      page,
+      pageSize,
+    ],
+    queryFn: () =>
+      fetchResourceHistory(resourceType, namespace, name, page, pageSize),
+    enabled: options?.enabled ?? true,
+    staleTime: options?.staleTime || 30000, // 30 seconds cache
   })
 }

@@ -365,5 +365,26 @@
       "title": "Setup Complete!",
       "message": "You will be redirected to the dashboard shortly..."
     }
+  },
+  "resourceHistory": {
+    "title": "Resource History",
+    "operator": "Operator",
+    "operationTime": "Time",
+    "operationType": "Type",
+    "status": "Status",
+    "actions": "Actions",
+    "viewDiff": "View Diff",
+    "yamlDiff": "YAML Diff",
+    "loadingHistory": "Loading history...",
+    "failedToLoadHistory": "Failed to load history",
+    "noHistoryFound": "No history found",
+    "create": "Create",
+    "update": "Update",
+    "delete": "Delete",
+    "apply": "Apply",
+    "success": "Success",
+    "failed": "Failed",
+    "previousVsModified": "Previous vs Modified",
+    "currentVsModified": "Current vs Modified"
   }
 }
