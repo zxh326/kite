@@ -218,17 +218,14 @@ func (h *AuthHandler) GetUser(c *gin.Context) {
 
 func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var tokenString string
-
 		if common.AnonymousUserEnabled {
 			c.Set("user", model.AnonymousUser)
 			c.Next()
 			return
 		}
 
-		if cookie, err := c.Cookie("auth_token"); err == nil {
-			tokenString = cookie
-		}
+		// Try to read auth token cookie (if missing, tokenString will be empty)
+		tokenString, _ := c.Cookie("auth_token")
 		if tokenString == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid or expired token",
@@ -489,15 +486,7 @@ func (h *AuthHandler) GetOAuthProvider(c *gin.Context) {
 // common.Host appears to be an https scheme.
 func setCookieSecure(c *gin.Context, name, value string, maxAge int) {
 	// Determine if secure should be set
-	secure := false
-	// If HOST is configured and starts with https:// assume secure
-	if strings.HasPrefix(common.Host, "https://") {
-		secure = true
-	}
-	// If request uses TLS or X-Forwarded-Proto header indicates https
-	if c.Request != nil && (c.Request.TLS != nil || strings.EqualFold(c.Request.Header.Get("X-Forwarded-Proto"), "https")) {
-		secure = true
-	}
+	secure := strings.HasPrefix(common.Host, "https://") || (c.Request != nil && (c.Request.TLS != nil || strings.EqualFold(c.Request.Header.Get("X-Forwarded-Proto"), "https")))
 
 	// Set SameSite to Lax for OAuth flows while still providing CSRF protection
 	c.SetSameSite(http.SameSiteLaxMode)

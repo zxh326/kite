@@ -167,7 +167,7 @@ export function ResourceHistoryTable<T extends ResourceType>({
         },
       },
     ],
-    [t]
+    [getOperationTypeLabel, t]
   )
 
   if (isLoading) {
