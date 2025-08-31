@@ -61,12 +61,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: IconRocket,
       },
       {
-        title: 'StatefulSets',
+        title: t('nav.statefulsets'),
         url: '/statefulsets',
         icon: IconStack2,
       },
       {
-        title: 'DaemonSets',
+        title: t('nav.daemonsets'),
         url: '/daemonsets',
         icon: IconTopologyBus,
       },
@@ -76,12 +76,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: IconPlayerPlay,
       },
       {
-        title: 'CronJobs',
+        title: t('nav.cronjobs'),
         url: '/cronjobs',
         icon: IconClockHour4,
       },
     ],
-    Traffic: [
+    [t('sidebar.groups.traffic')]: [
       {
         title: t('nav.ingresses'),
         url: '/ingresses',
@@ -103,24 +103,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: IconRoute,
       },
     ],
-    Storage: [
+    [t('sidebar.groups.storage')]: [
       {
-        title: 'PVCs',
+        title: t('sidebar.short.pvcs'),
         url: '/persistentvolumeclaims',
         icon: IconFileDatabase,
       },
       {
-        title: 'PVs',
+        title: t('sidebar.short.pvs'),
         url: '/persistentvolumes',
         icon: IconDatabase,
       },
       {
-        title: 'Storage Classes',
+        title: t('nav.storageclasses'),
         url: '/storageclasses',
         icon: IconFileDatabase,
       },
     ],
-    Config: [
+    [t('sidebar.groups.config')]: [
       {
         title: t('nav.configMaps'),
         url: '/configmaps',
@@ -132,7 +132,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: IconLock,
       },
     ],
-    Other: [
+    [t('sidebar.groups.other')]: [
       {
         title: t('nav.namespaces'),
         url: '/namespaces',
@@ -144,12 +144,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: IconServer2,
       },
       {
-        title: 'Events',
+        title: t('nav.events'),
         url: '/events',
         icon: IconBell,
       },
       {
-        title: 'CRDs',
+        title: t('nav.crds'),
         url: '/crds',
         icon: IconCode,
       },

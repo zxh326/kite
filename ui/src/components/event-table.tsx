@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { IconLoader } from '@tabler/icons-react'
 import { Event } from 'kubernetes-types/core/v1'
+import { useTranslation } from 'react-i18next'
 
 import { ResourceType } from '@/types/api'
 import { useResourcesEvents } from '@/lib/api'
@@ -15,6 +16,7 @@ export function EventTable(props: {
   name: string
   namespace?: string
 }) {
+  const { t } = useTranslation()
   const { data: events, isLoading } = useResourcesEvents(
     props.resource,
     props.name,
@@ -25,7 +27,7 @@ export function EventTable(props: {
   const eventColumns = useMemo(
     (): Column<Event>[] => [
       {
-        header: 'Type',
+        header: t('events.type'),
         accessor: (event: Event) => event.type || '',
         cell: (value: unknown) => {
           const type = value as string
@@ -34,21 +36,21 @@ export function EventTable(props: {
         },
       },
       {
-        header: 'Reason',
+        header: t('events.reason'),
         accessor: (event: Event) => event.reason || '',
         cell: (value: unknown) => (
           <div className="font-medium">{value as string}</div>
         ),
       },
       {
-        header: 'Message',
+        header: t('events.message'),
         accessor: (event: Event) => event.message || '',
         cell: (value: unknown) => (
           <div className="text-sm whitespace-pre-wrap">{value as string}</div>
         ),
       },
       {
-        header: 'Source',
+        header: t('events.source'),
         accessor: (event: Event) => event.reportingComponent || '',
         cell: (value: unknown) => {
           return (
@@ -59,7 +61,7 @@ export function EventTable(props: {
         },
       },
       {
-        header: 'First Seen',
+        header: t('events.firstSeen'),
         accessor: (event: Event) =>
           event.firstTimestamp || event.eventTime || '',
         cell: (value: unknown) => {
@@ -71,7 +73,7 @@ export function EventTable(props: {
         },
       },
       {
-        header: 'Last Seen',
+        header: t('events.lastSeen'),
         accessor: (event: Event) =>
           event.lastTimestamp || event.eventTime || '',
         cell: (value: unknown) => {
@@ -83,27 +85,27 @@ export function EventTable(props: {
         },
       },
     ],
-    []
+    [t]
   )
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <IconLoader className="animate-spin mr-2" />
-        Loading events...
+        {t('events.loading')}
       </div>
     )
   }
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Events</CardTitle>
+        <CardTitle>{t('events.title')}</CardTitle>
       </CardHeader>
       <CardContent>
         <SimpleTable
           data={events || []}
           columns={eventColumns}
-          emptyMessage="No events found"
+          emptyMessage={t('events.noEventsFound')}
         />
       </CardContent>
     </Card>

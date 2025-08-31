@@ -386,5 +386,146 @@
     "failed": "Failed",
     "previousVsModified": "Previous vs Modified",
     "currentVsModified": "Current vs Modified"
+  },
+  "pvcs": {
+    "volume": "Volume",
+    "storageClass": "Storage Class",
+    "capacity": "Capacity",
+    "accessModes": "Access Modes"
+  },
+  "detail": {
+    "buttons": {
+      "refresh": "Refresh",
+      "delete": "Delete",
+      "scale": "Scale",
+      "restart": "Restart",
+      "drain": "Drain",
+      "cordon": "Cordon",
+      "uncordon": "Uncordon",
+      "taint": "Taint",
+      "cancel": "Cancel",
+      "add": "Add",
+      "remove": "Remove",
+      "edit": "Edit",
+      "create": "Create",
+      "save": "Save"
+    },
+    "status": {
+      "loading": "Loading {{resource}} details...",
+      "yamlSaved": "YAML saved successfully",
+      "restartInitiated": "{{resource}} restart initiated",
+      "scaledTo": "{{resource}} scaled to {{replicas}} replicas",
+      "deleted": "{{resource}} deleted successfully",
+      "taintKeyRequired": "Taint key is required",
+      "taintRemoved": "Taint removed from {{resource}} successfully",
+      "nodeDrained": "Node {{name}} drained successfully",
+      "nodeCordoned": "Node {{name}} cordoned successfully",
+      "nodeUncordoned": "Node {{name}} uncordoned successfully",
+      "nodeTainted": "Node {{name}} tainted successfully"
+    },
+    "dialogs": {
+      "drainNode": {
+        "title": "Drain Node",
+        "description": "Safely evict all pods from this node.",
+        "forceDrain": "Force drain",
+        "deleteLocalData": "Delete local data",
+        "ignoreDaemonSets": "Ignore DaemonSets",
+        "gracePeriod": "Grace Period (seconds)",
+        "drainButton": "Drain Node"
+      },
+      "cordonNode": {
+        "title": "Cordon Node",
+        "description": "Mark this node as unschedulable.",
+        "cordonButton": "Cordon Node"
+      },
+      "taintNode": {
+        "title": "Taint Node",
+        "description": "Add a taint to prevent pods from being scheduled.",
+        "key": "Key *",
+        "value": "Value",
+        "effect": "Effect",
+        "keyPlaceholder": "e.g., node.kubernetes.io/maintenance",
+        "valuePlaceholder": "Optional value",
+        "addTaintButton": "Add Taint"
+      },
+      "scaleDeployment": {
+        "title": "Scale Deployment",
+        "description": "Adjust the number of replicas for this deployment.",
+        "replicas": "Replicas",
+        "scaleButton": "Scale"
+      },
+      "restartDeployment": {
+        "title": "Restart Deployment",
+        "description": "This will restart all pods in the deployment by updating the deployment's template with a new restart annotation. This action cannot be undone.",
+        "restartButton": "Restart"
+      },
+      "restartDaemonSet": {
+        "title": "Restart DaemonSet",
+        "description": "This will restart all pods managed by this DaemonSet. This action cannot be undone.",
+        "restartButton": "Restart"
+      }
+    },
+    "sections": {
+      "statusOverview": "Status Overview",
+      "nodeInformation": "Node Information",
+      "resourceCapacity": "Resource Capacity",
+      "nodeTaints": "Node Taints",
+      "nodeConditions": "Node Conditions",
+      "deploymentInformation": "Deployment Information",
+      "daemonSetInformation": "DaemonSet Information",
+      "podInformation": "Pod Information",
+      "initContainers": "Init Containers",
+      "containers": "Containers",
+      "conditions": "Conditions"
+    },
+    "fields": {
+      "created": "Created",
+      "strategy": "Strategy",
+      "replicas": "Replicas",
+      "selector": "Selector",
+      "started": "Started",
+      "podIP": "Pod IP",
+      "hostIP": "Host IP",
+      "owner": "Owner",
+      "role": "Role",
+      "internalIP": "Internal IP",
+      "externalIP": "External IP",
+      "podCIDR": "Pod CIDR",
+      "kubeletVersion": "Kubelet Version",
+      "hostname": "Hostname",
+      "osImage": "OS Image",
+      "kernelVersion": "Kernel Version",
+      "architecture": "Architecture",
+      "containerRuntime": "Container Runtime",
+      "kubeProxyVersion": "Kube Proxy Version",
+      "phase": "Phase",
+      "readyContainers": "Ready Containers",
+      "restartCount": "Restart Count",
+      "node": "Node",
+      "notAssigned": "Not assigned",
+      "notStarted": "Not started",
+      "noOwner": "No owner",
+      "ready": "Ready",
+      "notReady": "Not Ready",
+      "schedulingDisabled": "(SchedulingDisabled)",
+      "capacity": "Capacity",
+      "allocatable": "Allocatable",
+      "cpu": "CPU",
+      "memory": "Memory",
+      "pods": "Pods",
+      "storage": "Storage",
+      "effect": "Effect",
+      "key": "Key",
+      "value": "Value",
+      "timeAdded": "Time Added",
+      "type": "Type",
+      "message": "Message",
+      "lastTransitionTime": "Last Transition Time",
+      "updatedReplicas": "Updated Replicas",
+      "availableReplicas": "Available Replicas",
+      "readyReplicas": "Ready Replicas",
+      "desiredScheduled": "Desired Scheduled",
+      "currentScheduled": "Current Scheduled"
+    }
   }
 }

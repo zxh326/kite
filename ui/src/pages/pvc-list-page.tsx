@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { PersistentVolumeClaim } from 'kubernetes-types/core/v1'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
 import { formatDate } from '@/lib/utils'
@@ -8,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { ResourceTable } from '@/components/resource-table'
 
 export function PVCListPage() {
+  const { t } = useTranslation()
   // Define column helper outside of any hooks
   const columnHelper = createColumnHelper<PersistentVolumeClaim>()
 
@@ -15,7 +17,7 @@ export function PVCListPage() {
   const columns = useMemo(
     () => [
       columnHelper.accessor('metadata.name', {
-        header: 'Name',
+        header: t('common.name'),
         cell: ({ row }) => (
           <div className="font-medium text-blue-500 hover:underline">
             <Link
@@ -29,7 +31,7 @@ export function PVCListPage() {
         ),
       }),
       columnHelper.accessor('status.phase', {
-        header: 'Status',
+        header: t('common.status'),
         cell: ({ getValue }) => {
           const phase = getValue() || 'Unknown'
           let variant: 'default' | 'destructive' | 'secondary' = 'secondary'
@@ -50,26 +52,26 @@ export function PVCListPage() {
         },
       }),
       columnHelper.accessor('spec.volumeName', {
-        header: 'Volume',
+        header: t('pvcs.volume'),
         cell: ({ getValue }) => getValue() || '-',
       }),
       columnHelper.accessor('spec.storageClassName', {
-        header: 'Storage Class',
+        header: t('pvcs.storageClass'),
         cell: ({ getValue }) => getValue() || '-',
       }),
       columnHelper.accessor('spec.resources.requests.storage', {
-        header: 'Capacity',
+        header: t('pvcs.capacity'),
         cell: ({ getValue }) => getValue() || '-',
       }),
       columnHelper.accessor('spec.accessModes', {
-        header: 'Access Modes',
+        header: t('pvcs.accessModes'),
         cell: ({ getValue }) => {
           const modes = getValue() || []
           return modes.join(', ') || '-'
         },
       }),
       columnHelper.accessor('metadata.creationTimestamp', {
-        header: 'Created',
+        header: t('common.created'),
         cell: ({ getValue }) => {
           const dateStr = formatDate(getValue() || '')
 
@@ -79,7 +81,7 @@ export function PVCListPage() {
         },
       }),
     ],
-    [columnHelper]
+    [columnHelper, t]
   )
 
   // Custom filter for pvc search
@@ -98,7 +100,7 @@ export function PVCListPage() {
 
   return (
     <ResourceTable
-      resourceName="PersistentVolumeClaims"
+      resourceName={t('nav.persistentvolumeclaims')}
       columns={columns}
       searchQueryFilter={pvcSearchFilter}
     />

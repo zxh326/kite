@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { IconCircleCheckFilled, IconLoader } from '@tabler/icons-react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { DaemonSet } from 'kubernetes-types/apps/v1'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
 import { formatDate } from '@/lib/utils'
@@ -9,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { ResourceTable } from '@/components/resource-table'
 
 export function DaemonSetListPage() {
+  const { t } = useTranslation()
   // Define column helper outside of any hooks
   const columnHelper = createColumnHelper<DaemonSet>()
 
@@ -16,7 +18,7 @@ export function DaemonSetListPage() {
   const columns = useMemo(
     () => [
       columnHelper.accessor('metadata.name', {
-        header: 'Name',
+        header: t('common.name'),
         cell: ({ row }) => (
           <div className="font-medium text-blue-500 hover:underline">
             <Link
@@ -30,28 +32,30 @@ export function DaemonSetListPage() {
         ),
       }),
       columnHelper.accessor('status.desiredNumberScheduled', {
-        header: 'Desired',
+        header: t('common.desired'),
         cell: ({ getValue }) => getValue() || 0,
       }),
       columnHelper.accessor('status.currentNumberScheduled', {
-        header: 'Current',
+        header: t('common.current'),
         cell: ({ getValue }) => getValue() || 0,
       }),
       columnHelper.accessor('status.numberReady', {
-        header: 'Ready',
+        header: t('deployments.ready'),
         cell: ({ getValue }) => getValue() || 0,
       }),
       columnHelper.accessor('status.numberAvailable', {
-        header: 'Available',
+        header: t('deployments.available'),
         cell: ({ getValue }) => getValue() || 0,
       }),
       columnHelper.accessor('status.conditions', {
-        header: 'Status',
+        header: t('common.status'),
         cell: ({ row }) => {
           const readyReplicas = row.original.status?.numberReady || 0
           const replicas = row.original.status?.desiredNumberScheduled || 0
           const isAvailable = readyReplicas === replicas
-          const status = isAvailable ? 'Available' : 'In Progress'
+          const status = isAvailable
+            ? t('deployments.available')
+            : t('common.loading')
           if (replicas === 0) {
             return (
               <Badge
@@ -76,7 +80,7 @@ export function DaemonSetListPage() {
         },
       }),
       columnHelper.accessor('metadata.creationTimestamp', {
-        header: 'Created',
+        header: t('common.created'),
         cell: ({ getValue }) => {
           const dateStr = formatDate(getValue() || '')
 
@@ -86,7 +90,7 @@ export function DaemonSetListPage() {
         },
       }),
     ],
-    [columnHelper]
+    [columnHelper, t]
   )
 
   // Custom filter for daemonset search
@@ -102,7 +106,7 @@ export function DaemonSetListPage() {
 
   return (
     <ResourceTable
-      resourceName="DaemonSets"
+      resourceName={t('nav.daemonsets')}
       columns={columns}
       searchQueryFilter={daemonSetSearchFilter}
     />

@@ -25,7 +25,9 @@
     "resetPassword": "重置密码",
     "assign": "分配权限",
     "password": "密码",
-    "version": "版本"
+    "version": "版本",
+    "desired": "期望",
+    "current": "当前"
   },
   "nav": {
     "overview": "概览",
@@ -41,12 +43,30 @@
     "httproutes": "HTTP 路由",
     "configMaps": "配置映射",
     "secrets": "密钥",
-    "persistentVolumeClaims": "持久卷声明",
+    "persistentvolumeclaims": "持久卷声明",
+    "persistentvolumes": "持久卷",
     "nodes": "节点",
     "namespaces": "命名空间",
     "customResources": "自定义资源",
     "customResourceDefinitions": "自定义资源定义",
+    "replicasets": "副本集",
+    "cronjobs": "定时任务",
+    "storageclasses": "存储类",
+    "events": "事件",
+    "crds": "CRD",
     "settings": "设置"
+  },
+  "sidebar": {
+    "groups": {
+      "traffic": "流量",
+      "storage": "存储",
+      "config": "配置",
+      "other": "其他"
+    },
+    "short": {
+      "pvcs": "PVCs",
+      "pvs": "PVs"
+    }
   },
   "overview": {
     "title": "概览",
