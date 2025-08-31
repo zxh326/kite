@@ -99,6 +99,7 @@ export default defineConfig({
             { text: "Logs", link: "/guide/logs" },
             { text: "Monitor", link: "/guide/monitoring" },
             { text: "Web Terminal", link: "/guide/web-terminal" },
+            { text: "Resource History", link: "/guide/resource-history" },
           ],
         },
         {
@@ -133,6 +134,7 @@ export default defineConfig({
             { text: "日志", link: "/zh/guide/logs" },
             { text: "监控", link: "/zh/guide/monitoring" },
             { text: "Web 终端", link: "/zh/guide/web-terminal" },
+            { text: "资源历史", link: "/zh/guide/resource-history" },
           ],
         },
         {
