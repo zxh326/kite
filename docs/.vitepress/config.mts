@@ -6,8 +6,8 @@ export default defineConfig({
   description: "A modern, intuitive Kubernetes dashboard",
 
   sitemap: {
-    hostname: 'https://kite.zzde.me',
-    lastmodDateOnly: false
+    hostname: "https://kite.zzde.me",
+    lastmodDateOnly: false,
   },
 
   markdown: {
@@ -72,12 +72,23 @@ export default defineConfig({
     ],
 
     sidebar: {
-      "/guide/": [
+      "/": [
         {
           text: "Introduction",
           items: [
             { text: "What is Kite?", link: "/guide/" },
             { text: "Getting Started", link: "/guide/installation" },
+          ],
+        },
+        {
+          text: "Configuration",
+          items: [
+            { text: "User Management", link: "/config/user-management" },
+            { text: "OAuth Setup", link: "/config/oauth-setup" },
+            { text: "RBAC Configuration", link: "/config/rbac-config" },
+            { text: "Prometheus Setup", link: "/config/prometheus-setup" },
+            { text: "Environment Variables", link: "/config/env" },
+            { text: "Chart Values", link: "/config/chart-values" },
           ],
         },
         {
@@ -91,28 +102,27 @@ export default defineConfig({
           ],
         },
         {
-          text: "Configuration",
-          link: "/config/",
+          text: "FAQ",
+          link: "/faq",
         },
       ],
-      "/config/": [
-        {
-          text: "Configuration",
-          items: [
-            { text: "OAuth Setup", link: "/config/oauth-setup" },
-            { text: "RBAC Configuration", link: "/config/rbac-config" },
-            { text: "Prometheus Setup", link: "/config/prometheus-setup" },
-            { text: "Multi-Cluster Setup", link: "/config/multi-cluster" },
-            { text: "Chart Values", link: "/config/chart-values" },
-          ],
-        },
-      ],
-      "/zh/guide/": [
+      "/zh/": [
         {
           text: "介绍",
           items: [
             { text: "什么是 Kite?", link: "/zh/guide/" },
             { text: "开始", link: "/zh/guide/installation" },
+          ],
+        },
+        {
+          text: "配置",
+          items: [
+            { text: "用户管理", link: "/zh/config/user-management" },
+            { text: "OAuth 设置", link: "/zh/config/oauth-setup" },
+            { text: "RBAC 配置", link: "/zh/config/rbac-config" },
+            { text: "Prometheus 设置", link: "/zh/config/prometheus-setup" },
+            { text: "环境变量", link: "/zh/config/env" },
+            { text: "Chart Values", link: "/zh/config/chart-values" },
           ],
         },
         {
@@ -126,21 +136,9 @@ export default defineConfig({
           ],
         },
         {
-          text: "配置",
-          link: "/zh/config/",
-        },
-      ],
-      "/zh/config/": [
-        {
-          text: "配置",
-          items: [
-            { text: "OAuth 设置", link: "/zh/config/oauth-setup" },
-            { text: "RBAC 配置", link: "/zh/config/rbac-config" },
-            { text: "Prometheus 设置", link: "/zh/config/prometheus-setup" },
-            { text: "多集群设置", link: "/zh/config/multi-cluster" },
-            { text: "Chart Values", link: "/zh/config/chart-values" },
-          ],
-        },
+          text: "常见问题",
+          link: "/zh/faq",
+        }
       ],
     },
 

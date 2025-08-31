@@ -26,17 +26,17 @@ features:
     details: 享受清晰直观的界面，支持深色/浅色主题，高级搜索功能，以及精美的设计
   - icon: 🏘️
     title: 多集群管理
-    details: 在多个 Kubernetes 集群之间无缝切换，每个集群拥有独立的配置
+    details: 多个 Kubernetes 集群之间无缝切换，每个集群拥有独立的配置
   - icon: 🔍
     title: 全面的资源管理
     details: 完整的资源覆盖，支持实时 YAML 编辑，详细视图和资源关系可视化
   - icon: 📈
     title: 监控与可观察性
-    details: 实时指标，实时日志，以及 Web 终端提供完整的集群可视性
+    details: 日志、Web 终端、监控、以及完整的资源更新历史和审计
   - icon: 🔐
     title: 高级认证
-    details: 与 GitHub 和自定义提供商的 OAuth 集成，支持基于角色的访问控制
+    details: 密码登录或者自定义 OIDC 集成，支持用户管理、支持基于角色的访问控制
   - icon: 🚀
-    title: 轻量级 & 高速
-    details: 优化的性能，最小化资源需求，快速启动时间
+    title: 轻量级 & 高速 & 最小依赖
+    details: 极速响应，最小依赖，一个二进制即可
 ---

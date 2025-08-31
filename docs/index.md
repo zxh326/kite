@@ -5,7 +5,7 @@ layout: home
 hero:
   name: "Kite"
   text: "A modern, intuitive Kubernetes dashboard"
-  tagline: "Lightweight, powerful cluster management and monitoring"
+  tagline: "Lightweight, powerful cluster management and monitoring tool"
   image:
     src: /logo.svg
     alt: Kite Logo
@@ -32,11 +32,11 @@ features:
     details: Full resource coverage with live YAML editing, detailed views, and resource relationships
   - icon: 📈
     title: Monitoring & Observability
-    details: Real-time metrics, live logs, and web terminal for complete cluster visibility
+    details: Logs, web terminal, monitoring, and complete resource update history and audit
   - icon: 🔐
     title: Advanced Authentication
-    details: OAuth integration with GitHub and custom providers with role-based access control
+    details: Password login or custom OIDC integration, user management, role-based access control
   - icon: 🚀
-    title: Lightweight & Fast
-    details: Optimized performance with minimal resource requirements and fast startup times
+    title: Lightweight & Fast & Minimal Dependencies
+    details: Extremely fast response, minimal dependencies, just one binary
 ---
