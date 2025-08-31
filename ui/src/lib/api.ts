@@ -517,6 +517,29 @@ export const usePodMetrics = (
   })
 }
 
+// Pod describe API
+export const fetchPodDescribe = async (
+  namespace: string,
+  podName: string
+): Promise<{ result: string }> => {
+  const endpoint = `/pods/${namespace}/${podName}/describe`
+  return fetchAPI<{ result: string }>(endpoint)
+}
+
+export const usePodDescribe = (
+  namespace: string,
+  podName: string,
+  options?: { staleTime?: number; enabled?: boolean }
+) => {
+  return useQuery({
+    queryKey: ['pod-describe', namespace, podName],
+    queryFn: () => fetchPodDescribe(namespace, podName),
+    enabled: (options?.enabled ?? true) && !!namespace && !!podName,
+    staleTime: options?.staleTime || 0,
+    retry: 0,
+  })
+}
+
 // Paginated resources hook for managing pagination state
 export const usePaginatedResources = <T extends ResourceType>(
   resource: T,

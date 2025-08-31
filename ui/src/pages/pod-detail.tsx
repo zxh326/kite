@@ -6,7 +6,12 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
-import { deleteResource, updateResource, useResource } from '@/lib/api'
+import {
+  deleteResource,
+  updateResource,
+  usePodDescribe,
+  useResource,
+} from '@/lib/api'
 import {
   getOwnerInfo,
   getPodErrorMessage,
@@ -17,6 +22,7 @@ import { formatDate, translateError } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { ContainerTable } from '@/components/container-table'
@@ -29,6 +35,7 @@ import { PodMonitoring } from '@/components/pod-monitoring'
 import { PodStatusIcon } from '@/components/pod-status-icon'
 import { RelatedResourcesTable } from '@/components/related-resource-table'
 import { Terminal } from '@/components/terminal'
+import { TextViewer } from '@/components/text-viewer'
 import { VolumeTable } from '@/components/volume-table'
 import { YamlEditor } from '@/components/yaml-editor'
 
@@ -39,6 +46,7 @@ export function PodDetail(props: { namespace: string; name: string }) {
   const [refreshKey, setRefreshKey] = useState(0)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isDescribeOpen, setIsDescribeOpen] = useState(false)
   const navigate = useNavigate()
   const { t } = useTranslation()
 
@@ -100,6 +108,11 @@ export function PodDetail(props: { namespace: string; name: string }) {
     return getPodStatus(pod)
   }, [pod])
 
+  const { data: describeText } = usePodDescribe(namespace, name, {
+    enabled: isDescribeOpen,
+    staleTime: 0,
+  })
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -140,6 +153,19 @@ export function PodDetail(props: { namespace: string; name: string }) {
             <IconRefresh className="w-4 h-4" />
             Refresh
           </Button>
+          <Dialog open={isDescribeOpen} onOpenChange={setIsDescribeOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                Describe
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="!max-w-6xl sm:!max-w-6xl ">
+              <TextViewer
+                title={`kubectl describe pods -n ${namespace} ${name}`}
+                value={describeText?.result || ''}
+              />
+            </DialogContent>
+          </Dialog>
           <Button
             variant="destructive"
             size="sm"

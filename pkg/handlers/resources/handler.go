@@ -32,6 +32,8 @@ type resourceHandler interface {
 
 	registerCustomRoutes(group *gin.RouterGroup)
 	ListHistory(c *gin.Context)
+
+	Describe(c *gin.Context)
 }
 
 type Restartable interface {
@@ -134,6 +136,7 @@ func registerNamespaceScopeRoutes(group *gin.RouterGroup, handler resourceHandle
 	group.PUT("/:namespace/:name", handler.Update)
 	group.DELETE("/:namespace/:name", handler.Delete)
 	group.GET("/:namespace/:name/history", handler.ListHistory)
+	group.GET("/:namespace/:name/describe", handler.Describe)
 }
 
 var SearchFuncs = map[string]func(c *gin.Context, query string, limit int64) ([]common.SearchResult, error){}
