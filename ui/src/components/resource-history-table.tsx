@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { IconEye, IconLoader } from '@tabler/icons-react'
 import * as yaml from 'js-yaml'
 import { useTranslation } from 'react-i18next'
@@ -80,20 +80,23 @@ export function ResourceHistoryTable<T extends ResourceType>({
     }
   }
 
-  const getOperationTypeLabel = (operationType: string) => {
-    switch (operationType.toLowerCase()) {
-      case 'create':
-        return t('resourceHistory.create')
-      case 'update':
-        return t('resourceHistory.update')
-      case 'delete':
-        return t('resourceHistory.delete')
-      case 'apply':
-        return t('resourceHistory.apply')
-      default:
-        return operationType
-    }
-  }
+  const getOperationTypeLabel = useCallback(
+    (operationType: string) => {
+      switch (operationType.toLowerCase()) {
+        case 'create':
+          return t('resourceHistory.create')
+        case 'update':
+          return t('resourceHistory.update')
+        case 'delete':
+          return t('resourceHistory.delete')
+        case 'apply':
+          return t('resourceHistory.apply')
+        default:
+          return operationType
+      }
+    },
+    [t]
+  )
 
   // History table columns
   const historyColumns = useMemo(
