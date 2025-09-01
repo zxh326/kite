@@ -1,31 +1,21 @@
-# Installation
+# Installation Guide
 
-This guide provides detailed instructions for installing Kite in your Kubernetes environment.
+This guide provides detailed instructions for installing Kite in a Kubernetes environment.
 
 ## Prerequisites
 
-- `kubectl` with cluster admin access
-- Helm v3 (for Helm installation method)
+- `kubectl` with cluster administrator privileges
+- Helm v3 (recommended for Helm installation)
+- MySQL/PostgreSQL database, or local storage for sqlite
 
-## Installation Options
+## Installation Methods
 
-::: tip
-Kite works out of the box with minimal configuration.
+### Method 1: Helm Chart (Recommended)
 
-- If running with CLI, it defaults to using your local kubeconfig.
-- If running in Kubernetes, it defaults to using the in-cluster configuration.
-
-Without any authentication configuration, all users can access the dashboard, but only with read-only permissions.
-
-For more advanced setups, see the [Configuration](../config/) section.
-:::
-
-### Option 1: Helm Chart (Recommended)
-
-Using Helm provides the most flexibility for configuration and upgrades:
+Using Helm provides flexibility for configuration and upgrades:
 
 ```bash
-# Add the Kite repository
+# Add Kite repository
 helm repo add kite https://zxh326.github.io/kite
 
 # Update repository information
@@ -35,41 +25,41 @@ helm repo update
 helm install kite kite/kite -n kite-system --create-namespace
 ```
 
-#### Customizing Helm Installation
+#### Custom Installation
 
-You can customize the installation by creating a values file:
+You can adjust installation parameters by customizing the values file:
 
-Full values configuration can be found in the [Chart Values](../config/chart-values) document.
+For complete configuration, refer to [Chart Values](../config/chart-values).
 
-Then install using your custom values:
+Install with custom values:
 
 ```bash
 helm install kite kite/kite -n kite-system -f values.yaml
 ```
 
-### Option 2: YAML Manifest
+### Method 2: YAML Manifest
 
-For simple deployments, you can apply the installation YAML directly:
+For quick deployment, you can directly apply the official installation YAML:
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/zxh326/kite/main/deploy/install.yaml
 ```
 
-This method installs Kite with default settings. For more advanced configuration, consider using the Helm chart.
+This method will install Kite with default configuration. For advanced customization, it's recommended to use the Helm Chart.
 
 ## Accessing Kite
 
-### Using Port Forwarding
+### Port Forwarding (Testing Environment)
 
-The simplest way to access Kite during testing:
+During testing, you can quickly access Kite through port forwarding:
 
 ```bash
 kubectl port-forward -n kite-system svc/kite 8080:8080
 ```
 
-### Using LoadBalancer Service
+### LoadBalancer Service
 
-If your cluster supports LoadBalancer services, you can expose Kite:
+If the cluster supports LoadBalancer, you can directly expose the Kite service:
 
 ```bash
 kubectl patch svc kite -n kite-system -p '{"spec": {"type": "LoadBalancer"}}'
@@ -81,13 +71,12 @@ Get the assigned IP:
 kubectl get svc kite -n kite-system
 ```
 
-### Using Ingress
+### Ingress (Recommended for Production)
 
-For production deployments, configure an Ingress controller to expose Kite with TLS:
+For production environments, it's recommended to expose Kite through an Ingress controller with TLS enabled:
 
-::: tip
+::: warning
 Kite's log and web terminal features require websocket support.
-
 Some Ingress controllers may require additional configuration to handle websockets correctly.
 :::
 
@@ -118,30 +107,19 @@ spec:
 
 ## Verifying Installation
 
-To verify that Kite is running properly:
+After installation, you can access the dashboard to verify that Kite is deployed successfully. The expected interface is as follows:
 
-```bash
-kubectl get pods -n kite-system
-```
+::: tip
+If you need to configure Kite through environment variables, please refer to [Environment Variables](../config/env).
+:::
 
-All pods should show `Running` status with `1/1` ready.
+![setup](../screenshots/setup.png)
 
-## Upgrading
+![setup](../screenshots/setup2.png)
 
-### Helm Upgrade
+You can complete cluster setup according to the page prompts.
 
-```bash
-helm repo update
-helm upgrade kite kite/kite -n kite-system
-```
-
-### YAML Upgrade
-
-```bash
-kubectl apply -f https://raw.githubusercontent.com/zxh326/kite/main/deploy/install.yaml
-```
-
-## Uninstalling
+## Uninstalling Kite
 
 ### Helm Uninstall
 
@@ -157,9 +135,9 @@ kubectl delete -f https://raw.githubusercontent.com/zxh326/kite/main/deploy/inst
 
 ## Next Steps
 
-After installing Kite, you may want to:
+After Kite installation is complete, you can continue with:
 
-- [Configure OAuth Authentication](../config/oauth-setup)
-- [Set up Prometheus Monitoring](../config/prometheus-setup)
-- [Configure RBAC](../config/rbac-config)
-- [Set up Multi-Cluster Support](../config/multi-cluster)
+- [Adding Users](../config/user-management)
+- [Configuring RBAC](../config/rbac-config)
+- [Configuring OAuth Authentication](../config/oauth-setup)
+- [Setting up Prometheus Monitoring](../config/prometheus-setup)

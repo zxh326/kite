@@ -1,121 +1,183 @@
 # Chart Values
 
-This document explains the configurable parameters in the `values.yaml` file for the Kite Helm chart.
+This document describes all available configuration options for the Kite Helm Chart.
 
-## Global Settings
+## Basic Configuration
 
-| Parameter          | Description                                           | Default               |
-| ------------------ | ----------------------------------------------------- | --------------------- |
-| `replicaCount`     | Number of replicas for the Kite deployment.           | `1`                   |
-| `image.repository` | Image repository for the Kite container.              | `ghcr.io/zxh326/kite` |
-| `image.pullPolicy` | Image pull policy.                                    | `IfNotPresent`        |
-| `image.tag`        | Image tag. Overrides the chart's `appVersion`.        | `""`                  |
-| `imagePullSecrets` | Secrets for pulling images from a private repository. | `[]`                  |
-| `nameOverride`     | Override the chart name.                              | `""`                  |
-| `fullnameOverride` | Override the full chart name.                         | `""`                  |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `replicaCount` | Number of replicas | `1` |
+| `image.repository` | Container image repository | `ghcr.io/zxh326/kite` |
+| `image.pullPolicy` | Image pull policy | `IfNotPresent` |
+| `image.tag` | Image tag. If set, will override the chart's `appVersion`. | `""` |
+| `imagePullSecrets` | Image pull secrets for private repositories | `[]` |
+| `nameOverride` | Override chart name | `""` |
+| `fullnameOverride` | Override full name | `""` |
+| `debug` | Enable debug mode | `false` |
 
-## Multi-Cluster Configuration
+## Authentication & Security
 
-| Parameter                                | Description                                                                                                  | Default      |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------ |
-| `multiCluster.enabled`                   | Enable multi-cluster mode by mounting a kubeconfig.                                                          | `false`      |
-| `multiCluster.kubeconfig.fromContent`    | Create a secret from the kubeconfig content. If `true`, `content` must be provided.                          | `false`      |
-| `multiCluster.kubeconfig.content`        | The kubeconfig file content in plain text. Used when `fromContent` is `true`.                                | `""`         |
-| `multiCluster.kubeconfig.existingSecret` | Use an existing secret containing the kubeconfig. If specified, `fromContent` is ignored.                    | `""`         |
-| `multiCluster.kubeconfig.secretKey`      | The key in the secret that contains the kubeconfig. Used when `existingSecret` is specified.                 | `kubeconfig` |
-| `multiCluster.prometheus`                | Prometheus configuration for each cluster. The key is the cluster name, and the value is the Prometheus URL. | `{}`         |
-| `multiCluster.defaultPrometheusUrl`      | Default Prometheus URL for clusters without a specific configuration.                                        | `""`         |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `anonymousUserEnabled` | Enable anonymous user access with full admin privileges. Use with caution in production. | `false` |
+| `jwtSecret` | Secret key used for signing JWT tokens. Change this in production. | `"kite-default-jwt-secret-key-change-in-production"` |
+| `encryptKey` | Secret key used for encrypting sensitive data. Change this in production. | `"kite-default-encryption-key-change-in-production"` |
+| `host` | Hostname for the application | `""` |
 
-## Role Configuration
+## Database Configuration
 
-| Parameter                | Description                                                                              | Default                                           |
-| ------------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `roleConfig.roles`       | Defines custom roles with specific permissions (clusters, resources, namespaces, verbs). | See `values.yaml` for `admin` and `viewer` roles. |
-| `roleConfig.roleMapping` | Maps users or OIDC groups to the defined roles.                                          | `[]`                                              |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `db.type` | Database type: `sqlite`, `postgres`, `mysql` | `sqlite` |
+| `db.dsn` | Full DSN string for MySQL/Postgres. Required when type is mysql/postgres | `""` |
 
-## Authentication and Authorization
+### SQLite Configuration
 
-| Parameter            | Description                                                             | Default                                     |
-| -------------------- | ----------------------------------------------------------------------- | ------------------------------------------- |
-| `jwtSecret`          | The secret key for signing JWT tokens.                                  | `"your_jwt_secret_key_here"`                |
-| `basicAuth.enabled`  | Enable basic authentication.                                            | `true`                                      |
-| `basicAuth.username` | Username for basic authentication.                                      | `"kite"`                                    |
-| `basicAuth.password` | Password for basic authentication.                                      | `"password"`                                |
-| `oauth.enabled`      | Enable OAuth authentication.                                            | `false`                                     |
-| `oauth.allowUsers`   | Comma-separated list of allowed users. `*` means all users are allowed. | `"*"`                                       |
-| `oauth.redirect`     | The redirect URL for OAuth callbacks.                                   | `"http://localhost:8080/api/auth/callback"` |
-| `oauth.providers`    | Configuration for OAuth providers.                                      | `{}`                                        |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `db.sqlite.persistence.pvc.enabled` | Whether to create a PVC to store the sqlite database file | `false` |
+| `db.sqlite.persistence.pvc.existingClaim` | Use existing PVC | `""` |
+| `db.sqlite.persistence.pvc.storageClass` | StorageClass for PVC (optional) | `""` |
+| `db.sqlite.persistence.pvc.accessModes` | Access modes for PVC | `["ReadWriteOnce"]` |
+| `db.sqlite.persistence.pvc.size` | Requested storage size for PVC | `1Gi` |
+| `db.sqlite.persistence.hostPath.enabled` | Whether to use hostPath storage | `false` |
+| `db.sqlite.persistence.hostPath.path` | hostPath path | `/path/to/host/dir` |
+| `db.sqlite.persistence.hostPath.type` | hostPath type | `DirectoryOrCreate` |
+| `db.sqlite.persistence.mountPath` | Mount path inside container | `/data` |
+| `db.sqlite.persistence.filename` | SQLite filename inside mountPath | `kite.db` |
 
-## Other Configurations
+## Environment Variables
 
-| Parameter          | Description                                               | Default      |
-| ------------------ | --------------------------------------------------------- | ------------ |
-| `extraEnvs`        | Extra environment variables to be added to the container. | `[]`         |
-| `webhook.enabled`  | Enable the webhook handler.                               | `false`      |
-| `webhook.username` | Username for webhook authentication.                      | `"kite"`     |
-| `webhook.password` | Password for webhook authentication.                      | `"password"` |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `extraEnvs` | List of additional environment variables | `[]` |
 
-## Service Account
+## Webhook Configuration
 
-| Parameter                    | Description                                                                                     | Default |
-| ---------------------------- | ----------------------------------------------------------------------------------------------- | ------- |
-| `serviceAccount.create`      | Specifies whether a service account should be created.                                          | `true`  |
-| `serviceAccount.automount`   | Automatically mount a ServiceAccount's API credentials.                                         | `true`  |
-| `serviceAccount.annotations` | Annotations to add to the service account.                                                      | `{}`    |
-| `serviceAccount.name`        | The name of the service account to use. If not set and `create` is `true`, a name is generated. | `""`    |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `webhook.enabled` | Enable webhook | `false` |
+| `webhook.username` | Webhook username | `"kite"` |
+| `webhook.password` | Webhook password | `"password"` |
 
-## RBAC
+## Service Account Configuration
 
-| Parameter     | Description                                         | Default           |
-| ------------- | --------------------------------------------------- | ----------------- |
-| `rbac.create` | Specifies whether RBAC resources should be created. | `true`            |
-| `rbac.rules`  | A list of RBAC rules.                               | See `values.yaml` |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `serviceAccount.create` | Whether to create a service account | `true` |
+| `serviceAccount.automount` | Automatically mount service account API credentials | `true` |
+| `serviceAccount.annotations` | Annotations for service account | `{}` |
+| `serviceAccount.name` | Name of service account to use | `""` |
+
+## RBAC Configuration
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `rbac.create` | Whether to create RBAC resources | `true` |
+| `rbac.rules` | List of RBAC rules | See example below |
+
+### RBAC Rules Example
+
+```yaml
+rbac:
+  rules:
+    - apiGroups: ["*"]
+      resources: ["*"]
+      verbs: ["*"]
+    - nonResourceURLs: ["*"]
+      verbs: ["*"]
+```
 
 ## Pod Configuration
 
-| Parameter            | Description                         | Default |
-| -------------------- | ----------------------------------- | ------- |
-| `podAnnotations`     | Annotations to add to the pod.      | `{}`    |
-| `podLabels`          | Labels to add to the pod.           | `{}`    |
-| `podSecurityContext` | Security context for the pod.       | `{}`    |
-| `securityContext`    | Security context for the container. | `{}`    |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `podAnnotations` | Kubernetes annotations for Pod | `{}` |
+| `podLabels` | Kubernetes labels for Pod | `{}` |
+| `podSecurityContext` | Pod security context | `{}` |
+| `securityContext` | Container security context | `{}` |
 
-## Service
+## Service Configuration
 
-| Parameter      | Description                       | Default     |
-| -------------- | --------------------------------- | ----------- |
-| `service.type` | The type of service to create.    | `ClusterIP` |
-| `service.port` | The port the service will expose. | `8080`      |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `service.type` | Service type | `ClusterIP` |
+| `service.port` | Service port | `8080` |
 
-## Ingress
+## Ingress Configuration
 
-| Parameter             | Description                         | Default           |
-| --------------------- | ----------------------------------- | ----------------- |
-| `ingress.enabled`     | Enable ingress resource.            | `false`           |
-| `ingress.className`   | The class of the ingress.           | `"nginx"`         |
-| `ingress.annotations` | Annotations for the ingress.        | `{}`              |
-| `ingress.hosts`       | Host configuration for the ingress. | See `values.yaml` |
-| `ingress.tls`         | TLS configuration for the ingress.  | `[]`              |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `ingress.enabled` | Whether to enable Ingress | `false` |
+| `ingress.className` | Ingress class name | `"nginx"` |
+| `ingress.annotations` | Ingress annotations | `{}` |
+| `ingress.hosts` | Ingress host configuration | See example below |
+| `ingress.tls` | TLS configuration | `[]` |
 
-## Resource Management
+### Ingress Host Configuration Example
 
-| Parameter      | Description                              | Default |
-| -------------- | ---------------------------------------- | ------- |
-| `resources`    | CPU/Memory resource requests and limits. | `{}`    |
-| `nodeSelector` | Node selector for pod assignment.        | `{}`    |
-| `tolerations`  | Tolerations for pod assignment.          | `[]`    |
-| `affinity`     | Affinity for pod assignment.             | `{}`    |
+```yaml
+ingress:
+  hosts:
+    - host: kite.zzde.me
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+```
 
-## Probes
+## Resource Limits
 
-| Parameter        | Description                            | Default           |
-| ---------------- | -------------------------------------- | ----------------- |
-| `livenessProbe`  | Configuration for the liveness probe.  | See `values.yaml` |
-| `readinessProbe` | Configuration for the readiness probe. | See `values.yaml` |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `resources` | Container resource limits and requests | `{}` |
 
-## Volumes
+### Resource Limits Example
 
-| Parameter      | Description                                       | Default |
-| -------------- | ------------------------------------------------- | ------- |
-| `volumes`      | Additional volumes to add to the deployment.      | `[]`    |
-| `volumeMounts` | Additional volume mounts to add to the container. | `[]`    |
+```yaml
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+```
+
+## Health Checks
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `livenessProbe` | Liveness probe configuration | See example below |
+| `readinessProbe` | Readiness probe configuration | See example below |
+
+### Health Check Example
+
+```yaml
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+```
+
+## Storage Configuration
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `volumes` | Additional volume configurations | `[]` |
+| `volumeMounts` | Additional volume mount configurations | `[]` |
+
+## Scheduling Configuration
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `nodeSelector` | Node selector | `{}` |
+| `tolerations` | Tolerations configuration | `[]` |
+| `affinity` | Affinity configuration | `{}` |

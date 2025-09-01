@@ -1,30 +1,21 @@
 # 安装指南
 
-本指南提供在 Kubernetes 环境中安装 Kite 的详细说明。
+本指南详细介绍如何在 Kubernetes 环境下安装 Kite。
 
 ## 前提条件
 
-- 具有集群管理员访问权限的 `kubectl`
-- Helm v3（用于 Helm 安装方式）
+- 拥有集群管理员权限的 `kubectl`
+- Helm v3（推荐使用 Helm 安装）
+- MySQL/PostgreSQL 数据库，或本地存储用于 sqlite
 
-## 安装选项
+## 安装方式
 
-::: tip 注意
-Kite 可以开箱即用，无需最少的配置。
+### 方式一：Helm Chart（推荐）
 
-- 如果使用 CLI 运行，默认使用您的本地 kubeconfig。
-- 如果在 Kubernetes 中运行，默认使用集群内配置。
-
-如果没有任何身份验证配置，所有用户都可以访问仪表盘，但仅具有只读权限。
-
-对于更高级的设置，请参阅 [配置](../config/) 部分。
-:::
-
-### 选项 1：Helm Chart（推荐）
-
-使用 Helm 提供了最灵活的配置和升级方式：
+使用 Helm 可灵活配置和升级 Kite：
 
 ```bash
+
 # 添加 Kite 仓库
 helm repo add kite https://zxh326.github.io/kite
 
@@ -35,41 +26,41 @@ helm repo update
 helm install kite kite/kite -n kite-system --create-namespace
 ```
 
-#### 自定义 Helm 安装
+#### 自定义安装
 
-您可以通过创建 values 文件来自定义安装：
+可通过自定义 values 文件调整安装参数：
 
-完整的 values 配置可从 [Chart Values](../config/chart-values) 获取。
+完整配置参考 [Chart Values](../config/chart-values)。
 
-然后使用您的自定义值安装：
+使用自定义值安装：
 
 ```bash
 helm install kite kite/kite -n kite-system -f values.yaml
 ```
 
-### 选项 2：YAML 清单
+### 方式二：YAML 清单
 
-对于简单部署，您可以直接应用安装 YAML：
+如需快速部署，可直接应用官方安装 YAML：
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/zxh326/kite/main/deploy/install.yaml
 ```
 
-此方法使用默认设置安装 Kite。对于更高级的配置，请考虑使用 Helm chart。
+此方法将使用默认配置安装 Kite。如需高级定制，建议使用 Helm Chart。
 
 ## 访问 Kite
 
-### 使用端口转发
+### 端口转发（测试环境）
 
-在测试期间访问 Kite 的最简单方法：
+测试期间可通过端口转发快速访问 Kite：
 
 ```bash
 kubectl port-forward -n kite-system svc/kite 8080:8080
 ```
 
-### 使用 LoadBalancer 服务
+### LoadBalancer 服务
 
-如果您的集群支持 LoadBalancer 服务，您可以暴露 Kite：
+如集群支持 LoadBalancer，可直接暴露 Kite 服务：
 
 ```bash
 kubectl patch svc kite -n kite-system -p '{"spec": {"type": "LoadBalancer"}}'
@@ -81,14 +72,13 @@ kubectl patch svc kite -n kite-system -p '{"spec": {"type": "LoadBalancer"}}'
 kubectl get svc kite -n kite-system
 ```
 
-### 使用 Ingress
+### Ingress（生产环境推荐）
 
-对于生产部署，配置 Ingress 控制器以使用 TLS 暴露 Kite：
+生产环境建议通过 Ingress 控制器并启用 TLS 暴露 Kite：
 
 ::: warning
-Kite 的日志和 Web 终端功能需要提供 websocket 支持。
-
-某些 Ingress 控制器可能需要额外的配置才能正确处理 websocket。
+Kite 的日志和 Web 终端功能需支持 websocket。
+部分 Ingress 控制器可能需额外配置以正确处理 websocket。
 :::
 
 ```yaml
@@ -118,30 +108,19 @@ spec:
 
 ## 验证安装
 
-要验证 Kite 是否正常运行：
+安装完成后，可访问仪表盘验证 Kite 是否部署成功。预期界面如下：
 
-```bash
-kubectl get pods -n kite-system
-```
+::: tip
+如需通过环境变量配置 Kite，请参考 [环境变量](../config/env)。
+:::
 
-所有 pod 都应显示 `Running` 状态，`1/1` 就绪。
+![setup](../../screenshots/setup.png)
 
-## 升级
+![setup](../../screenshots/setup2.png)
 
-### Helm 升级
+可根据页面提示完成集群设置。
 
-```bash
-helm repo update
-helm upgrade kite kite/kite -n kite-system
-```
-
-### YAML 升级
-
-```bash
-kubectl apply -f https://raw.githubusercontent.com/zxh326/kite/main/deploy/install.yaml
-```
-
-## 卸载
+## 卸载 Kite
 
 ### Helm 卸载
 
@@ -157,9 +136,9 @@ kubectl delete -f https://raw.githubusercontent.com/zxh326/kite/main/deploy/inst
 
 ## 后续步骤
 
-安装 Kite 后，您可能想要：
+Kite 安装完成后，您可以继续：
 
+- [添加用户](../config/user-management)
+- [配置 RBAC](../config/rbac-config)
 - [配置 OAuth 认证](../config/oauth-setup)
 - [设置 Prometheus 监控](../config/prometheus-setup)
-- [配置 RBAC](../config/rbac-config)
-- [设置多集群支持](../config/multi-cluster)

@@ -1,10 +1,10 @@
 # Prometheus Setup Guide
 
-This guide explains how to configure Prometheus monitoring integration with Kite to enable real-time metrics and monitoring capabilities.
+This guide explains how to configure Kite's monitoring integration with Prometheus to achieve real-time metrics and monitoring functionality.
 
 ## Overview
 
-Kite integrates with Prometheus to provide:
+Kite's integration with Prometheus provides:
 
 - Real-time cluster resource metrics
 - Historical data visualization
@@ -14,8 +14,8 @@ Kite integrates with Prometheus to provide:
 ## Prerequisites
 
 - A running Kubernetes cluster
-- `kubectl` configured to access your cluster
-- Cluster admin privileges (for Prometheus installation)
+- `kubectl` configured with cluster access permissions
+- Cluster administrator privileges (for Prometheus installation)
 
 ## Prometheus Installation Options
 
@@ -47,76 +47,13 @@ Follow the official documentation for each component for detailed installation i
 
 ## Connecting Kite to Prometheus
 
-### Single Cluster Configuration
+Users with the **admin** role can access the settings entry in the upper right corner of the page to enter the cluster management interface.
 
-Set the `PROMETHEUS_URL` environment variable to point to your Prometheus server:
+Select the cluster that needs to be configured and fill in the Prometheus address.
 
-```sh
-PROMETHEUS_URL=http://prometheus-server.monitoring.svc:9090
-```
+## Troubleshooting
 
-Using Helm:
-
-```yaml
-# values.yaml
-prometheus:
-  url: "http://prometheus-server.monitoring.svc:9090"
-```
-
-### Multi-Cluster Configuration
-
-For multi-cluster setups, you can specify a different Prometheus URL for each cluster using the `$CLUSTER_PROMETHEUS_URLS` environment variable pattern:
-
-```shell
-# For cluster named "dev-cluster"
-DEV_CLUSTER_PROMETHEUS_URL=http://prometheus-dev.monitoring.svc:9090
-
-# For cluster named "prod-cluster"
-PROD_CLUSTER_PROMETHEUS_URL=http://prometheus-prod.monitoring.svc:9090
-```
-
-Configuring via Helm:
-
-```yaml
-# values.yaml
-multiCluster:
-  # Enable multi-cluster mode by mounting kubeconfig
-  enabled: true
-
-  prometheus:
-    # Format is cluster name: Prometheus URL
-    # If the cluster name contains special characters, please replace them with underscores (`_`).
-    # production: "https://prometheus.production.example.com"
-    # staging: "https://prometheus.staging.example.com"
-    # cluster-1: "http://prometheus.cluster-1.svc.cluster.local:9090"
-```
-
-### Special Character Handling
-
-For cluster names with special characters, replace them with underscores (`_`)
-
-Example:
-
-- using env
-
-```bash
-# Cluster name: arn:aws-cn:eks:cn-north-1:123456:cluster/kite
-export ARN_AWS_CN_EKS_CN_NORTH_1_123456_CLUSTER_KITE_PROMETHEUS_URL=http://prometheus-server:9090
-```
-
-- using values.yaml
-
-```yaml
-multiCluster:
-  prometheus:
-    arn_aws_cn_eks_cn_north_1_123456_cluster_kite: "http://prometheus-server:9090"
-```
-
-## Verifying Prometheus Integration
-
-To verify that Kite is successfully connected to Prometheus:
-
-1. Access your Kite dashboard
+### Common Issues
 
 1. **No metrics displayed**:
 
@@ -124,13 +61,13 @@ To verify that Kite is successfully connected to Prometheus:
    - Check Prometheus server is running
    - Ensure Prometheus can scrape metrics from targets
 
-1. **Incomplete metrics**:
+2. **Incomplete metrics**:
 
    - Ensure kube-state-metrics is running
    - Check Prometheus configuration includes all necessary scrape jobs
    - Verify target pods/nodes are labeled correctly for Prometheus discovery
 
-1. **Authentication errors**:
+3. **Authentication errors**:
    - If Prometheus requires authentication, ensure credentials are provided
    - Check for TLS configuration if HTTPS is used
 

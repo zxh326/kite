@@ -1,243 +1,100 @@
 # RBAC 配置指南
 
-本指南说明如何在 Kite 中配置基于角色的访问控制 (RBAC)，以管理用户权限和访问权限。
+本指南介绍如何在 Kite 中配置基于角色的访问控制（RBAC），以高效管理用户权限和资源访问。
 
 ## 概述
 
-Kite 的 RBAC 系统允许您：
+Kite 的 RBAC 系统支持：
 
-- 定义具有特定权限的自定义角色
-- 将角色分配给用户或 OIDC 组
-- 在集群、命名空间和资源级别控制访问
+- 定义具备特定权限的自定义角色
+- 将角色分配给用户或 OAuth 组
+- 在集群、命名空间和资源级别灵活控制访问
 - 为每个角色指定允许的操作（动词）
 
-## 配置文件结构
+## 配置
 
-RBAC 配置在 `roles.yaml` 文件中定义，有两个主要部分：
+拥有 **admin** 角色的用户可在页面右上角进入设置入口。
 
-- `roles`：定义可用角色、权限和范围
-- `roleMapping`：将用户或 OIDC 组映射到特定角色
+系统默认提供两类不可编辑和删除的角色：
 
-### 配置示例
+- **admin**：拥有管理所有资源的全部权限
+- **viewer**：拥有查看所有资源和日志的权限
 
-```yaml
-roles:
-  - name: admin
-    description: 具有完全访问权限的管理员角色
-    clusters:
-      - "*"
-    resources:
-      - "*"
-    namespaces:
-      - "*"
-    verbs:
-      - "*"
-  - name: viewer
-    description: 具有只读访问权限的查看者角色
-    clusters:
-      - "*"
-    resources:
-      - "*"
-    namespaces:
-      - "*"
-    verbs:
-      - "get"
-  - name: dev-admin
-    description: 开发命名空间的管理员
-    clusters:
-      - "*"
-    resources:
-      - "*"
-    namespaces:
-      - "development"
-    verbs:
-      - "*"
+![RBAC 设置](../../screenshots/rbac.png)
 
-roleMapping:
-  - name: admin
-    users:
-      - alice
-      - bob
-    oidcGroups:
-      - admin-group
-  - name: viewer
-    users:
-      - "*"
-  - name: dev-admin
-    users:
-      - dev1
-      - dev2
-    oidcGroups:
-      - developers
-```
+每个角色可指定以下字段：
 
-## 角色定义
+| 字段          | 描述             | 示例                                                          |
+| ------------- | ---------------- | ------------------------------------------------------------- |
+| `name`        | 角色标识符       | `admin`、`viewer`                                             |
+| `description` | 简要描述（可选） | `具有完全访问权限的管理员角色`                                |
+| `clusters`    | 适用集群         | `!prod`、`dev` 表示可访问 dev 但不可访问 prod                 |
+| `resources`   | 可访问资源       | `pods`、`deployments` 表示特定资源                            |
+| `namespaces`  | 适用命名空间     | `!kube-system`、`*` 表示可访问除 `kube-system` 外所有命名空间 |
+| `verbs`       | 允许操作         | `get` 表示只读操作                                            |
 
-每个角色指定：
+### 支持的操作动词
 
-| 字段          | 描述               | 示例                                                                    |
-| ------------- | ------------------ | ----------------------------------------------------------------------- |
-| `name`        | 角色标识符         | `admin`、`viewer`                                                       |
-| `description` | 简要描述（可选）   | `具有完全访问权限的管理员角色`                                          |
-| `clusters`    | 角色适用的集群     | `["*"]` 表示所有集群，`["dev", "test"]` 表示特定集群                    |
-| `resources`   | 角色可访问的资源   | `["*"]` 表示所有资源，`["pods", "deployments"]` 表示特定资源            |
-| `namespaces`  | 角色适用的命名空间 | `["*"]` 表示所有命名空间，`["default", "kube-system"]` 表示特定命名空间 |
-| `verbs`       | 允许的操作         | `["*"]` 表示所有操作，`["get"]` 表示只读操作                            |
-
-### 支持的动词
-
-- 通用资源动词：`get`、`create`、`update`、`delete`
-- Pod 特定动词：`exec`、`log`（用于 Pod 终端和日志访问）
-- 节点特定动词：`exec`（用于节点终端访问）
+- 通用资源：`get`、`create`、`update`、`delete`
+- Pod 专用：`exec`、`log`（用于 Pod 终端和日志访问）
+- 节点专用：`exec`（用于节点终端访问）
 - 通配符：`*`（所有操作）
 
-## 角色映射
+### 映射角色到 OAuth 组
 
-角色映射部分将用户或 OIDC 组连接到角色：
+可为特定 OAuth 组分配角色，使组内所有用户自动继承相应权限。
 
-| 字段         | 描述             | 示例                                        |
-| ------------ | ---------------- | ------------------------------------------- |
-| `name`       | 要分配的角色名称 | 必须匹配已定义的角色名称                    |
-| `users`      | 用户名列表       | `["alice", "bob"]`，或 `["*"]` 表示所有用户 |
-| `oidcGroups` | OIDC 组名列表    | `["admins", "developers"]`                  |
+注意：部分 OAuth 组可能无法返回用户的组和权限信息，建议使用 [DEX](https://github.com/dexidp/dex) 项目作为中转。请确保 OAuth 的 scope 包含 `groups` 或 `roles`。
 
-## 部署
+在 Role Actions 中可配置或取消组映射。
 
-### 使用 Helm Chart
+![RBAC 组映射](../../screenshots/assign-role.png)
 
-```yaml
-roleConfig:
-  roles:
-    - name: admin
-      description: Administrator role with full access.
-      clusters:
-        - '*'
-      resources:
-        - '*'
-      namespaces:
-        - '*'
-      verbs:
-        - '*'
-    - name: viewer
-      description: Viewer role with read-only access
-      clusters:
-        - '*'
-      resources:
-        - '*'
-      namespaces:
-        - '*'
-      verbs:
-        - 'get'
-  roleMapping:
-    # map specific users to the admin role
-    # - name: admin
-    #   oidcGroups:
-    #     - admins
-    # - name: viewer
-    #   users:
-    #     - 'zxh326'
-```
+### 映射角色到用户
 
-### 使用 ConfigMap
+可为指定用户分配角色，使其获得相应权限。
 
-1. 使用您的 RBAC 配置创建 ConfigMap：
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: kite-rbac
-  namespace: kite-system
-data:
-  roles.yaml: |
-    roles:
-      - name: admin
-        description: 管理员角色
-        clusters: ["*"]
-        resources: ["*"]
-        namespaces: ["*"]
-        verbs: ["*"]
-      # ... 其他角色
-    roleMapping:
-      - name: admin
-        users:
-          - admin@example.com
-      # ... 其他映射
-```
-
-2. 在 Kite 部署中挂载 ConfigMap：
-
-```yaml
-volumes:
-  - name: rbac-config
-    configMap:
-      name: kite-rbac
-containers:
-  - name: kite
-    volumeMounts:
-      - name: rbac-config
-        mountPath: /app/config/rbac
-```
-
-### 使用环境变量
-
-设置 `RBAC_CONFIG_PATH` 环境变量指向您的 RBAC 配置文件：
-
-```sh
-RBAC_CONFIG_PATH=/path/to/roles.yaml
-```
-
-## 动态更新
-
-`roles.yaml` 文件在更改时会自动重新加载：
-
-- 当作为 ConfigMap 挂载时，更改大约需要 1 分钟才能应用
-- 当存储为文件时，更改会立即应用
-
-## 最佳实践
-
-1. **最小权限原则**：为每个角色授予所需的最小权限
-2. **使用命名空间角色**：可能时将访问限制在特定命名空间
-3. **避免通配符用户**：在生产环境中明确列出用户，而非使用 `"*"`
-4. **定期审计**：定期审查角色映射
-5. **测试访问**：在更改后验证权限是否按预期工作
+![RBAC 用户映射](../../screenshots/assign-role2.png)
 
 ## 示例场景
 
-### 多租户设置
+### 场景 1：测试环境
 
-```yaml
-roles:
-  - name: team-a-admin
-    clusters: ["*"]
-    resources: ["*"]
-    namespaces: ["team-a"]
-    verbs: ["*"]
-  - name: team-b-admin
-    clusters: ["*"]
-    resources: ["*"]
-    namespaces: ["team-b"]
-    verbs: ["*"]
+可访问所有 test、beta 命名空间的资源，但禁止更新和删除。
 
-roleMapping:
-  - name: team-a-admin
-    oidcGroups: ["team-a"]
-  - name: team-b-admin
-    oidcGroups: ["team-b"]
+配置示例：
+
+```
+clusters: *
+resources: *
+namespaces: test, beta
+verbs: !delete, !update, *
 ```
 
-### 具有日志查看权限的只读访问
+### 场景 2：集群管理员
 
-```yaml
-roles:
-  - name: log-viewer
-    clusters: ["*"]
-    resources: ["pods"]
-    namespaces: ["*"]
-    verbs: ["get", "log"]
+为 `test-cluster` 集群管理员分配全部操作权限。
 
-roleMapping:
-  - name: log-viewer
-    users: ["logger@example.com"]
-    oidcGroups: ["support-team"]
+配置示例：
+
 ```
+clusters: test-cluster
+resources: *
+namespaces: *
+verbs: *
+```
+
+### 场景 3：为所有 OAuth 用户设置默认角色
+
+当你的 OAuth 供应商是可以信任的，例如公司内部 OA 系统。
+你可以选中某个角色，将 username 设置为 `*` 赋予该角色。参考示例
+
+![alt text](../../screenshots/assign-role3.png)
+
+## 最佳实践
+
+1. **最小权限原则**：仅为角色分配必要权限
+2. **优先使用命名空间角色**：尽量将访问限制在特定命名空间
+3. **避免通配符用户**：生产环境中应明确指定用户，避免使用 `"*"`
+4. **定期审计**：定期检查和优化角色映射
+5. **测试访问**：更改后及时验证权限效果

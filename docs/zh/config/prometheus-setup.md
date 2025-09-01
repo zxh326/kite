@@ -47,71 +47,9 @@ helm install prometheus prometheus-community/kube-prometheus-stack \
 
 ## 连接 Kite 到 Prometheus
 
-### 单集群配置
+拥有 **admin** 角色的用户，可在页面右上角进入设置入口，进入集群管理界面。
 
-设置 `PROMETHEUS_URL` 环境变量指向您的 Prometheus 服务器：
-
-```shell
-PROMETHEUS_URL=http://prometheus-server.monitoring.svc:9090
-```
-
-### 多集群配置
-
-对于多集群设置，您可以使用 `$CLUSTER_PROMETHEUS_URLS` 环境变量模式为每个集群指定不同的 Prometheus URL：
-
-```shell
-# 集群名为 "dev-cluster"
-DEV_CLUSTER_PROMETHEUS_URL=http://prometheus-dev.monitoring.svc:9090
-
-# 集群名为 "prod-cluster"
-PROD_CLUSTER_PROMETHEUS_URL=http://prometheus-prod.monitoring.svc:9090
-```
-
-通过 Helm 配置：
-
-```yaml
-# values.yaml
-multiCluster:
-  # Enable multi-cluster mode by mounting kubeconfig
-  enabled: true
-
-  prometheus:
-    # 格式为集群名：Prometheus URL
-    # 如果集群名字中有特殊字符，请使用下划线替换
-    # production: "https://prometheus.production.example.com"
-    # staging: "https://prometheus.staging.example.com"
-    # cluster-1: "http://prometheus.cluster-1.svc.cluster.local:9090"
-```
-
-### 特殊字符处理
-
-对于包含特殊字符的集群名称，将它们替换为下划线（`_`），然后大写：
-
-示例：
-
-- 使用环境变量
-
-```bash
-# 集群名称: arn:aws-cn:eks:cn-north-1:123456:cluster/kite
-export ARN_AWS_CN_EKS_CN_NORTH_1_123456_CLUSTER_KITE_PROMETHEUS_URL=http://prometheus-server:9090
-```
-
-- 使用 `values.yaml`
-
-```yaml
-multiCluster:
-  prometheus:
-    arn_aws_cn_eks_cn_north_1_123456_cluster_kite: "http://prometheus-server:9090"
-```
-
-## 验证 Prometheus 集成
-
-要验证 Kite 已成功连接到 Prometheus：
-
-1. 访问 Kite 仪表盘
-2. 导航至节点或 Pod 详情视图
-3. 检查是否存在指标图表
-4. 确保指标实时更新
+选中需要配置的集群，填写 Prometheus 地址。
 
 ## 故障排除
 

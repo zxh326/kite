@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 
 import {
@@ -16,6 +17,7 @@ interface BreadcrumbSegment {
 
 export function DynamicBreadcrumb() {
   const location = useLocation()
+  const { t } = useTranslation()
 
   const generateBreadcrumbs = (): BreadcrumbSegment[] => {
     const pathSegments = location.pathname.split('/').filter(Boolean)
@@ -27,21 +29,21 @@ export function DynamicBreadcrumb() {
 
     // Resource name mappings
     const resourceLabels: Record<string, string> = {
-      pods: 'Pods',
-      deployments: 'Deployments',
-      services: 'Services',
-      configmaps: 'ConfigMaps',
-      secrets: 'Secrets',
-      ingresses: 'Ingresses',
-      gateways: 'Gateways',
-      httproutes: 'HTTPRoutes',
-      jobs: 'Jobs',
-      daemonsets: 'DaemonSets',
-      statefulsets: 'StatefulSets',
-      namespaces: 'Namespaces',
-      pvcs: 'PVCs',
-      crds: 'CRDs',
-      crs: 'Custom Resources',
+      pods: t('nav.pods'),
+      deployments: t('nav.deployments'),
+      services: t('nav.services'),
+      configmaps: t('nav.configMaps'),
+      secrets: t('nav.secrets'),
+      ingresses: t('nav.ingresses'),
+      gateways: t('nav.gateways'),
+      httproutes: t('nav.httproutes'),
+      jobs: t('nav.jobs'),
+      daemonsets: t('nav.daemonsets'),
+      statefulsets: t('nav.statefulsets'),
+      namespaces: t('nav.namespaces'),
+      pvcs: t('sidebar.short.pvcs'),
+      crds: t('nav.crds'),
+      crs: t('nav.customResources'),
     }
 
     // Helper function to create breadcrumb item

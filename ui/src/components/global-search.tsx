@@ -16,6 +16,7 @@ import {
   IconStarFilled,
   IconTopologyBus,
 } from '@tabler/icons-react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
 import { globalSearch, SearchResult } from '@/lib/api'
@@ -45,22 +46,22 @@ const RESOURCE_CONFIG: Record<
     icon: React.ComponentType<{ className?: string }>
   }
 > = {
-  pods: { label: 'Pods', icon: IconBox },
-  deployments: { label: 'Deployments', icon: IconRocket },
-  services: { label: 'Services', icon: IconNetwork },
-  configmaps: { label: 'ConfigMaps', icon: IconMap },
-  secrets: { label: 'Secrets', icon: IconLock },
+  pods: { label: 'nav.pods', icon: IconBox },
+  deployments: { label: 'nav.deployments', icon: IconRocket },
+  services: { label: 'nav.services', icon: IconNetwork },
+  configmaps: { label: 'nav.configMaps', icon: IconMap },
+  secrets: { label: 'nav.secrets', icon: IconLock },
   namespaces: {
-    label: 'Namespaces',
+    label: 'nav.namespaces',
     icon: IconBoxMultiple,
   },
-  nodes: { label: 'Nodes', icon: IconServer2 },
-  jobs: { label: 'Jobs', icon: IconPlayerPlay },
-  ingresses: { label: 'Ingresses', icon: IconRouter },
-  gateways: { label: 'Gateways', icon: IconLoadBalancer },
-  httproutes: { label: 'HTTPRoutes', icon: IconRoute },
+  nodes: { label: 'nav.nodes', icon: IconServer2 },
+  jobs: { label: 'nav.jobs', icon: IconPlayerPlay },
+  ingresses: { label: 'nav.ingresses', icon: IconRouter },
+  gateways: { label: 'nav.gateways', icon: IconLoadBalancer },
+  httproutes: { label: 'nav.httproutes', icon: IconRoute },
   daemonsets: {
-    label: 'DaemonSets',
+    label: 'nav.daemonsets',
     icon: IconTopologyBus,
   },
 }
@@ -71,6 +72,7 @@ interface GlobalSearchProps {
 }
 
 export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
+  const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[] | null>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -162,15 +164,13 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogHeader className="sr-only">
-        <DialogTitle>Global Search</DialogTitle>
-        <DialogDescription>
-          Search across all Kubernetes resources
-        </DialogDescription>
+        <DialogTitle>{t('globalSearch.title')}</DialogTitle>
+        <DialogDescription>{t('globalSearch.description')}</DialogDescription>
       </DialogHeader>
       <DialogContent className="overflow-hidden p-0">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search resources..."
+            placeholder={t('globalSearch.placeholder')}
             value={query}
             onValueChange={setQuery}
           />
@@ -179,18 +179,22 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2 py-6">
                   <IconLoader className="h-4 w-4 animate-spin" />
-                  <span>Searching...</span>
+                  <span>{t('globalSearch.searching')}</span>
                 </div>
               ) : query.length < 2 ? (
-                'Type at least 2 characters to search or see favorites below...'
+                t('globalSearch.emptyHint')
               ) : (
-                'No resources found.'
+                t('globalSearch.noResults')
               )}
             </CommandEmpty>
 
             {results && results.length > 0 && (
               <CommandGroup
-                heading={query.length < 2 ? 'Favorites' : 'Resources'}
+                heading={
+                  query.length < 2
+                    ? t('globalSearch.favorites')
+                    : t('globalSearch.resources')
+                }
               >
                 {results.map((result) => {
                   const config = RESOURCE_CONFIG[result.resourceType] || {
@@ -205,7 +209,10 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
                   return (
                     <CommandItem
                       key={result.id}
-                      value={`${result.name} ${result.namespace || ''} ${result.resourceType} ${RESOURCE_CONFIG[result.resourceType]?.label || result.resourceType}`}
+                      value={`${result.name} ${result.namespace || ''} ${result.resourceType} ${
+                        RESOURCE_CONFIG[result.resourceType]?.label ||
+                        result.resourceType
+                      }`}
                       onSelect={() => handleSelect(path)}
                       className="flex items-center gap-3 py-3"
                     >
@@ -214,13 +221,19 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{result.name}</span>
                           <Badge className="text-xs">
-                            {RESOURCE_CONFIG[result.resourceType]?.label ||
-                              result.resourceType}
+                            {RESOURCE_CONFIG[result.resourceType]?.label
+                              ? t(
+                                  RESOURCE_CONFIG[result.resourceType]
+                                    .label as string
+                                )
+                              : result.resourceType}
                           </Badge>
                         </div>
                         {result.namespace && (
                           <div className="text-xs text-muted-foreground mt-1">
-                            Namespace: {result.namespace}
+                            {t('globalSearch.namespace', {
+                              ns: result.namespace,
+                            })}
                           </div>
                         )}
                       </div>

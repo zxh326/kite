@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { IconCircleCheckFilled, IconLoader } from '@tabler/icons-react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { StatefulSet } from 'kubernetes-types/apps/v1'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
 import { formatDate } from '@/lib/utils'
@@ -9,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { ResourceTable } from '@/components/resource-table'
 
 export function StatefulSetListPage() {
+  const { t } = useTranslation()
   // Define column helper outside of any hooks
   const columnHelper = createColumnHelper<StatefulSet>()
 
@@ -16,7 +18,7 @@ export function StatefulSetListPage() {
   const columns = useMemo(
     () => [
       columnHelper.accessor('metadata.name', {
-        header: 'Name',
+        header: t('common.name'),
         cell: ({ row }) => (
           <div className="font-medium text-blue-500 hover:underline">
             <Link
@@ -31,7 +33,7 @@ export function StatefulSetListPage() {
       }),
       columnHelper.accessor((row) => row.status, {
         id: 'ready',
-        header: 'Ready',
+        header: t('deployments.ready'),
         cell: ({ row }) => {
           const status = row.original.status
           const ready = status?.readyReplicas || 0
@@ -44,12 +46,14 @@ export function StatefulSetListPage() {
         },
       }),
       columnHelper.accessor('status.conditions', {
-        header: 'Status',
+        header: t('common.status'),
         cell: ({ row }) => {
           const readyReplicas = row.original.status?.readyReplicas || 0
           const replicas = row.original.status?.replicas || 0
           const isAvailable = readyReplicas === replicas
-          const status = isAvailable ? 'Available' : 'In Progress'
+          const status = isAvailable
+            ? t('deployments.available')
+            : t('common.loading')
           if (replicas === 0) {
             return (
               <Badge
@@ -74,11 +78,11 @@ export function StatefulSetListPage() {
         },
       }),
       columnHelper.accessor('spec.serviceName', {
-        header: 'Service Name',
+        header: t('services.serviceName'),
         cell: ({ getValue }) => getValue() || '-',
       }),
       columnHelper.accessor('metadata.creationTimestamp', {
-        header: 'Created',
+        header: t('common.created'),
         cell: ({ getValue }) => {
           const dateStr = formatDate(getValue() || '')
 
@@ -88,7 +92,7 @@ export function StatefulSetListPage() {
         },
       }),
     ],
-    [columnHelper]
+    [columnHelper, t]
   )
 
   // Custom filter for statefulset search
@@ -107,7 +111,8 @@ export function StatefulSetListPage() {
 
   return (
     <ResourceTable
-      resourceName="StatefulSets"
+      resourceName={"StatefulSets"}
+      resourceType="statefulsets"
       columns={columns}
       searchQueryFilter={statefulSetSearchFilter}
     />

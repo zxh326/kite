@@ -1,121 +1,183 @@
-# Chart Values 配置
+# Chart Values
 
-本文档解释了 Kite Helm chart 中 `values.yaml` 文件的可配置参数。
+本文档描述了 Kite Helm Chart 的所有可用配置选项。
 
-## 全局设置
+## 基础配置
 
-| 参数               | 描述                                               | 默认值                |
-| ------------------ | -------------------------------------------------- | --------------------- |
-| `replicaCount`     | Kite deployment 的副本数。                         | `1`                   |
-| `image.repository` | Kite 容器的镜像仓库。                              | `ghcr.io/zxh326/kite` |
-| `image.pullPolicy` | 镜像拉取策略。                                     | `IfNotPresent`        |
-| `image.tag`        | 镜像标签。如果设置，将覆盖 chart 的 `appVersion`。 | `""`                  |
-| `imagePullSecrets` | 用于从私有仓库拉取镜像的 secret。                  | `[]`                  |
-| `nameOverride`     | 覆盖 chart 名称。                                  | `""`                  |
-| `fullnameOverride` | 覆盖完整的 chart 名称。                            | `""`                  |
+| 参数 | 描述 | 默认值 |
+|------|------|--------|
+| `replicaCount` | 副本数量 | `1` |
+| `image.repository` | 容器镜像仓库 | `ghcr.io/zxh326/kite` |
+| `image.pullPolicy` | 镜像拉取策略 | `IfNotPresent` |
+| `image.tag` | 镜像标签。如果设置，将覆盖 chart 的 `appVersion`。 | `""` |
+| `imagePullSecrets` | 私有镜像仓库的拉取密钥 | `[]` |
+| `nameOverride` | 覆盖 chart 名称 | `""` |
+| `fullnameOverride` | 覆盖完整名称 | `""` |
+| `debug` | 启用调试模式 | `false` |
 
-## 多集群配置
+## 认证与安全
 
-| 参数                                     | 描述                                                                 | 默认值       |
-| ---------------------------------------- | -------------------------------------------------------------------- | ------------ |
-| `multiCluster.enabled`                   | 通过挂载 kubeconfig 启用多集群模式。                                 | `false`      |
-| `multiCluster.kubeconfig.fromContent`    | 从 kubeconfig 内容创建 secret。如果为 `true`，则必须提供 `content`。 | `false`      |
-| `multiCluster.kubeconfig.content`        | kubeconfig 文件的纯文本内容。当 `fromContent` 为 `true` 时使用。     | `""`         |
-| `multiCluster.kubeconfig.existingSecret` | 使用包含 kubeconfig 的现有 secret。如果指定，则忽略 `fromContent`。  | `""`         |
-| `multiCluster.kubeconfig.secretKey`      | secret 中包含 kubeconfig 的键。当 `existingSecret` 被指定时使用。    | `kubeconfig` |
-| `multiCluster.prometheus`                | 每个集群的 Prometheus 配置。键是集群名称，值是 Prometheus URL。      | `{}`         |
-| `multiCluster.defaultPrometheusUrl`      | 没有特定配置的集群的默认 Prometheus URL。                            | `""`         |
+| 参数 | 描述 | 默认值 |
+|------|------|--------|
+| `anonymousUserEnabled` | 启用匿名用户访问，拥有完全管理员权限。生产环境请谨慎使用。 | `false` |
+| `jwtSecret` | 用于签名 JWT 令牌的密钥。生产环境请修改此值。 | `"kite-default-jwt-secret-key-change-in-production"` |
+| `encryptKey` | 用于加密敏感数据的密钥。生产环境请修改此值。 | `"kite-default-encryption-key-change-in-production"` |
+| `host` | 应用程序的主机名 | `""` |
 
-## 角色配置
+## 数据库配置
 
-| 参数                     | 描述                                                         | 默认值                                             |
-| ------------------------ | ------------------------------------------------------------ | -------------------------------------------------- |
-| `roleConfig.roles`       | 定义具有特定权限（集群、资源、命名空间、操作）的自定义角色。 | 参见 `values.yaml` 中的 `admin` 和 `viewer` 角色。 |
-| `roleConfig.roleMapping` | 将用户或 OIDC 组映射到已定义的角色。                         | `[]`                                               |
+| 参数 | 描述 | 默认值 |
+|------|------|--------|
+| `db.type` | 数据库类型：`sqlite`、`postgres`、`mysql` | `sqlite` |
+| `db.dsn` | MySQL/Postgres 的完整 DSN 字符串。当类型为 mysql/postgres 时必需 | `""` |
 
-## 认证和授权
+### SQLite 配置
 
-| 参数                 | 描述                                               | 默认值                                      |
-| -------------------- | -------------------------------------------------- | ------------------------------------------- |
-| `jwtSecret`          | 用于签署 JWT 令牌的密钥。                          | `"your_jwt_secret_key_here"`                |
-| `basicAuth.enabled`  | 启用基本认证。                                     | `true`                                      |
-| `basicAuth.username` | 基本认证的用户名。                                 | `"kite"`                                    |
-| `basicAuth.password` | 基本认证的密码。                                   | `"password"`                                |
-| `oauth.enabled`      | 启用 OAuth 认证。                                  | `false`                                     |
-| `oauth.allowUsers`   | 允许的用户列表，以逗号分隔。`*` 表示允许所有用户。 | `"*"`                                       |
-| `oauth.redirect`     | OAuth 回调的重定向 URL。                           | `"http://localhost:8080/api/auth/callback"` |
-| `oauth.providers`    | OAuth 提供程序的配置。                             | `{}`                                        |
+| 参数 | 描述 | 默认值 |
+|------|------|--------|
+| `db.sqlite.persistence.pvc.enabled` | 是否创建 PVC 来存储 sqlite 数据库文件 | `false` |
+| `db.sqlite.persistence.pvc.existingClaim` | 使用现有的 PVC | `""` |
+| `db.sqlite.persistence.pvc.storageClass` | PVC 的 StorageClass（可选） | `""` |
+| `db.sqlite.persistence.pvc.accessModes` | PVC 的访问模式 | `["ReadWriteOnce"]` |
+| `db.sqlite.persistence.pvc.size` | PVC 请求的存储大小 | `1Gi` |
+| `db.sqlite.persistence.hostPath.enabled` | 是否使用 hostPath 存储 | `false` |
+| `db.sqlite.persistence.hostPath.path` | hostPath 路径 | `/path/to/host/dir` |
+| `db.sqlite.persistence.hostPath.type` | hostPath 类型 | `DirectoryOrCreate` |
+| `db.sqlite.persistence.mountPath` | 容器内的挂载路径 | `/data` |
+| `db.sqlite.persistence.filename` | 挂载路径内的 sqlite 文件名 | `kite.db` |
 
-## 其他配置
+## 环境变量
 
-| 参数               | 描述                         | 默认值       |
-| ------------------ | ---------------------------- | ------------ |
-| `extraEnvs`        | 要添加到容器的额外环境变量。 | `[]`         |
-| `webhook.enabled`  | 启用 webhook 处理器。        | `false`      |
-| `webhook.username` | webhook 认证的用户名。       | `"kite"`     |
-| `webhook.password` | webhook 认证的密码。         | `"password"` |
+| 参数 | 描述 | 默认值 |
+|------|------|--------|
+| `extraEnvs` | 额外的环境变量列表 | `[]` |
 
-## 服务账号
+## Webhook 配置
 
-| 参数                         | 描述                                                                        | 默认值 |
-| ---------------------------- | --------------------------------------------------------------------------- | ------ |
-| `serviceAccount.create`      | 指定是否应创建服务账号。                                                    | `true` |
-| `serviceAccount.automount`   | 自动挂载服务账号的 API 凭据。                                               | `true` |
-| `serviceAccount.annotations` | 要添加到服务账号的注解。                                                    | `{}`   |
-| `serviceAccount.name`        | 要使用的服务账号的名称。如果未设置且 `create` 为 `true`，则会生成一个名称。 | `""`   |
+| 参数 | 描述 | 默认值 |
+|------|------|--------|
+| `webhook.enabled` | 启用 webhook | `false` |
+| `webhook.username` | webhook 用户名 | `"kite"` |
+| `webhook.password` | webhook 密码 | `"password"` |
 
-## RBAC
+## 服务账户配置
 
-| 参数          | 描述                       | 默认值             |
-| ------------- | -------------------------- | ------------------ |
-| `rbac.create` | 指定是否应创建 RBAC 资源。 | `true`             |
-| `rbac.rules`  | RBAC 规则列表。            | 参考 `values.yaml` |
+| 参数 | 描述 | 默认值 |
+|------|------|--------|
+| `serviceAccount.create` | 是否创建服务账户 | `true` |
+| `serviceAccount.automount` | 自动挂载服务账户的 API 凭据 | `true` |
+| `serviceAccount.annotations` | 服务账户的注解 | `{}` |
+| `serviceAccount.name` | 使用的服务账户名称 | `""` |
+
+## RBAC 配置
+
+| 参数 | 描述 | 默认值 |
+|------|------|--------|
+| `rbac.create` | 是否创建 RBAC 资源 | `true` |
+| `rbac.rules` | RBAC 规则列表 | 见下方示例 |
+
+### RBAC 规则示例
+
+```yaml
+rbac:
+  rules:
+    - apiGroups: ["*"]
+      resources: ["*"]
+      verbs: ["*"]
+    - nonResourceURLs: ["*"]
+      verbs: ["*"]
+```
 
 ## Pod 配置
 
-| 参数                 | 描述                  | 默认值 |
-| -------------------- | --------------------- | ------ |
-| `podAnnotations`     | 要添加到 pod 的注解。 | `{}`   |
-| `podLabels`          | 要添加到 pod 的标签。 | `{}`   |
-| `podSecurityContext` | pod 的安全上下文。    | `{}`   |
-| `securityContext`    | 容器的安全上下文。    | `{}`   |
+| 参数 | 描述 | 默认值 |
+|------|------|--------|
+| `podAnnotations` | Pod 的 Kubernetes 注解 | `{}` |
+| `podLabels` | Pod 的 Kubernetes 标签 | `{}` |
+| `podSecurityContext` | Pod 安全上下文 | `{}` |
+| `securityContext` | 容器安全上下文 | `{}` |
 
-## Service
+## 服务配置
 
-| 参数           | 描述                    | 默认值      |
-| -------------- | ----------------------- | ----------- |
-| `service.type` | 要创建的 service 类型。 | `ClusterIP` |
-| `service.port` | service 将公开的端口。  | `8080`      |
+| 参数 | 描述 | 默认值 |
+|------|------|--------|
+| `service.type` | 服务类型 | `ClusterIP` |
+| `service.port` | 服务端口 | `8080` |
 
-## Ingress
+## Ingress 配置
 
-| 参数                  | 描述                  | 默认值             |
-| --------------------- | --------------------- | ------------------ |
-| `ingress.enabled`     | 启用 ingress 资源。   | `false`            |
-| `ingress.className`   | ingress 的类名。      | `"nginx"`          |
-| `ingress.annotations` | ingress 的注解。      | `{}`               |
-| `ingress.hosts`       | ingress 的主机配置。  | 参考 `values.yaml` |
-| `ingress.tls`         | ingress 的 TLS 配置。 | `[]`               |
+| 参数 | 描述 | 默认值 |
+|------|------|--------|
+| `ingress.enabled` | 是否启用 Ingress | `false` |
+| `ingress.className` | Ingress 类名 | `"nginx"` |
+| `ingress.annotations` | Ingress 注解 | `{}` |
+| `ingress.hosts` | Ingress 主机配置 | 见下方示例 |
+| `ingress.tls` | TLS 配置 | `[]` |
 
-## 资源管理
+### Ingress 主机配置示例
 
-| 参数           | 描述                        | 默认值 |
-| -------------- | --------------------------- | ------ |
-| `resources`    | CPU/内存资源请求和限制。    | `{}`   |
-| `nodeSelector` | 用于 pod 分配的节点选择器。 | `{}`   |
-| `tolerations`  | 用于 pod 分配的容忍度。     | `[]`   |
-| `affinity`     | 用于 pod 分配的亲和性。     | `{}`   |
+```yaml
+ingress:
+  hosts:
+    - host: kite.zzde.me
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+```
 
-## 探针
+## 资源限制
 
-| 参数             | 描述             | 默认值             |
-| ---------------- | ---------------- | ------------------ |
-| `livenessProbe`  | 存活探针的配置。 | 参考 `values.yaml` |
-| `readinessProbe` | 就绪探针的配置。 | 参考 `values.yaml` |
+| 参数 | 描述 | 默认值 |
+|------|------|--------|
+| `resources` | 容器资源限制和请求 | `{}` |
 
-## 卷
+### 资源限制示例
 
-| 参数           | 描述                           | 默认值 |
-| -------------- | ------------------------------ | ------ |
-| `volumes`      | 要添加到 deployment 的额外卷。 | `[]`   |
-| `volumeMounts` | 要添加到容器的额外卷挂载。     | `[]`   |
+```yaml
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+```
+
+## 健康检查
+
+| 参数 | 描述 | 默认值 |
+|------|------|--------|
+| `livenessProbe` | 存活探针配置 | 见下方示例 |
+| `readinessProbe` | 就绪探针配置 | 见下方示例 |
+
+### 健康检查示例
+
+```yaml
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+```
+
+## 存储配置
+
+| 参数 | 描述 | 默认值 |
+|------|------|--------|
+| `volumes` | 额外的卷配置 | `[]` |
+| `volumeMounts` | 额外的卷挂载配置 | `[]` |
+
+## 调度配置
+
+| 参数 | 描述 | 默认值 |
+|------|------|--------|
+| `nodeSelector` | 节点选择器 | `{}` |
+| `tolerations` | 容忍度配置 | `[]` |
+| `affinity` | 亲和性配置 | `{}` |
