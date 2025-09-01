@@ -58,6 +58,9 @@ export default defineConfig({
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     logo: "/logo.svg",
+    search: {
+      provider: 'local'
+    },
     langMenuLabel: "Language",
     editLink: {
       pattern: "https://github.com/zxh326/kite/tree/main/docs/:path",
