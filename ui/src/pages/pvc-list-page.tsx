@@ -100,7 +100,7 @@ export function PVCListPage() {
 
   return (
     <ResourceTable
-      resourceName={t('nav.persistentvolumeclaims')}
+      resourceName={"PersistentVolumeClaims"}
       columns={columns}
       searchQueryFilter={pvcSearchFilter}
     />

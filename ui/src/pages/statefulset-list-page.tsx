@@ -111,7 +111,8 @@ export function StatefulSetListPage() {
 
   return (
     <ResourceTable
-      resourceName={t('nav.statefulsets')}
+      resourceName={"StatefulSets"}
+      resourceType="statefulsets"
       columns={columns}
       searchQueryFilter={statefulSetSearchFilter}
     />
