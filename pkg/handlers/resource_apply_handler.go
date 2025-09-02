@@ -72,11 +72,16 @@ func (h *ResourceApplyHandler) ApplyResource(c *gin.Context) {
 	defer func() {
 		previousYAML := []byte{}
 		if existingObj.GetResourceVersion() != "" {
+			existingObj.SetManagedFields(nil)
 			previousYAML, _ = syaml.Marshal(existingObj)
+		}
+		errMessage := ""
+		if err != nil {
+			errMessage = err.Error()
 		}
 		model.DB.Create(&model.ResourceHistory{
 			ClusterName:   cs.Name,
-			ResourceType:  obj.GetKind(),
+			ResourceType:  resource,
 			ResourceName:  obj.GetName(),
 			Namespace:     obj.GetNamespace(),
 			OperationType: "apply",
@@ -84,7 +89,7 @@ func (h *ResourceApplyHandler) ApplyResource(c *gin.Context) {
 			PreviousYAML:  string(previousYAML),
 			OperatorID:    user.ID,
 			Success:       err == nil,
-			ErrorMessage:  err.Error(),
+			ErrorMessage:  errMessage,
 		})
 	}()
 

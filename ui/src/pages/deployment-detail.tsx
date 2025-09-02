@@ -77,15 +77,15 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
         .map(([key, value]) => `${key}=${value}`)
         .join(',')
     : undefined
-  const { data: relatedPods, isLoading: isLoadingPods } = useResources(
-    'pods',
-    namespace,
-    {
-      labelSelector,
-      refreshInterval,
-      disable: !deployment?.spec?.selector.matchLabels,
-    }
-  )
+  const {
+    data: relatedPods,
+    isLoading: isLoadingPods,
+    refetch: refetchPods,
+  } = useResources('pods', namespace, {
+    labelSelector,
+    refreshInterval,
+    disable: !deployment?.spec?.selector.matchLabels,
+  })
 
   useEffect(() => {
     if (deployment) {
@@ -117,6 +117,7 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
   const handleRefresh = () => {
     setRefreshKey((prev) => prev + 1)
     refetchDeployment()
+    refetchPods()
   }
 
   const handleRestart = useCallback(async () => {

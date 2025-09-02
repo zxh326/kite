@@ -4,6 +4,7 @@ import * as yaml from 'js-yaml'
 import { editor as monacoEditor } from 'monaco-editor'
 import { useTranslation } from 'react-i18next'
 
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,10 @@ interface YamlDiffViewerProps {
   open: boolean
   /** Callback when dialog is closed */
   onOpenChange: (open: boolean) => void
+  /** Callback when user wants to rollback to a specific version */
+  onRollback?: (yamlContent: string) => void
+  /** Whether rollback operation is in progress */
+  isRollingBack?: boolean
   /** Dialog title */
   title?: string
   /** Height of the diff editor */
@@ -45,6 +50,8 @@ export function YamlDiffViewer({
   current,
   open,
   onOpenChange,
+  onRollback,
+  isRollingBack = false,
   title = 'YAML Diff',
   height = 600,
 }: YamlDiffViewerProps) {
@@ -108,30 +115,77 @@ export function YamlDiffViewer({
 
   const { original: leftContent, modified: rightContent } = getDiffContent()
 
+  // Handle rollback button clicks
+  const handleRollbackClick = (yamlContent: string) => {
+    if (onRollback) {
+      onRollback(yamlContent)
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!max-w-6xl sm:!max-w-6xl max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span className="text-lg font-bold">{title}</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mr-4">
               {current && (
-                <Select
-                  value={diffMode}
-                  onValueChange={(value: DiffMode) => setDiffMode(value)}
-                >
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="previous-vs-modified">
-                      {t('resourceHistory.previousVsModified')}
-                    </SelectItem>
-                    <SelectItem value="current-vs-modified">
-                      {t('resourceHistory.currentVsModified')}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <>
+                  {diffMode === 'current-vs-modified' && (
+                    <Button
+                      onClick={() => handleRollbackClick(modified)}
+                      disabled={isRollingBack}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {isRollingBack
+                        ? t('resourceHistory.rollback.rollingBack')
+                        : t('resourceHistory.rollback.modified')}
+                    </Button>
+                  )}
+
+                  {diffMode === 'previous-vs-modified' && (
+                    <>
+                      <Button
+                        onClick={() => handleRollbackClick(original)}
+                        disabled={isRollingBack}
+                        variant="outline"
+                        size="sm"
+                      >
+                        {isRollingBack
+                          ? t('resourceHistory.rollback.rollingBack')
+                          : t('resourceHistory.rollback.previous')}
+                      </Button>
+                      <Button
+                        onClick={() => handleRollbackClick(modified)}
+                        disabled={isRollingBack}
+                        variant="outline"
+                        size="sm"
+                      >
+                        {isRollingBack
+                          ? t('resourceHistory.rollback.rollingBack')
+                          : t('resourceHistory.rollback.modified')}
+                      </Button>
+                    </>
+                  )}
+
+                  <Select
+                    value={diffMode}
+                    onValueChange={(value: DiffMode) => setDiffMode(value)}
+                  >
+                    <SelectTrigger className="max-w-64">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="previous-vs-modified">
+                        {t('resourceHistory.previousVsModified')}
+                      </SelectItem>
+                      <SelectItem value="current-vs-modified">
+                        {t('resourceHistory.currentVsModified')}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </>
               )}
             </div>
           </DialogTitle>

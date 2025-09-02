@@ -385,7 +385,14 @@
     "success": "Success",
     "failed": "Failed",
     "previousVsModified": "Previous vs Modified",
-    "currentVsModified": "Current vs Modified"
+    "currentVsModified": "Current vs Modified",
+    "rollback": {
+      "previous": "Rollback Previous",
+      "modified": "Rollback Modified",
+      "rollingBack": "Rolling back...",
+      "success": "Successfully rolled back resource",
+      "error": "Failed to rollback resource"
+    }
   },
   "pvcs": {
     "volume": "Volume",

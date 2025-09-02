@@ -439,6 +439,13 @@
     "success": "成功",
     "failed": "失败",
     "previousVsModified": "前一个版本 vs 修改版本",
-    "currentVsModified": "当前版本 vs 修改版本"
+    "currentVsModified": "当前版本 vs 修改版本",
+    "rollback": {
+      "previous": "回滚到前一个版本",
+      "modified": "回滚到修改版本",
+      "rollingBack": "回滚中...",
+      "success": "资源回滚成功",
+      "error": "资源回滚失败"
+    }
   }
 }

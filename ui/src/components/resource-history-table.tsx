@@ -2,9 +2,10 @@ import { useCallback, useMemo, useState } from 'react'
 import { IconEye, IconLoader } from '@tabler/icons-react'
 import * as yaml from 'js-yaml'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 
 import { ResourceHistory, ResourceType, ResourceTypeMap } from '@/types/api'
-import { useResourceHistory } from '@/lib/api'
+import { applyResource, useResourceHistory } from '@/lib/api'
 import { formatDate } from '@/lib/utils'
 
 import { Column, SimpleTable } from './simple-table'
@@ -32,9 +33,11 @@ export function ResourceHistoryTable<T extends ResourceType>({
   const [selectedHistory, setSelectedHistory] =
     useState<ResourceHistory | null>(null)
   const [isDiffOpen, setIsDiffOpen] = useState(false)
+  const [isRollingBack, setIsRollingBack] = useState(false)
 
   const {
     data: historyResponse,
+    refetch: refetchHistory,
     isLoading,
     isError,
     error,
@@ -63,6 +66,32 @@ export function ResourceHistoryTable<T extends ResourceType>({
   const handleViewDiff = (item: ResourceHistory) => {
     setSelectedHistory(item)
     setIsDiffOpen(true)
+  }
+
+  // Handle rollback operations
+  const handleRollback = async (yamlContent: string) => {
+    try {
+      setIsRollingBack(true)
+      await applyResource(yamlContent)
+
+      // Show success toast
+      toast.success(t('resourceHistory.rollback.success'))
+
+      // Close the dialog after successful rollback
+      setIsDiffOpen(false)
+      refetchHistory()
+      // Refresh the history data
+      // You might want to add a refetch function here if available
+    } catch (error) {
+      console.error('Failed to rollback resource:', error)
+
+      // Show error toast
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      toast.error(`${t('resourceHistory.rollback.error')}: ${errorMessage}`)
+    } finally {
+      setIsRollingBack(false)
+    }
   }
 
   const getOperationTypeColor = (operationType: string) => {
@@ -223,6 +252,8 @@ export function ResourceHistoryTable<T extends ResourceType>({
           current={currentYaml}
           open={isDiffOpen}
           onOpenChange={setIsDiffOpen}
+          onRollback={handleRollback}
+          isRollingBack={isRollingBack}
           title={`${t('resourceHistory.yamlDiff')}`}
         />
       )}

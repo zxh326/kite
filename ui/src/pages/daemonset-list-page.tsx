@@ -106,7 +106,7 @@ export function DaemonSetListPage() {
 
   return (
     <ResourceTable
-      resourceName={"DaemonSets"}
+      resourceName={'DaemonSets'}
       columns={columns}
       searchQueryFilter={daemonSetSearchFilter}
     />
