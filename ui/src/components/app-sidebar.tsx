@@ -1,32 +1,9 @@
 import * as React from 'react'
+import { useMemo } from 'react'
 import Icon from '@/assets/icon.svg'
+import { useSidebarConfig } from '@/contexts/sidebar-config-context'
 import { CollapsibleContent } from '@radix-ui/react-collapsible'
-import {
-  IconBell,
-  IconBox,
-  IconBoxMultiple,
-  IconClockHour4,
-  IconCode,
-  IconDatabase,
-  IconFileDatabase,
-  IconKey,
-  IconLayoutDashboard,
-  IconLoadBalancer,
-  IconLock,
-  IconMap,
-  IconNetwork,
-  IconPlayerPlay,
-  IconRocket,
-  IconRoute,
-  IconRouter,
-  IconServer2,
-  IconShield,
-  IconShieldCheck,
-  IconStack2,
-  IconTopologyBus,
-  IconUser,
-  IconUsers,
-} from '@tabler/icons-react'
+import { IconLayoutDashboard } from '@tabler/icons-react'
 import { ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
@@ -52,143 +29,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation()
   const location = useLocation()
   const { isMobile, setOpenMobile } = useSidebar()
+  const { config, isLoading, getIconComponent } = useSidebarConfig()
 
-  const menus = {
-    [t('nav.workloads')]: [
-      {
-        title: t('nav.pods'),
-        url: '/pods',
-        icon: IconBox,
-      },
-      {
-        title: t('nav.deployments'),
-        url: '/deployments',
-        icon: IconRocket,
-      },
-      {
-        title: t('nav.statefulsets'),
-        url: '/statefulsets',
-        icon: IconStack2,
-      },
-      {
-        title: t('nav.daemonsets'),
-        url: '/daemonsets',
-        icon: IconTopologyBus,
-      },
-      {
-        title: t('nav.jobs'),
-        url: '/jobs',
-        icon: IconPlayerPlay,
-      },
-      {
-        title: t('nav.cronjobs'),
-        url: '/cronjobs',
-        icon: IconClockHour4,
-      },
-    ],
-    [t('sidebar.groups.traffic')]: [
-      {
-        title: t('nav.ingresses'),
-        url: '/ingresses',
-        icon: IconRouter,
-      },
-      {
-        title: t('nav.services'),
-        url: '/services',
-        icon: IconNetwork,
-      },
-      {
-        title: t('nav.gateways'),
-        url: '/gateways',
-        icon: IconLoadBalancer,
-      },
-      {
-        title: t('nav.httproutes'),
-        url: '/httproutes',
-        icon: IconRoute,
-      },
-    ],
-    [t('sidebar.groups.storage')]: [
-      {
-        title: t('sidebar.short.pvcs'),
-        url: '/persistentvolumeclaims',
-        icon: IconFileDatabase,
-      },
-      {
-        title: t('sidebar.short.pvs'),
-        url: '/persistentvolumes',
-        icon: IconDatabase,
-      },
-      {
-        title: t('nav.storageclasses'),
-        url: '/storageclasses',
-        icon: IconFileDatabase,
-      },
-    ],
-    [t('sidebar.groups.config')]: [
-      {
-        title: t('nav.configMaps'),
-        url: '/configmaps',
-        icon: IconMap,
-      },
-      {
-        title: t('nav.secrets'),
-        url: '/secrets',
-        icon: IconLock,
-      },
-    ],
-    [t('sidebar.groups.security')]: [
-      {
-        title: t('nav.serviceaccounts'),
-        url: '/serviceaccounts',
-        icon: IconUser,
-      },
-      {
-        title: t('nav.roles'),
-        url: '/roles',
-        icon: IconShield,
-      },
-      {
-        title: t('nav.rolebindings'),
-        url: '/rolebindings',
-        icon: IconUsers,
-      },
-      {
-        title: t('nav.clusterroles'),
-        url: '/clusterroles',
-        icon: IconShieldCheck,
-      },
-      {
-        title: t('nav.clusterrolebindings'),
-        url: '/clusterrolebindings',
-        icon: IconKey,
-      },
-    ],
-    [t('sidebar.groups.other')]: [
-      {
-        title: t('nav.namespaces'),
-        url: '/namespaces',
-        icon: IconBoxMultiple,
-      },
-      {
-        title: t('nav.nodes'),
-        url: '/nodes',
-        icon: IconServer2,
-      },
-      {
-        title: t('nav.events'),
-        url: '/events',
-        icon: IconBell,
-      },
-      {
-        title: t('nav.crds'),
-        url: '/crds',
-        icon: IconCode,
-      },
-    ],
-  }
+  const pinnedItems = useMemo(() => {
+    if (!config) return []
+    return config.groups
+      .flatMap((group) => group.items)
+      .filter((item) => config.pinnedItems.includes(item.id))
+      .filter((item) => !config.hiddenItems.includes(item.id))
+  }, [config])
 
-  // Function to check if current path matches menu item
+  const visibleGroups = useMemo(() => {
+    if (!config) return []
+    return config.groups
+      .filter((group) => group.visible)
+      .sort((a, b) => a.order - b.order)
+      .map((group) => ({
+        ...group,
+        items: group.items
+          .filter((item) => !config.hiddenItems.includes(item.id))
+          .filter((item) => !config.pinnedItems.includes(item.id))
+          .sort((a, b) => a.order - b.order),
+      }))
+      .filter((group) => group.items.length > 0)
+  }, [config])
+
   const isActive = (url: string) => {
     if (url === '/') {
       return location.pathname === '/'
@@ -201,6 +66,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     if (isMobile) {
       setOpenMobile(false)
     }
+  }
+
+  if (isLoading || !config) {
+    return (
+      <Sidebar collapsible="offcanvas" {...props}>
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link to="/" onClick={handleMenuItemClick}>
+                  <img src={Icon} alt="Kite Logo" className="ml-1 h-8 w-8" />
+                  <span className="text-base font-semibold">Kite</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+        <SidebarContent>
+          <div className="p-4 text-center text-muted-foreground">
+            {t('common.loading', 'Loading...')}
+          </div>
+        </SidebarContent>
+      </Sidebar>
+    )
   }
 
   return (
@@ -242,13 +131,47 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </SidebarGroup>
 
-        {Object.entries(menus).map(([group, items]) => (
-          <Collapsible defaultOpen className="group/collapsible" key={group}>
+        {pinnedItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              {t('sidebar.pinned', 'Pinned')}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {pinnedItems.map((item) => {
+                  const IconComponent = getIconComponent(item.icon)
+                  const title = item.titleKey ? t(item.titleKey) : ''
+                  return (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton
+                        tooltip={title}
+                        asChild
+                        isActive={isActive(item.url)}
+                      >
+                        <Link to={item.url} onClick={handleMenuItemClick}>
+                          <IconComponent className="text-sidebar-primary" />
+                          <span>{title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {visibleGroups.map((group) => (
+          <Collapsible
+            key={group.id}
+            defaultOpen={!group.collapsed}
+            className="group/collapsible"
+          >
             <SidebarGroup>
               <SidebarGroupLabel asChild>
                 <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors group-data-[state=open]:text-foreground">
                   <span className="uppercase tracking-wide text-xs font-bold">
-                    {group}
+                    {group.nameKey ? t(group.nameKey) : ''}
                   </span>
                   <ChevronDown className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
                 </CollapsibleTrigger>
@@ -256,22 +179,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <CollapsibleContent>
                 <SidebarGroupContent className="flex flex-col gap-2">
                   <SidebarMenu>
-                    {items.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          tooltip={item.title}
-                          asChild
-                          isActive={isActive(item.url)}
-                        >
-                          <Link to={item.url} onClick={handleMenuItemClick}>
-                            {item.icon && (
-                              <item.icon className="text-sidebar-primary" />
-                            )}
-                            <span>{item.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
+                    {group.items.map((item) => {
+                      const IconComponent = getIconComponent(item.icon)
+                      const title = item.titleKey ? t(item.titleKey) : ''
+                      return (
+                        <SidebarMenuItem key={item.id}>
+                          <SidebarMenuButton
+                            tooltip={title}
+                            asChild
+                            isActive={isActive(item.url)}
+                          >
+                            <Link to={item.url} onClick={handleMenuItemClick}>
+                              <IconComponent className="text-sidebar-primary" />
+                              <span>{title}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      )
+                    })}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </CollapsibleContent>

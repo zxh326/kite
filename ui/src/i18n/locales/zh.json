@@ -27,7 +27,8 @@
     "password": "密码",
     "version": "版本",
     "desired": "期望",
-    "current": "当前"
+    "current": "当前",
+    "done": "完成"
   },
   "globalSearch": {
     "title": "全局搜索",
@@ -84,7 +85,17 @@
     "short": {
       "pvcs": "PVCs",
       "pvs": "PVs"
-    }
+    },
+    "customize": "自定义侧边栏",
+    "customizeTitle": "自定义侧边栏",
+    "layout": "布局",
+    "layout.default": "默认",
+    "layout.compact": "紧凑",
+    "layout.minimal": "极简",
+    "pinnedItems": "置顶项目",
+    "pinned": "置顶",
+    "menuGroups": "菜单分组",
+    "resetToDefault": "重置为默认"
   },
   "overview": {
     "title": "概览",

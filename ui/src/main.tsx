@@ -10,6 +10,7 @@ import './i18n'
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 
 import { AuthProvider } from './contexts/auth-context'
+import { SidebarConfigProvider } from './contexts/sidebar-config-context'
 import { QueryProvider } from './lib/query-provider'
 import { router } from './routes'
 
@@ -25,7 +26,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryProvider>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <SidebarConfigProvider>
+          <RouterProvider router={router} />
+        </SidebarConfigProvider>
       </AuthProvider>
     </QueryProvider>
   </StrictMode>

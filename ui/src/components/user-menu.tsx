@@ -15,6 +15,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ColorTheme, useColorTheme } from '@/components/color-theme-provider'
 
+import { SidebarCustomizer } from './sidebar-customizer'
+
 const colorThemeIcons = {
   blue: <div className="h-4 w-4 rounded-full bg-blue-500"></div>,
   red: <div className="h-4 w-4 rounded-full bg-red-500"></div>,
@@ -110,6 +112,8 @@ export function UserMenu() {
             })}
           </DropdownMenuSubContent>
         </DropdownMenuSub>
+
+        <SidebarCustomizer />
 
         {user.provider !== 'Anonymous' && (
           <>
