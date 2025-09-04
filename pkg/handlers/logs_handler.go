@@ -2,19 +2,21 @@ package handlers
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"io"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/kube"
 	"github.com/zxh326/kite/pkg/model"
 	"github.com/zxh326/kite/pkg/rbac"
 	"golang.org/x/net/websocket"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type LogsHandler struct {
@@ -22,62 +24,6 @@ type LogsHandler struct {
 
 func NewLogsHandler() *LogsHandler {
 	return &LogsHandler{}
-}
-
-type LogReadWriter struct {
-	conn   *websocket.Conn
-	stream io.ReadCloser
-}
-
-func NewLogReadWriter(ctx context.Context, conn *websocket.Conn, stream io.ReadCloser) *LogReadWriter {
-	l := &LogReadWriter{
-		conn:   conn,
-		stream: stream,
-	}
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				_ = l.stream.Close()
-				return
-			default:
-				var temp []byte
-				err := websocket.Message.Receive(l.conn, &temp)
-				if err != nil {
-					_ = l.stream.Close()
-					return
-				}
-				if strings.Contains(string(temp), "ping") {
-					err = sendMessage(l.conn, "pong", "pong")
-					if err != nil {
-						_ = l.stream.Close()
-						return
-					}
-				}
-			}
-		}
-	}()
-	return l
-}
-
-func (l *LogReadWriter) Write(p []byte) (int, error) {
-	logString := string(p)
-	logLines := strings.SplitSeq(logString, "\n")
-	for line := range logLines {
-		if line == "" {
-			continue
-		}
-		err := sendMessage(l.conn, "log", line)
-		if err != nil {
-			return 0, err
-		}
-	}
-
-	return len(p), nil
-}
-
-func (l *LogReadWriter) Read(p []byte) (int, error) {
-	return l.stream.Read(p)
 }
 
 type LogsMessage struct {
@@ -115,7 +61,6 @@ func (h *LogsHandler) HandleLogsWebSocket(c *gin.Context) {
 			_ = sendErrorMessage(ws, "invalid tailLines parameter")
 			return
 		}
-
 		timestampsBool := timestamps == "true"
 		previousBool := previous == "true"
 
@@ -137,28 +82,88 @@ func (h *LogsHandler) HandleLogsWebSocket(c *gin.Context) {
 			logOptions.SinceSeconds = &since
 		}
 
-		req := cs.K8sClient.ClientSet.CoreV1().Pods(namespace).GetLogs(podName, logOptions)
-		podLogs, err := req.Stream(ctx)
-		if err != nil {
-			_ = sendErrorMessage(ws, fmt.Sprintf("Failed to get pod logs: %v", err))
-			return
-		}
-		defer func() {
-			_ = podLogs.Close()
-		}()
+		labelSelector := c.Query("labelSelector")
+		bl := kube.NewBatchLogHandler(ws, cs.K8sClient, logOptions)
 
-		if err := sendMessage(ws, "connected", "{\"status\":\"connected\"}"); err != nil {
-			return
+		if podName == "_all" && labelSelector != "" {
+			selector, err := metav1.ParseToLabelSelector(labelSelector)
+			if err != nil {
+				_ = sendErrorMessage(ws, "invalid labelSelector parameter: "+err.Error())
+				return
+			}
+			labelSelectorOption, err := metav1.LabelSelectorAsSelector(selector)
+			if err != nil {
+				_ = sendErrorMessage(ws, "failed to convert labelSelector: "+err.Error())
+				return
+			}
+
+			podList := &corev1.PodList{}
+			var listOpts []client.ListOption
+			listOpts = append(listOpts, client.InNamespace(namespace))
+			listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: labelSelectorOption})
+			if err := cs.K8sClient.List(ctx, podList, listOpts...); err != nil {
+				_ = sendErrorMessage(ws, "failed to list pods: "+err.Error())
+				return
+			}
+			for _, pod := range podList.Items {
+				if pod.Status.Phase == corev1.PodRunning {
+					bl.AddPod(pod)
+				}
+			}
+
+			go h.watchPods(ctx, cs, namespace, labelSelectorOption, bl)
+		} else {
+			bl.AddPod(corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      podName,
+					Namespace: namespace,
+				},
+			})
 		}
 
-		lrw := NewLogReadWriter(ctx, ws, podLogs)
-		_, err = io.Copy(lrw, lrw)
-		if err != nil && !errors.Is(err, io.EOF) {
-			_ = sendErrorMessage(ws, err.Error())
-		}
-
-		_ = sendMessage(ws, "close", "{\"status\":\"closed\"}")
+		bl.StreamLogs(ctx)
 	}).ServeHTTP(c.Writer, c.Request)
+}
+
+func (h *LogsHandler) watchPods(ctx context.Context, cs *cluster.ClientSet, namespace string, labelSelector labels.Selector, bl *kube.BatchLogHandler) {
+	listOptions := metav1.ListOptions{
+		LabelSelector: labelSelector.String(),
+	}
+
+	watchInterface, err := cs.K8sClient.ClientSet.CoreV1().Pods(namespace).Watch(ctx, listOptions)
+	if err != nil {
+		return
+	}
+	defer watchInterface.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case event, ok := <-watchInterface.ResultChan():
+			if !ok {
+				return
+			}
+
+			pod, ok := event.Object.(*corev1.Pod)
+			if !ok {
+				continue
+			}
+
+			klog.Infof("Pod %s in namespace %s is %s, event Type: %s", pod.Name, pod.Namespace, pod.Status.Phase, event.Type)
+
+			switch event.Type {
+			case watch.Added, watch.Modified:
+				if pod.Status.Phase == corev1.PodRunning {
+					bl.AddPod(*pod)
+				} else {
+					bl.RemovePod(*pod)
+				}
+			case watch.Deleted:
+				bl.RemovePod(*pod)
+			}
+		}
+	}
 }
 
 func sendMessage(ws *websocket.Conn, msgType, data string) error {

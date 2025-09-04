@@ -29,6 +29,18 @@
     "desired": "期望",
     "current": "当前"
   },
+  "globalSearch": {
+    "title": "全局搜索",
+    "description": "搜索所有 Kubernetes 资源",
+    "placeholder": "搜索资源...",
+    "searching": "搜索中...",
+    "emptyHint": "输入至少 3 个字符进行搜索或查看下面的收藏...",
+    "favorites": "收藏",
+    "resources": "资源"
+  },
+  "log": {
+    "jumpToBottom": "跳到底部"
+  },
   "nav": {
     "overview": "概览",
     "workloads": "工作负载",
