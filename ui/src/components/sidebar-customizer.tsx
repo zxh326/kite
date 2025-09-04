@@ -94,7 +94,7 @@ export function SidebarCustomizer() {
                             <IconComponent className="h-4 w-4 text-sidebar-primary" />
                             <span className="text-sm">{title}</span>
                             <Badge variant="outline" className="text-xs">
-                              Pinned
+                              {t('sidebar.pinned', 'Pinned')}
                             </Badge>
                           </div>
                           <Button
@@ -144,7 +144,9 @@ export function SidebarCustomizer() {
                           onClick={() => toggleGroupCollapse(group.id)}
                           className="h-8 px-2 text-xs"
                         >
-                          {group.collapsed ? 'Expand' : 'Collapse'}
+                          {group.collapsed
+                            ? t('sidebar.expand', 'Expand')
+                            : t('sidebar.collapse', 'Collapse')}
                         </Button>
                         <Button
                           variant="ghost"
@@ -186,7 +188,7 @@ export function SidebarCustomizer() {
                               {isPinned && (
                                 <Badge variant="secondary" className="text-xs">
                                   <Pin className="h-3 w-3 mr-1" />
-                                  Pinned
+                                  {t('sidebar.pinned', 'Pinned')}
                                 </Badge>
                               )}
                             </div>

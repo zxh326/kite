@@ -95,7 +95,9 @@
     "pinnedItems": "置顶项目",
     "pinned": "置顶",
     "menuGroups": "菜单分组",
-    "resetToDefault": "重置为默认"
+    "resetToDefault": "重置为默认",
+    "expand": "展开",
+    "collapse": "折叠"
   },
   "overview": {
     "title": "概览",
