@@ -119,6 +119,10 @@ docs-build: ## Build documentation
 	@echo "📚 Building documentation..."
 	cd docs && pnpm run docs:build
 
+release-helm-chart: ## Release Helm chart to GitHub Pages
+	@echo "🚀 Releasing Helm chart..."
+	./scripts/release-chart.sh $(shell git describe --tags --match 'v*' | grep -oE '[0-9]+\.[0-9][0-9]*(\.[0-9]+)?')
+
 define go-install-tool
 @[ -f "$(1)-$(3)" ] || { \
 set -e; \

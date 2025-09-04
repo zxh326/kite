@@ -21,7 +21,7 @@ jobs:
   # See also https://docs.docker.com/docker-hub/builds/
   push:
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'zxh326' }}
+    if: ${{ github.repository_owner == 'zxh326' && github.event_name == 'release' }}
     permissions:
       packages: write
       contents: write
@@ -103,3 +103,44 @@ jobs:
           gh release upload ${{ github.event.release.tag_name }} bin/kite-*-${{ github.event.release.tag_name }}.tar.gz --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-helm-chart:
+    runs-on: ubuntu-latest
+    needs: push
+    permissions:
+      packages: write
+      contents: write
+    if: ${{ github.repository_owner == 'zxh326' && github.event_name == 'release' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bump helm chart version and commit
+        if: ${{ github.event_name == 'release' }}
+        run: |
+          make release-helm-chart
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          
+          # Check if there are any changes
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            echo "Local changes detected, committing and pushing..."
+            git add .
+            git commit -m "[ci skip] Bump helm chart version to ${{ github.event.release.tag_name }}"
+            git push
+          else
+            echo "No local changes to push"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@v1.7.0
+        env:
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CR_RELEASE_NAME_TEMPLATE: helm-chart-{{ .Version }}
+          CR_SKIP_EXISTING: true
+        with:
+          charts_dir: charts
