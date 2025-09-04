@@ -21,7 +21,7 @@ jobs:
   # See also https://docs.docker.com/docker-hub/builds/
   push:
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'zxh326' && github.event_name == 'release' }}
+    if: ${{ github.repository_owner == 'zxh326' }}
     permissions:
       packages: write
       contents: write
