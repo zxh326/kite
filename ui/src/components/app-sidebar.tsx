@@ -9,6 +9,7 @@ import {
   IconCode,
   IconDatabase,
   IconFileDatabase,
+  IconKey,
   IconLayoutDashboard,
   IconLoadBalancer,
   IconLock,
@@ -19,8 +20,12 @@ import {
   IconRoute,
   IconRouter,
   IconServer2,
+  IconShield,
+  IconShieldCheck,
   IconStack2,
   IconTopologyBus,
+  IconUser,
+  IconUsers,
 } from '@tabler/icons-react'
 import { ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -130,6 +135,33 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: t('nav.secrets'),
         url: '/secrets',
         icon: IconLock,
+      },
+    ],
+    [t('sidebar.groups.security')]: [
+      {
+        title: t('nav.serviceaccounts'),
+        url: '/serviceaccounts',
+        icon: IconUser,
+      },
+      {
+        title: t('nav.roles'),
+        url: '/roles',
+        icon: IconShield,
+      },
+      {
+        title: t('nav.rolebindings'),
+        url: '/rolebindings',
+        icon: IconUsers,
+      },
+      {
+        title: t('nav.clusterroles'),
+        url: '/clusterroles',
+        icon: IconShieldCheck,
+      },
+      {
+        title: t('nav.clusterrolebindings'),
+        url: '/clusterrolebindings',
+        icon: IconKey,
       },
     ],
     [t('sidebar.groups.other')]: [

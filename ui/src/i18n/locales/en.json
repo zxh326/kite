@@ -29,6 +29,19 @@
     "favorites": "Favorites",
     "resources": "Resources"
   },
+  "sidebar": {
+    "groups": {
+      "traffic": "traffic",
+      "storage": "storage",
+      "config": "config",
+      "other": "other",
+      "security": "Security"
+    },
+    "short": {
+      "pvcs": "PVCs",
+      "pvs": "PVs"
+    }
+  },
   "nav": {
     "overview": "Overview",
     "workloads": "Workloads",
@@ -53,7 +66,12 @@
     "cronjobs": "Cron Jobs",
     "storageclasses": "Storage Classes",
     "events": "Events",
-    "crds": "CRDs"
+    "crds": "CRDs",
+    "serviceaccounts": "Service Accounts",
+    "roles": "Roles",
+    "rolebindings": "Role Bindings",
+    "clusterroles": "Cluster Roles",
+    "clusterrolebindings": "Cluster Role Bindings"
   },
   "overview": {
     "title": "Overview",

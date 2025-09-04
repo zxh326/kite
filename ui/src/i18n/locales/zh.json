@@ -66,14 +66,20 @@
     "storageclasses": "存储类",
     "events": "事件",
     "crds": "CRD",
-    "settings": "设置"
+    "settings": "设置",
+    "serviceaccounts": "服务账户",
+    "roles": "角色",
+    "rolebindings": "角色绑定",
+    "clusterroles": "集群角色",
+    "clusterrolebindings": "集群角色绑定"
   },
   "sidebar": {
     "groups": {
       "traffic": "流量",
       "storage": "存储",
       "config": "配置",
-      "other": "其他"
+      "other": "其他",
+      "security": "安全"
     },
     "short": {
       "pvcs": "PVCs",

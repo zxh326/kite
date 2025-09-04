@@ -1,26 +1,54 @@
 // API types for Custom Resources
 
-import { CustomResourceDefinition } from 'kubernetes-types/apiextensions/v1'
+import {
+  CustomResourceDefinition,
+  CustomResourceDefinitionList,
+} from 'kubernetes-types/apiextensions/v1'
 import {
   DaemonSet,
+  DaemonSetList,
   Deployment,
+  DeploymentList,
   ReplicaSet,
+  ReplicaSetList,
   StatefulSet,
+  StatefulSetList,
 } from 'kubernetes-types/apps/v1'
-import { CronJob, Job } from 'kubernetes-types/batch/v1'
+import { CronJob, CronJobList, Job, JobList } from 'kubernetes-types/batch/v1'
 import {
   ConfigMap,
+  ConfigMapList,
   Event,
+  EventList,
   Namespace,
+  NamespaceList,
   Node,
+  NodeList,
   PersistentVolume,
   PersistentVolumeClaim,
+  PersistentVolumeClaimList,
+  PersistentVolumeList,
   Pod,
+  PodList,
   Secret,
+  SecretList,
   Service,
+  ServiceAccount,
+  ServiceAccountList,
+  ServiceList,
 } from 'kubernetes-types/core/v1'
-import { Ingress } from 'kubernetes-types/networking/v1'
-import { StorageClass } from 'kubernetes-types/storage/v1'
+import { Ingress, IngressList } from 'kubernetes-types/networking/v1'
+import {
+  ClusterRole,
+  ClusterRoleBinding,
+  ClusterRoleBindingList,
+  ClusterRoleList,
+  Role as RawRole,
+  RoleBinding,
+  RoleBindingList,
+  RoleList,
+} from 'kubernetes-types/rbac/v1'
+import { StorageClass, StorageClassList } from 'kubernetes-types/storage/v1'
 
 export interface CustomResource {
   apiVersion: string
@@ -76,6 +104,11 @@ export type ResourceType =
   | 'storageclasses'
   | 'podmetrics'
   | 'replicasets'
+  | 'serviceaccounts'
+  | 'roles'
+  | 'rolebindings'
+  | 'clusterroles'
+  | 'clusterrolebindings'
 
 export const clusterScopeResources: ResourceType[] = [
   'crds',
@@ -84,6 +117,8 @@ export const clusterScopeResources: ResourceType[] = [
   'nodes',
   'events',
   'storageclasses',
+  'clusterroles',
+  'clusterrolebindings',
 ]
 
 type listMetadataType = {
@@ -93,86 +128,37 @@ type listMetadataType = {
 
 // Define resource type mappings
 export interface ResourcesTypeMap {
-  pods: {
-    items: Pod[]
-    metadata?: listMetadataType
-  }
-  deployments: {
-    items: Deployment[]
-    metadata?: listMetadataType
-  }
-  statefulsets: {
-    items: StatefulSet[]
-    metadata?: listMetadataType
-  }
-  daemonsets: {
-    items: DaemonSet[]
-    metadata?: listMetadataType
-  }
-  jobs: {
-    items: Job[]
-    metadata?: listMetadataType
-  }
-  cronjobs: {
-    items: CronJob[]
-    metadata?: listMetadataType
-  }
-  services: {
-    items: Service[]
-    metadata?: listMetadataType
-  }
-  configmaps: {
-    items: ConfigMap[]
-    metadata?: listMetadataType
-  }
-  secrets: {
-    items: Secret[]
-    metadata?: listMetadataType
-  }
-  persistentvolumeclaims: {
-    items: PersistentVolumeClaim[]
-    metadata?: listMetadataType
-  }
-  ingresses: {
-    items: Ingress[]
-    metadata?: listMetadataType
-  }
-  namespaces: {
-    items: Namespace[]
-    metadata?: listMetadataType
-  }
-  crds: {
-    items: CustomResourceDefinition[]
-    metadata?: listMetadataType
-  }
+  pods: PodList
+  deployments: DeploymentList
+  statefulsets: StatefulSetList
+  daemonsets: DaemonSetList
+  jobs: JobList
+  cronjobs: CronJobList
+  services: ServiceList
+  configmaps: ConfigMapList
+  secrets: SecretList
+  persistentvolumeclaims: PersistentVolumeClaimList
+  ingresses: IngressList
+  namespaces: NamespaceList
+  crds: CustomResourceDefinitionList
   crs: {
     items: CustomResource[]
     metadata?: listMetadataType
   }
-  nodes: {
-    items: Node[]
-    metadata?: listMetadataType
-  }
-  events: {
-    items: Event[]
-    metadata?: listMetadataType
-  }
-  persistentvolumes: {
-    items: PersistentVolume[]
-    metadata?: listMetadataType
-  }
-  storageclasses: {
-    items: StorageClass[]
-    metadata?: listMetadataType
-  }
+  nodes: NodeList
+  events: EventList
+  persistentvolumes: PersistentVolumeList
+  storageclasses: StorageClassList
   podmetrics: {
     items: PodMetrics[]
     metadata?: listMetadataType
   }
-  replicasets: {
-    items: ReplicaSet[]
-    metadata?: listMetadataType
-  }
+  replicasets: ReplicaSetList
+  serviceaccounts: ServiceAccountList
+  roles: RoleList
+  rolebindings: RoleBindingList
+  clusterroles: ClusterRoleList
+  clusterrolebindings: ClusterRoleBindingList
 }
 
 export interface PodMetrics {
@@ -215,6 +201,11 @@ export interface ResourceTypeMap {
   storageclasses: StorageClass
   replicasets: ReplicaSet
   podmetrics: PodMetrics
+  serviceaccounts: ServiceAccount
+  roles: RawRole
+  rolebindings: RoleBinding
+  clusterroles: ClusterRole
+  clusterrolebindings: ClusterRoleBinding
 }
 
 export interface RecentEvent {
