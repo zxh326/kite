@@ -18,7 +18,8 @@
     "actions": "Actions",
     "refresh": "Refresh",
     "language": "Language",
-    "close": "Close"
+    "close": "Close",
+    "done": "Done"
   },
   "globalSearch": {
     "title": "Global Search",
@@ -35,16 +36,24 @@
       "storage": "storage",
       "config": "config",
       "other": "other",
-      "security": "Security"
+      "security": "Security",
+      "workloads": "Workloads"
     },
     "short": {
       "pvcs": "PVCs",
       "pvs": "PVs"
-    }
+    },
+    "layout": "Layout",
+    "layout.default": "Default",
+    "layout.compact": "Compact",
+    "layout.minimal": "Minimal",
+    "pinnedItems": "Pinned Items",
+    "pinned": "Pinned",
+    "menuGroups": "Menu Groups",
+    "resetToDefault": "Reset to Default"
   },
   "nav": {
     "overview": "Overview",
-    "workloads": "Workloads",
     "pods": "Pods",
     "deployments": "Deployments",
     "statefulsets": "StatefulSets",
