@@ -13,6 +13,9 @@ import (
 	"golang.org/x/net/websocket"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -58,43 +61,6 @@ func (h *LogsHandler) HandleLogsWebSocket(c *gin.Context) {
 			_ = sendErrorMessage(ws, "invalid tailLines parameter")
 			return
 		}
-
-		labelSelector := c.Query("labelSelector")
-		pods := make([]corev1.Pod, 0)
-		if podName == "_all" && labelSelector != "" {
-			selector, err := metav1.ParseToLabelSelector(labelSelector)
-			if err != nil {
-				_ = sendErrorMessage(ws, "invalid labelSelector parameter: "+err.Error())
-				return
-			}
-			labelSelectorOption, err := metav1.LabelSelectorAsSelector(selector)
-			if err != nil {
-				_ = sendErrorMessage(ws, "failed to convert labelSelector: "+err.Error())
-				return
-			}
-
-			podList := &corev1.PodList{}
-			var listOpts []client.ListOption
-			listOpts = append(listOpts, client.InNamespace(namespace))
-			listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: labelSelectorOption})
-			if err := cs.K8sClient.List(ctx, podList, listOpts...); err != nil {
-				_ = sendErrorMessage(ws, "failed to list pods: "+err.Error())
-				return
-			}
-			if len(podList.Items) == 0 {
-				_ = sendErrorMessage(ws, "no pods found matching labelSelector")
-				return
-			}
-			pods = append(pods, podList.Items...)
-		} else {
-			pods = append(pods, corev1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      podName,
-					Namespace: namespace,
-				},
-			})
-		}
-
 		timestampsBool := timestamps == "true"
 		previousBool := previous == "true"
 
@@ -116,9 +82,88 @@ func (h *LogsHandler) HandleLogsWebSocket(c *gin.Context) {
 			logOptions.SinceSeconds = &since
 		}
 
-		bl := kube.NewBatchLogHandler(ws, pods)
-		bl.StreamLogs(ctx, cs.K8sClient, logOptions)
+		labelSelector := c.Query("labelSelector")
+		bl := kube.NewBatchLogHandler(ws, cs.K8sClient, logOptions)
+
+		if podName == "_all" && labelSelector != "" {
+			selector, err := metav1.ParseToLabelSelector(labelSelector)
+			if err != nil {
+				_ = sendErrorMessage(ws, "invalid labelSelector parameter: "+err.Error())
+				return
+			}
+			labelSelectorOption, err := metav1.LabelSelectorAsSelector(selector)
+			if err != nil {
+				_ = sendErrorMessage(ws, "failed to convert labelSelector: "+err.Error())
+				return
+			}
+
+			podList := &corev1.PodList{}
+			var listOpts []client.ListOption
+			listOpts = append(listOpts, client.InNamespace(namespace))
+			listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: labelSelectorOption})
+			if err := cs.K8sClient.List(ctx, podList, listOpts...); err != nil {
+				_ = sendErrorMessage(ws, "failed to list pods: "+err.Error())
+				return
+			}
+			for _, pod := range podList.Items {
+				if pod.Status.Phase == corev1.PodRunning {
+					bl.AddPod(pod)
+				}
+			}
+
+			go h.watchPods(ctx, cs, namespace, labelSelectorOption, bl)
+		} else {
+			bl.AddPod(corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      podName,
+					Namespace: namespace,
+				},
+			})
+		}
+
+		bl.StreamLogs(ctx)
 	}).ServeHTTP(c.Writer, c.Request)
+}
+
+func (h *LogsHandler) watchPods(ctx context.Context, cs *cluster.ClientSet, namespace string, labelSelector labels.Selector, bl *kube.BatchLogHandler) {
+	listOptions := metav1.ListOptions{
+		LabelSelector: labelSelector.String(),
+	}
+
+	watchInterface, err := cs.K8sClient.ClientSet.CoreV1().Pods(namespace).Watch(ctx, listOptions)
+	if err != nil {
+		return
+	}
+	defer watchInterface.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case event, ok := <-watchInterface.ResultChan():
+			if !ok {
+				return
+			}
+
+			pod, ok := event.Object.(*corev1.Pod)
+			if !ok {
+				continue
+			}
+
+			klog.Infof("Pod %s in namespace %s is %s, event Type: %s", pod.Name, pod.Namespace, pod.Status.Phase, event.Type)
+
+			switch event.Type {
+			case watch.Added, watch.Modified:
+				if pod.Status.Phase == corev1.PodRunning {
+					bl.AddPod(*pod)
+				} else {
+					bl.RemovePod(*pod)
+				}
+			case watch.Deleted:
+				bl.RemovePod(*pod)
+			}
+		}
+	}
 }
 
 func sendMessage(ws *websocket.Conn, msgType, data string) error {

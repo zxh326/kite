@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   IconClearAll,
   IconDownload,
+  IconFilter,
   IconMaximize,
   IconMinimize,
   IconPalette,
@@ -70,6 +71,7 @@ export function LogViewer({
   const [timestamps, setTimestamps] = useState(false)
   const [previous, setPrevious] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [isFilterMode, setIsFilterMode] = useState(false)
   const [autoScroll, setAutoScroll] = useState(true)
   const [isReconnecting, setIsReconnecting] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -107,8 +109,9 @@ export function LogViewer({
     }
     if (pods && pods.length > 0) {
       if (
-        !selectPodName ||
-        !pods.find((p) => p.metadata?.name === selectPodName)
+        selectPodName !== '_all' &&
+        (!selectPodName ||
+          !pods.find((p) => p.metadata?.name === selectPodName))
       ) {
         setSelectPodName(pods[0].metadata?.name)
       }
@@ -154,21 +157,40 @@ export function LogViewer({
   }, [autoScroll])
 
   // Use the new WebSocket logs hook
-  const { logs, isLoading, error, isConnected, downloadSpeed, refetch } =
-    useLogsWebSocket(namespace, selectPodName!, {
-      container: selectedContainer,
-      tailLines,
-      timestamps,
-      previous,
-      enabled: true,
-      labelSelector,
-    })
+  const {
+    logs,
+    isLoading,
+    error,
+    isConnected,
+    downloadSpeed,
+    refetch,
+    stopStreaming,
+  } = useLogsWebSocket(namespace, selectPodName || '', {
+    container: selectedContainer,
+    tailLines,
+    timestamps,
+    previous,
+    enabled: !!selectPodName,
+    labelSelector,
+  })
 
   const handleClearLogs = useCallback(() => {
     if (logs) {
       setLogStartIndex(logs.length)
     }
   }, [logs])
+
+  const stopStreamingRef = useRef(stopStreaming)
+  stopStreamingRef.current = stopStreaming
+
+  // Clean up WebSocket connection when component unmounts
+  useEffect(() => {
+    return () => {
+      if (stopStreamingRef.current) {
+        stopStreamingRef.current()
+      }
+    }
+  }, [])
 
   // Stop previous stream when critical parameters change
   useEffect(() => {
@@ -183,7 +205,14 @@ export function LogViewer({
     }, 500)
 
     return () => clearTimeout(timer)
-  }, [selectedContainer, tailLines, timestamps, previous, isLoading])
+  }, [
+    selectedContainer,
+    selectPodName,
+    tailLines,
+    timestamps,
+    previous,
+    isLoading,
+  ])
 
   // Hide reconnecting state when loading completes
   useEffect(() => {
@@ -272,7 +301,7 @@ export function LogViewer({
     const logsToFilter = logsData?.logs?.slice(logStartIndex) || []
     const logs =
       logsToFilter.filter((line) =>
-        searchTerm
+        searchTerm && isFilterMode
           ? stripAnsi(line).toLowerCase().includes(searchTerm.toLowerCase())
           : true
       ) || []
@@ -282,7 +311,7 @@ export function LogViewer({
       return logs.slice(-maxDisplayLines)
     }
     return logs
-  }, [logsData?.logs, searchTerm, logStartIndex])
+  }, [logsData?.logs, searchTerm, isFilterMode, logStartIndex])
 
   const downloadLogs = () => {
     if (!logsData?.logs) return
@@ -319,7 +348,7 @@ export function LogViewer({
       if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
         e.preventDefault()
         const searchInput = document.querySelector(
-          'input[placeholder="Filter logs..."]'
+          'input[placeholder*="logs..."]'
         ) as HTMLInputElement
         searchInput?.focus()
       }
@@ -328,6 +357,7 @@ export function LogViewer({
       }
       if (e.key === 'Escape' && searchTerm) {
         setSearchTerm('')
+        setIsFilterMode(false)
       }
       // Alt/Option + Z to toggle word wrap
       if (e.altKey && (e.key === 'z' || e.key === 'Z' || e.key === 'Ω')) {
@@ -372,7 +402,9 @@ export function LogViewer({
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span>
                   {filteredLogs?.length || 0} lines
-                  {searchTerm && ` (filtered from ${displayedLogCount || 0})`}
+                  {searchTerm &&
+                    isFilterMode &&
+                    ` (filtered from ${displayedLogCount || 0})`}
                   {logsData?.logs && logsData.logs.length > 10000 && (
                     <span className="text-yellow-600 ml-1">
                       (showing last 10k lines)
@@ -399,11 +431,30 @@ export function LogViewer({
             <div className="relative">
               <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Filter logs..."
+                placeholder={isFilterMode ? 'Filter logs...' : 'Search logs...'}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 w-48"
+                className="pl-8 pr-10 w-48"
               />
+              {searchTerm && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsFilterMode(!isFilterMode)}
+                  className={`absolute right-1 top-1 h-6 w-6 p-0 ${
+                    isFilterMode
+                      ? 'text-blue-600 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-800/50'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                  title={
+                    isFilterMode
+                      ? 'Switch to highlight mode'
+                      : 'Switch to filter mode'
+                  }
+                >
+                  <IconFilter className="h-3 w-3" />
+                </Button>
+              )}
             </div>
 
             {/* Container Selector */}
@@ -427,7 +478,7 @@ export function LogViewer({
                 )}
                 showAllOption={true}
                 selectedPod={selectPodName}
-                onPodChange={(v) => setSelectPodName(v)}
+                onPodChange={(v) => setSelectPodName(v || '_all')}
               />
             )}
 
@@ -695,7 +746,11 @@ export function LogViewer({
 
           {filteredLogs?.length === 0 && !isLoading && (
             <div className="text-center opacity-60">
-              {searchTerm ? 'No logs match your search' : 'No logs available'}
+              {searchTerm && isFilterMode
+                ? 'No logs match your search'
+                : searchTerm && !isFilterMode
+                  ? 'No logs available (search term present but no matches to highlight)'
+                  : 'No logs available'}
             </div>
           )}
 
@@ -744,20 +799,19 @@ export function LogViewer({
 
           {!autoScroll && (
             <div
-              className={`sticky bottom-0 flex justify-between items-center ${
+              className={`sticky bottom-2 right-2 ml-auto w-fit animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ${
                 logTheme === 'github'
-                  ? 'bg-orange-100 text-orange-800 border border-orange-200'
-                  : 'bg-yellow-900/80 text-yellow-300'
-              } px-2 py-1 text-xs rounded`}
+                  ? 'bg-white/90 text-gray-600 border border-gray-200 shadow-sm'
+                  : 'bg-gray-800/90 text-gray-300 border border-gray-600 shadow-sm'
+              } px-3 py-1.5 text-xs rounded-full backdrop-blur-sm`}
             >
-              <span>Auto-scroll disabled. Scroll to bottom to re-enable.</span>
               <Button
                 size="sm"
                 variant="ghost"
-                className={`h-6 px-2 ${
+                className={`h-auto p-0 text-xs font-normal ${
                   logTheme === 'github'
-                    ? 'text-orange-800 hover:bg-orange-200'
-                    : 'text-yellow-300 hover:bg-yellow-800/50'
+                    ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100/70'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700/70'
                 }`}
                 onClick={() => {
                   if (logContainerRef.current) {
@@ -772,7 +826,7 @@ export function LogViewer({
                   }
                 }}
               >
-                Jump to bottom
+                ↓ {t('log.jumpToBottom', 'Jump to bottom')}
               </Button>
             </div>
           )}
