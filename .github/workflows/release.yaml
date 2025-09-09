@@ -1,15 +1,9 @@
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      image_version:
-        description: 'image version for image build'
-        required: false
-        type: string
-  release:
-    types:
-      - created
+  push:
+    tags:
+      - 'v[0-9]+\.[0-9]+\.[0-9]+'
 
 env:
   IMAGE_NAME: kite
@@ -25,6 +19,8 @@ jobs:
     permissions:
       packages: write
       contents: write
+    outputs:
+      tag_name: ${{ steps.check_version.outputs.tag_name }}
 
     steps:
       - name: Checkout code
@@ -65,18 +61,17 @@ jobs:
       - name: Install deps
         run: make deps
 
-      - name: Build
-        run: make cross-compile
-
       - name: Check version
         id: check_version
         run: |
-          if [ ${{ inputs.image_version }} ]; then
-            IMAGE_TAG=${{ inputs.image_version }}
-          else
-            IMAGE_TAG=$(git describe --tags --match 'v*' | grep -oE 'v[0-9]+\.[0-9][0-9]*(\.[0-9]+)?')
-          fi
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Build
+        run: make cross-compile
+
+      - name: Package binaries
+        run: make package-binaries
 
       - name: Build and push image
         uses: docker/build-push-action@v6
@@ -88,59 +83,79 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-            zzde/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ steps.check_version.outputs.tag_name }}
+            zzde/${{ env.IMAGE_NAME }}:${{ steps.check_version.outputs.tag_name }}
             ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
             zzde/${{ env.IMAGE_NAME }}:latest
           labels: runnumber=${{ github.run_id }}
 
-      - name: Package binaries
-        run: make package-binaries
-
-      - name: Upload binary packages to release
+      - name: Package Helm chart
         run: |
-          echo "Uploading all kite binary packages..."
-          gh release upload ${{ github.event.release.tag_name }} bin/kite-*-${{ github.event.release.tag_name }}.tar.gz --clobber
+          # Package chart
+          helm package charts/kite/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.check_version.outputs.tag_name }}
+          name: ${{ steps.check_version.outputs.tag_name }}
+          draft: false
+          prerelease: false
+          files: |
+            bin/kite-*-${{ steps.check_version.outputs.tag_name }}.tar.gz
+            kite-*.tgz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  release-helm-chart:
+  update-helm-index:
     runs-on: ubuntu-latest
     needs: push
+    if: ${{ github.repository_owner == 'zxh326' && startsWith(github.ref, 'refs/tags/v') }}
     permissions:
-      packages: write
       contents: write
-    if: ${{ github.repository_owner == 'zxh326' && github.event_name == 'release' }}
     steps:
-      - name: Checkout
+      - name: Checkout gh-pages
         uses: actions/checkout@v4
         with:
+          ref: gh-pages
           fetch-depth: 0
 
-      - name: Bump helm chart version and commit
-        if: ${{ github.event_name == 'release' }}
+      - name: Download release assets
         run: |
-          make release-helm-chart
+          TAG_NAME=${{ needs.push.outputs.tag_name }}
+          VERSION=$(echo $TAG_NAME | sed 's/^v//')
+          
+          # Download the helm chart from the release
+          gh release download $TAG_NAME --pattern "kite-$VERSION.tgz"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Helm index
+        run: |
+          TAG_NAME=${{ needs.push.outputs.tag_name }}
+          VERSION=$(echo $TAG_NAME | sed 's/^v//')
+          
+          # Set the repository URL for the helm chart
+          REPO_URL="https://github.com/${{ github.repository }}/releases/download/$TAG_NAME"
+          
+          # Update index.yaml
+          if [ -f index.yaml ]; then
+            helm repo index . --url $REPO_URL --merge index.yaml
+          else
+            helm repo index . --url $REPO_URL
+          fi
+
+      - name: Commit and push index.yaml
+        run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
           
-          # Check if there are any changes
-          if ! git diff --quiet || ! git diff --cached --quiet; then
-            echo "Local changes detected, committing and pushing..."
-            git add .
-            git commit -m "[ci skip] Bump helm chart version to ${{ github.event.release.tag_name }}"
+          git add index.yaml
+          if ! git diff --cached --quiet; then
+            git commit -m "Update Helm index for ${{ needs.push.outputs.tag_name }}"
             git push
           else
-            echo "No local changes to push"
+            echo "No changes to commit"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.7.0
-        env:
-          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CR_RELEASE_NAME_TEMPLATE: helm-chart-{{ .Version }}
-          CR_SKIP_EXISTING: true
-        with:
-          charts_dir: charts
