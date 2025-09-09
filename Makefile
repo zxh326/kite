@@ -7,6 +7,17 @@ UI_DIR=ui
 DOCKER_IMAGE=kite
 DOCKER_TAG=latest
 
+# Version information
+VERSION ?= $(shell git describe --tags --match 'v*' | grep -oE 'v[0-9]+\.[0-9][0-9]*(\.[0-9]+)?')
+BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+COMMIT_ID ?= $(shell git rev-parse HEAD 2>/dev/null || echo "unknown")
+
+# Build flags
+LDFLAGS=-ldflags "-s -w \
+	-X 'github.com/zxh326/kite/pkg/version.Version=$(VERSION)' \
+	-X 'github.com/zxh326/kite/pkg/version.BuildDate=$(BUILD_DATE)' \
+	-X 'github.com/zxh326/kite/pkg/version.CommitID=$(COMMIT_ID)'"
+
 # Default target
 .DEFAULT_GOAL := help
 DOCKER_TAG=latest
@@ -39,10 +50,10 @@ build: frontend backend ## Build both frontend and backend
 cross-compile: frontend ## Cross-compile for multiple architectures
 	@echo "🔄 Cross-compiling for multiple architectures..."
 	mkdir -p bin
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bin/$(BINARY_NAME)-amd64 .
-	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bin/$(BINARY_NAME)-arm64 .
-	# GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bin/$(BINARY_NAME)-darwin-amd64 .
-	# GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bin/$(BINARY_NAME)-darwin-arm64 .
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath $(LDFLAGS) -o bin/$(BINARY_NAME)-amd64 .
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath $(LDFLAGS) -o bin/$(BINARY_NAME)-arm64 .
+	# GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -trimpath $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-amd64 .
+	# GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -trimpath $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-arm64 .
 
 package-release:
 	@echo "🔄 Packaging..."
@@ -66,7 +77,7 @@ frontend: ## Build frontend only
 
 backend: ## Build backend only
 	@echo "🏗️ Building backend..."
-	CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o $(BINARY_NAME) .
+	CGO_ENABLED=0 go build -trimpath $(LDFLAGS) -o $(BINARY_NAME) .
 
 # Production targets
 run: backend ## Run the built application
@@ -76,7 +87,7 @@ run: backend ## Run the built application
 dev: ## Run in development mode
 	@echo "🔄 Starting development mode..."
 	@echo "🏗️ Building backend..."
-	go build -o $(BINARY_NAME) .
+	go build $(LDFLAGS) -o $(BINARY_NAME) .
 	@echo "🚀 Starting $(BINARY_NAME) server..."
 	./$(BINARY_NAME) -v=5 & \
 	BACKEND_PID=$$!; \

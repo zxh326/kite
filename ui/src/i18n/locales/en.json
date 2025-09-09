@@ -28,7 +28,8 @@
     "searching": "Searching...",
     "emptyHint": "Type at least 3 characters to search or see favorites below...",
     "favorites": "Favorites",
-    "resources": "Resources"
+    "resources": "Resources",
+    "noResults": "No results found"
   },
   "sidebar": {
     "groups": {

@@ -25,6 +25,7 @@ import (
 	"github.com/zxh326/kite/pkg/model"
 	"github.com/zxh326/kite/pkg/rbac"
 	"github.com/zxh326/kite/pkg/utils"
+	"github.com/zxh326/kite/pkg/version"
 	"k8s.io/klog/v2"
 )
 
@@ -69,6 +70,7 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 		})
 	})
 	r.GET("/api/v1/init_check", handlers.InitCheck)
+	r.GET("/api/v1/version", version.GetVersion)
 	// Auth routes (no auth required)
 	authHandler := auth.NewAuthHandler()
 	authGroup := r.Group("/api/auth")
@@ -213,6 +215,8 @@ func main() {
 		}
 	}()
 	klog.Infof("Kite server started on port %s", common.Port)
+	klog.Infof("Version: %s, Build Date: %s, Commit: %s",
+		version.Version, version.BuildDate, version.CommitID)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

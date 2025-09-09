@@ -37,7 +37,8 @@
     "searching": "搜索中...",
     "emptyHint": "输入至少 3 个字符进行搜索或查看下面的收藏...",
     "favorites": "收藏",
-    "resources": "资源"
+    "resources": "资源",
+    "noResults": "未找到结果"
   },
   "log": {
     "jumpToBottom": "跳到底部"

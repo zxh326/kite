@@ -24,6 +24,7 @@ import {
 
 import { ClusterSelector } from './cluster-selector'
 import { Collapsible, CollapsibleTrigger } from './ui/collapsible'
+import { VersionInfo } from './version-info'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation()
@@ -102,10 +103,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5 hover:bg-accent/50 transition-colors"
             >
               <Link to="/" onClick={handleMenuItemClick}>
-                <img src={Icon} alt="Kite Logo" className="ml-1 h-8 w-8" />
-                <span className="text-base font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                  Kite
-                </span>
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2">
+                    <img src={Icon} alt="Kite Logo" className="h-8 w-8" />
+                    <div className="flex flex-col">
+                      <span className="text-base font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                        Kite
+                      </span>
+                      <VersionInfo />
+                    </div>
+                  </div>
+                </div>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
