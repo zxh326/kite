@@ -13,7 +13,7 @@ import {
   SortingState,
   useReactTable,
 } from '@tanstack/react-table'
-import { Box, Database, Plus, Search, XCircle } from 'lucide-react'
+import { Box, Database, Plus, RefreshCw, Search, XCircle } from 'lucide-react'
 
 import { ResourceType } from '@/types/api'
 import { useResources } from '@/lib/api'
@@ -350,6 +350,26 @@ export function ResourceTable<T>({
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Refresh interval selector */}
+            <Select
+              value={refreshInterval.toString()}
+              onValueChange={(value) => setRefreshInterval(Number(value))}
+            >
+              <SelectTrigger className="max-w-[140px]">
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4" />
+                  <SelectValue />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1000">1s</SelectItem>
+                <SelectItem value="5000">5s</SelectItem>
+                <SelectItem value="10000">10s</SelectItem>
+                <SelectItem value="30000">30s</SelectItem>
+                <SelectItem value="0">Off</SelectItem>
+              </SelectContent>
+            </Select>
+
             {!clusterScope && (
               <NamespaceSelector
                 selectedNamespace={selectedNamespace}
@@ -428,7 +448,6 @@ export function ResourceTable<T>({
               </Button>
             )}
           </div>
-
           {showCreateButton && onCreateClick && (
             <Button onClick={onCreateClick} className="gap-1">
               <Plus className="h-2 w-2" />

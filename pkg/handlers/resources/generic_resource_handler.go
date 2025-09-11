@@ -62,7 +62,6 @@ func (h *GenericResourceHandler[T, V]) ToYAML(obj T) string {
 	return string(yamlBytes)
 }
 
-// recordHistory 记录操作历史
 func (h *GenericResourceHandler[T, V]) recordHistory(c *gin.Context, opType string, prev, curr T, success bool, errMsg string) {
 	cs := c.MustGet("cluster").(*cluster.ClientSet)
 	user := c.MustGet("user").(model.User)
@@ -135,7 +134,8 @@ func (h *GenericResourceHandler[T, V]) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, object)
 }
 
-func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
+func (h *GenericResourceHandler[T, V]) list(c *gin.Context) (V, error) {
+	var zero V
 	cs := c.MustGet("cluster").(*cluster.ClientSet)
 	objectList := reflect.New(h.listType).Interface().(V)
 
@@ -152,7 +152,7 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 		limit, err := strconv.ParseInt(c.Query("limit"), 10, 64)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid limit parameter"})
-			return
+			return zero, err
 		}
 		listOpts = append(listOpts, client.Limit(limit))
 	}
@@ -168,12 +168,12 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 		selector, err := metav1.ParseToLabelSelector(labelSelector)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid labelSelector parameter: " + err.Error()})
-			return
+			return zero, err
 		}
 		labelSelectorOption, err := metav1.LabelSelectorAsSelector(selector)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to convert labelSelector: " + err.Error()})
-			return
+			return zero, err
 		}
 		listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: labelSelectorOption})
 	}
@@ -183,14 +183,14 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 		fieldSelectorOption, err := fields.ParseSelector(fieldSelector)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid fieldSelector parameter: " + err.Error()})
-			return
+			return zero, err
 		}
 		listOpts = append(listOpts, client.MatchingFieldsSelector{Selector: fieldSelectorOption})
 	}
 
 	if err := cs.K8sClient.List(ctx, objectList, listOpts...); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		return zero, err
 	}
 
 	// Sort by creation timestamp in descending order (newest first)
@@ -199,7 +199,7 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 	items, err := meta.ExtractList(objectList)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to extract items from list"})
-		return
+		return zero, err
 	}
 	sort.Slice(items, func(i, j int) bool {
 		o1, _ := meta.Accessor(items[i])
@@ -223,7 +223,7 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 		obj, err := meta.Accessor(items[i])
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to access object metadata"})
-			return
+			return zero, err
 		}
 		obj.SetManagedFields(nil)
 		anno := obj.GetAnnotations()
@@ -241,7 +241,15 @@ func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
 	}
 	_ = meta.SetList(objectList, filterItems)
 
-	c.JSON(http.StatusOK, objectList)
+	return objectList, nil
+}
+
+func (h *GenericResourceHandler[T, V]) List(c *gin.Context) {
+	object, err := h.list(c)
+	if err != nil {
+		return
+	}
+	c.JSON(http.StatusOK, object)
 }
 
 func (h *GenericResourceHandler[T, V]) Create(c *gin.Context) {

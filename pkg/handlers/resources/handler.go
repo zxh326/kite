@@ -44,7 +44,7 @@ var handlers = map[string]resourceHandler{}
 
 func RegisterRoutes(group *gin.RouterGroup) {
 	handlers = map[string]resourceHandler{
-		"pods":                   NewGenericResourceHandler[*corev1.Pod, *corev1.PodList]("pods", false, true),
+		"pods":                   NewPodHandler(),
 		"namespaces":             NewGenericResourceHandler[*corev1.Namespace, *corev1.NamespaceList]("namespaces", true, false),
 		"nodes":                  NewNodeHandler(),
 		"services":               NewGenericResourceHandler[*corev1.Service, *corev1.ServiceList]("services", false, true),

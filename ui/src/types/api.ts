@@ -29,7 +29,6 @@ import {
   PersistentVolumeClaimList,
   PersistentVolumeList,
   Pod,
-  PodList,
   Secret,
   SecretList,
   Service,
@@ -128,7 +127,10 @@ type listMetadataType = {
 
 // Define resource type mappings
 export interface ResourcesTypeMap {
-  pods: PodList
+  pods: {
+    items: PodWithMetrics[]
+    metadata?: listMetadataType
+  }
   deployments: DeploymentList
   statefulsets: StatefulSetList
   daemonsets: DaemonSetList
@@ -180,8 +182,15 @@ export interface PodMetrics {
   }[]
 }
 
+export type PodWithMetrics = Pod & {
+  metrics?: {
+    cpuUsage?: number // in millicores
+    memoryUsage?: number // in bytes
+  }
+}
+
 export interface ResourceTypeMap {
-  pods: Pod
+  pods: PodWithMetrics
   deployments: Deployment
   statefulsets: StatefulSet
   daemonsets: DaemonSet
