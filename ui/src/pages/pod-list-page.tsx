@@ -4,16 +4,18 @@ import { Pod } from 'kubernetes-types/core/v1'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
+import { PodWithMetrics } from '@/types/api'
 import { getPodStatus } from '@/lib/k8s'
 import { formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { PodMetricCell } from '@/components/pod-metrics-cell'
 import { PodStatusIcon } from '@/components/pod-status-icon'
 import { ResourceTable } from '@/components/resource-table'
 
 export function PodListPage() {
   const { t } = useTranslation()
   // Define column helper outside of any hooks
-  const columnHelper = createColumnHelper<Pod>()
+  const columnHelper = createColumnHelper<PodWithMetrics>()
 
   // Define columns for the pod table - moved outside render cycle for better performance
   const columns = useMemo(
@@ -69,6 +71,16 @@ export function PodListPage() {
           )
         },
       }),
+      columnHelper.accessor((row) => row.metrics?.cpuUsage || 0, {
+        id: 'cpu',
+        header: 'CPU',
+        cell: ({ row }) => <PodMetricCell pod={row.original} type="cpu" />,
+      }),
+      columnHelper.accessor((row) => row.metrics?.memoryUsage || 0, {
+        id: 'memory',
+        header: 'Memory',
+        cell: ({ row }) => <PodMetricCell pod={row.original} type="memory" />,
+      }),
       columnHelper.accessor((row) => row.status?.podIP, {
         id: 'podIP',
         header: 'IP',
@@ -78,7 +90,18 @@ export function PodListPage() {
         id: 'nodeName',
         header: t('pods.node'),
         enableColumnFilter: true,
-        cell: ({ getValue }) => getValue() || '-',
+        cell: ({ row }) => {
+          if (row.original.spec?.nodeName) {
+            return (
+              <div className="font-medium text-blue-500 hover:underline">
+                <Link to={`/nodes/${row.original.spec?.nodeName}`}>
+                  {row.original.spec?.nodeName}
+                </Link>
+              </div>
+            )
+          }
+          return '-'
+        },
       }),
       columnHelper.accessor((row) => row.metadata?.creationTimestamp, {
         id: 'creationTimestamp',
