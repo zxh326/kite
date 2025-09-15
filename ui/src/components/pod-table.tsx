@@ -37,6 +37,7 @@ export function PodTable(props: {
             </div>
           )
         },
+        align: 'left' as const,
       },
       {
         header: 'Ready',

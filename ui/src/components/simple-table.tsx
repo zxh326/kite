@@ -14,6 +14,7 @@ interface Column<T> {
   header: string
   accessor: (item: T) => unknown
   cell: (value: unknown) => React.ReactNode
+  align?: 'left' | 'center' | 'right'
 }
 
 interface SimpleTableProps<T> {
@@ -103,7 +104,18 @@ export function SimpleTable<T>({
         <TableHeader>
           <TableRow>
             {columns.map((column, index) => (
-              <TableHead key={index}>{column.header}</TableHead>
+              <TableHead
+                key={index}
+                className={
+                  column.align === 'left'
+                    ? 'text-left'
+                    : column.align === 'right'
+                      ? 'text-right'
+                      : 'text-center'
+                }
+              >
+                {column.header}
+              </TableHead>
             ))}
           </TableRow>
         </TableHeader>
@@ -121,7 +133,16 @@ export function SimpleTable<T>({
             paginatedData.map((item, rowIndex) => (
               <TableRow key={rowIndex}>
                 {columns.map((column, colIndex) => (
-                  <TableCell key={colIndex}>
+                  <TableCell
+                    key={colIndex}
+                    className={
+                      column.align === 'left'
+                        ? 'text-left'
+                        : column.align === 'right'
+                          ? 'text-right'
+                          : 'text-center'
+                    }
+                  >
                     {column.cell(column.accessor(item))}
                   </TableCell>
                 ))}

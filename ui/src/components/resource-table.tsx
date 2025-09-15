@@ -320,8 +320,11 @@ export function ResourceTable<T>({
 
     return rows.map((row) => (
       <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-        {row.getVisibleCells().map((cell) => (
-          <TableCell key={cell.id} className="align-middle text-center">
+        {row.getVisibleCells().map((cell, index) => (
+          <TableCell
+            key={cell.id}
+            className={`align-middle ${index === 0 ? 'text-left' : 'text-center'}`}
+          >
             {cell.column.columnDef.cell
               ? flexRender(cell.column.columnDef.cell, cell.getContext())
               : String(cell.getValue() || '-')}
@@ -482,8 +485,11 @@ export function ResourceTable<T>({
                 <TableHeader className="bg-muted sticky top-0 z-10">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <TableHead key={header.id} className="text-center">
+                      {headerGroup.headers.map((header, index) => (
+                        <TableHead
+                          key={header.id}
+                          className={index === 0 ? 'text-left' : 'text-center'}
+                        >
                           {header.isPlaceholder ? null : header.column.getCanSort() ? (
                             <Button
                               variant="ghost"
