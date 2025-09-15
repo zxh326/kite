@@ -186,6 +186,8 @@ export type PodWithMetrics = Pod & {
   metrics?: {
     cpuUsage?: number // in millicores
     memoryUsage?: number // in bytes
+    cpuLimit?: number // in millicores
+    memoryLimit?: number // in bytes
   }
 }
 

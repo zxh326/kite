@@ -85,9 +85,9 @@ export function ResourceCharts(props: ResourceChartsProps) {
   return (
     <div className="grid grid-cols-1 gap-4 ">
       {chartData.map((resource) => {
-        const requestIsHigh = resource.requestPercentage > 80
+        const requestIsHigh = resource.requestPercentage > 90
         const requestIsMedium = resource.requestPercentage > 60
-        const limitIsHigh = resource.limitPercentage > 80
+        const limitIsHigh = resource.limitPercentage > 90
         const limitIsMedium = resource.limitPercentage > 60
 
         return (

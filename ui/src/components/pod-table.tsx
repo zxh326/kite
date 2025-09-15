@@ -76,21 +76,19 @@ export function PodTable(props: {
       {
         header: 'CPU',
         accessor: (pod: PodWithMetrics) => {
-          return pod?.metrics?.cpuUsage || 0
+          return pod
         },
         cell: (value: unknown) => {
-          const cpuValue = value as number
-          return <PodMetricCell type="cpu" value={cpuValue} />
+          return <PodMetricCell type="cpu" pod={value as PodWithMetrics} />
         },
       },
       {
         header: 'Memory',
         accessor: (pod: PodWithMetrics) => {
-          return pod?.metrics?.memoryUsage || 0
+          return pod
         },
         cell: (value: unknown) => {
-          const memoryValue = value as number
-          return <PodMetricCell type="memory" value={memoryValue} />
+          return <PodMetricCell type="memory" pod={value as PodWithMetrics} />
         },
       },
       {

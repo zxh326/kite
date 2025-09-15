@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"sort"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -21,7 +22,9 @@ func NewPodHandler() *PodHandler {
 
 type PodMetrics struct {
 	CPUUsage    int64 `json:"cpuUsage,omitempty"`
+	CPULimit    int64 `json:"cpuLimit,omitempty"`
 	MemoryUsage int64 `json:"memoryUsage,omitempty"`
+	MemoryLimit int64 `json:"memoryLimit,omitempty"`
 }
 
 type PodWithMetrics struct {
@@ -55,9 +58,20 @@ func GetPodMetrics(c *gin.Context, pod *corev1.Pod) (PodMetrics, error) {
 				memUsage += memQuantity.Value()
 			}
 		}
+		var cpuLimit, memLimit int64
+		for _, container := range pod.Spec.Containers {
+			if cpuQuantity, ok := container.Resources.Limits["cpu"]; ok {
+				cpuLimit += cpuQuantity.MilliValue()
+			}
+			if memQuantity, ok := container.Resources.Limits["memory"]; ok {
+				memLimit += memQuantity.Value()
+			}
+		}
 		return PodMetrics{
 			CPUUsage:    cpuUsage,
 			MemoryUsage: memUsage,
+			CPULimit:    cpuLimit,
+			MemoryLimit: memLimit,
 		}, nil
 	}
 }
@@ -110,5 +124,8 @@ func (h *PodHandler) List(c *gin.Context) {
 	for rc := range resultsChan {
 		result.Items = append(result.Items, rc)
 	}
+	sort.Slice(result.Items, func(i, j int) bool {
+		return result.Items[i].CreationTimestamp.After(result.Items[j].CreationTimestamp.Time)
+	})
 	c.JSON(200, result)
 }
