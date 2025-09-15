@@ -50,7 +50,7 @@ export function PodMetricCell({
     }
 
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-center gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="w-14 h-2 relative">
