@@ -68,7 +68,7 @@ export function PodMetricCell({
                     transform: 'translateX(-50%)',
                   }}
                 >
-                  <div className="w-0.5 h-3 bg-foreground dark:bg-white rounded-sm shadow-sm"></div>
+                  <div className="w-0.5 h-3 bg-muted-foreground dark:bg-gray-400 rounded-sm shadow-sm"></div>
                 </div>
               )}
             </div>
