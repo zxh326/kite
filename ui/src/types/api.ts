@@ -188,6 +188,8 @@ export type PodWithMetrics = Pod & {
     memoryUsage?: number // in bytes
     cpuLimit?: number // in millicores
     memoryLimit?: number // in bytes
+    cpuRequest?: number // in millicores
+    memoryRequest?: number // in bytes
   }
 }
 

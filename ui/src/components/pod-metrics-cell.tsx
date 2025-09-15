@@ -20,14 +20,13 @@ export function PodMetricCell({
   const metricLimit =
     type === 'cpu' ? pod?.metrics?.cpuLimit : pod?.metrics?.memoryLimit
 
-  const formatValue = useCallback(
-    (val: number) => (type === 'cpu' ? `${val}m` : formatMemory(val)),
-    [type]
-  )
+  const metricRequest =
+    type === 'cpu' ? pod?.metrics?.cpuRequest : pod?.metrics?.memoryRequest
 
-  const formatLimit = useCallback(
-    (limit: number | undefined) => (limit ? formatValue(limit) : '-'),
-    [formatValue]
+  const formatValue = useCallback(
+    (val?: number) =>
+      val ? (type === 'cpu' ? `${val}m` : formatMemory(val)) : '-',
+    [type]
   )
 
   return useMemo(() => {
@@ -39,6 +38,11 @@ export function PodMetricCell({
       ? Math.min((metricValue / metricLimit) * 100, 100)
       : 0
 
+    const requestPercentage =
+      metricRequest && metricLimit
+        ? Math.min((metricRequest / metricLimit) * 100, 100)
+        : 0
+
     const getProgressColor = () => {
       if (percentage > 90) return 'bg-red-500'
       if (percentage > 60) return 'bg-yellow-500'
@@ -49,19 +53,35 @@ export function PodMetricCell({
       <div className="flex items-center gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="w-14 bg-muted rounded-full h-2">
-              <div
-                className={`h-2 rounded-full transition-all duration-300 ${getProgressColor()}`}
-                style={{
-                  width: `${percentage}%`,
-                }}
-              ></div>
+            <div className="w-14 h-2 relative">
+              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                <div
+                  className={`h-2 rounded-full transition-all duration-300 ${getProgressColor()}`}
+                  style={{ width: `${percentage}%` }}
+                />
+              </div>
+              {metricRequest && metricLimit && (
+                <div
+                  className="absolute -top-0.5 h-3 flex items-center justify-center"
+                  style={{
+                    left: `${requestPercentage}%`,
+                    transform: 'translateX(-50%)',
+                  }}
+                >
+                  <div className="w-0.5 h-3 bg-foreground dark:bg-white rounded-sm shadow-sm"></div>
+                </div>
+              )}
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <span>
-              {formatValue(metricValue)} / {formatLimit(metricLimit)}
-            </span>
+            <div className="text-sm grid grid-cols-2 gap-x-3 gap-y-0.5 min-w-0">
+              <span>Usage:</span>
+              <span className="text-right">{formatValue(metricValue)}</span>
+              <span>Request:</span>
+              <span className="text-right">{formatValue(metricRequest)}</span>
+              <span>Limit:</span>
+              <span className="text-right">{formatValue(metricLimit)}</span>
+            </div>
           </TooltipContent>
         </Tooltip>
         <span className="text-xs text-muted-foreground min-w-fit">
@@ -69,5 +89,5 @@ export function PodMetricCell({
         </span>
       </div>
     )
-  }, [metricValue, metricLimit, formatValue, formatLimit])
+  }, [metricValue, metricLimit, metricRequest, formatValue])
 }

@@ -84,7 +84,11 @@ export function PodListPage() {
       columnHelper.accessor((row) => row.status?.podIP, {
         id: 'podIP',
         header: 'IP',
-        cell: ({ getValue }) => getValue() || '-',
+        cell: ({ getValue }) => (
+          <span className="text-muted-foreground text-sm">
+            {getValue() || '-'}
+          </span>
+        ),
       }),
       columnHelper.accessor((row) => row.spec?.nodeName, {
         id: 'nodeName',

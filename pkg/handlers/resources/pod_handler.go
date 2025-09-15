@@ -21,10 +21,12 @@ func NewPodHandler() *PodHandler {
 }
 
 type PodMetrics struct {
-	CPUUsage    int64 `json:"cpuUsage,omitempty"`
-	CPULimit    int64 `json:"cpuLimit,omitempty"`
-	MemoryUsage int64 `json:"memoryUsage,omitempty"`
-	MemoryLimit int64 `json:"memoryLimit,omitempty"`
+	CPUUsage      int64 `json:"cpuUsage,omitempty"`
+	CPULimit      int64 `json:"cpuLimit,omitempty"`
+	CPURequest    int64 `json:"cpuRequest,omitempty"`
+	MemoryUsage   int64 `json:"memoryUsage,omitempty"`
+	MemoryLimit   int64 `json:"memoryLimit,omitempty"`
+	MemoryRequest int64 `json:"memoryRequest,omitempty"`
 }
 
 type PodWithMetrics struct {
@@ -59,6 +61,7 @@ func GetPodMetrics(c *gin.Context, pod *corev1.Pod) (PodMetrics, error) {
 			}
 		}
 		var cpuLimit, memLimit int64
+		var cpuRequest, memRequest int64
 		for _, container := range pod.Spec.Containers {
 			if cpuQuantity, ok := container.Resources.Limits["cpu"]; ok {
 				cpuLimit += cpuQuantity.MilliValue()
@@ -66,12 +69,20 @@ func GetPodMetrics(c *gin.Context, pod *corev1.Pod) (PodMetrics, error) {
 			if memQuantity, ok := container.Resources.Limits["memory"]; ok {
 				memLimit += memQuantity.Value()
 			}
+			if cpuQuantity, ok := container.Resources.Requests["cpu"]; ok {
+				cpuRequest += cpuQuantity.MilliValue()
+			}
+			if memQuantity, ok := container.Resources.Requests["memory"]; ok {
+				memRequest += memQuantity.Value()
+			}
 		}
 		return PodMetrics{
-			CPUUsage:    cpuUsage,
-			MemoryUsage: memUsage,
-			CPULimit:    cpuLimit,
-			MemoryLimit: memLimit,
+			CPUUsage:      cpuUsage,
+			MemoryUsage:   memUsage,
+			CPULimit:      cpuLimit,
+			MemoryLimit:   memLimit,
+			CPURequest:    cpuRequest,
+			MemoryRequest: memRequest,
 		}, nil
 	}
 }
@@ -125,7 +136,12 @@ func (h *PodHandler) List(c *gin.Context) {
 		result.Items = append(result.Items, rc)
 	}
 	sort.Slice(result.Items, func(i, j int) bool {
-		return result.Items[i].CreationTimestamp.After(result.Items[j].CreationTimestamp.Time)
+		t1 := result.Items[i].CreationTimestamp.Time
+		t2 := result.Items[j].CreationTimestamp.Time
+		if t1.Equal(t2) {
+			return result.Items[i].Name < result.Items[j].Name
+		}
+		return t1.After(t2)
 	})
 	c.JSON(200, result)
 }
