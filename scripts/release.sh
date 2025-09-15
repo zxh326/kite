@@ -23,4 +23,4 @@ $SED_CMD -i "s/$current_version/$version/g" "$CHART_DIR/README.md"
 
 git add "$CHART_DIR/Chart.yaml" "$CHART_DIR/README.md"
 git commit -m "release v$version"
-git tag "v$version"
+git tag -a "v$version" -m "version $version"
