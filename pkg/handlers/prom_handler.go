@@ -74,10 +74,13 @@ func (h *PromHandler) GetResourceUsageHistory(c *gin.Context) {
 	}
 
 	instance := c.Query("instance")
-	resourceUsageHistory, err := cs.PromClient.GetResourceUsageHistory(ctx, instance, duration)
+	resourceUsageHistory, err := cs.PromClient.GetResourceUsageHistory(ctx, instance, duration, "instance")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to get resource usage history: %v", err)})
-		return
+		resourceUsageHistory, err = cs.PromClient.GetResourceUsageHistory(ctx, instance, duration, "node")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to get resource usage history: %v", err)})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, resourceUsageHistory)

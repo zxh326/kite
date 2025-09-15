@@ -75,7 +75,7 @@ func NewClient(prometheusURL string) (*Client, error) {
 }
 
 // GetResourceUsageHistory fetches historical usage data for CPU and Memory
-func (c *Client) GetResourceUsageHistory(ctx context.Context, instance string, duration string) (*ResourceUsageHistory, error) {
+func (c *Client) GetResourceUsageHistory(ctx context.Context, instance string, duration string, nodeLabel string) (*ResourceUsageHistory, error) {
 	var step time.Duration
 	var timeRange time.Duration
 
@@ -107,7 +107,7 @@ func (c *Client) GetResourceUsageHistory(ctx context.Context, instance string, d
 		`resource="memory"`,
 	}
 	if instance != "" {
-		conditions = append(conditions, fmt.Sprintf(`instance="%s"`, instance))
+		conditions = append(conditions, fmt.Sprintf(`%s="%s"`, nodeLabel, instance))
 		cpuConditions = append(cpuConditions, fmt.Sprintf(`node="%s"`, instance))
 		memoryConditions = append(memoryConditions, fmt.Sprintf(`node="%s"`, instance))
 	}
@@ -126,11 +126,9 @@ func (c *Client) GetResourceUsageHistory(ctx context.Context, instance string, d
 		return nil, fmt.Errorf("error querying Memory usage: %w", err)
 	}
 
-	conditions = []string{
-		`id="/"`,
-	}
+	conditions = []string{}
 	if instance != "" {
-		conditions = append(conditions, fmt.Sprintf(`instance="%s"`, instance))
+		conditions = append(conditions, fmt.Sprintf(`%s="%s"`, nodeLabel, instance))
 	}
 
 	// Query Network incoming bytes rate (bytes per second)
@@ -147,7 +145,7 @@ func (c *Client) GetResourceUsageHistory(ctx context.Context, instance string, d
 		return nil, fmt.Errorf("error querying Network outgoing bytes: %w", err)
 	}
 
-	if len(cpuData) == 0 || len(memoryData) == 0 || len(networkInData) == 0 || len(networkOutData) == 0 {
+	if len(cpuData) == 0 && len(memoryData) == 0 && len(networkInData) == 0 && len(networkOutData) == 0 {
 		return nil, fmt.Errorf("metrics-server or kube-state-metrics may not be available or configured correctly")
 	}
 
