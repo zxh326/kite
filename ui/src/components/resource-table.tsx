@@ -86,6 +86,7 @@ export function ResourceTable<T>({
     selectedNamespace,
     {
       refreshInterval, // Refresh every 5 seconds
+      reduce: true, // Fetch reduced data for performance
     }
   )
 

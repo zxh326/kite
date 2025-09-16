@@ -4,13 +4,19 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sort"
 
 	"github.com/gin-gonic/gin"
+	"github.com/samber/lo"
 	"github.com/zxh326/kite/pkg/cluster"
+	"github.com/zxh326/kite/pkg/common"
 	"github.com/zxh326/kite/pkg/kube"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/klog/v2"
+	"k8s.io/kubectl/pkg/describe"
+	metricsv1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
 type NodeHandler struct {
@@ -241,6 +247,107 @@ func (h *NodeHandler) UntaintNode(c *gin.Context) {
 		"node":            node.Name,
 		"removedTaintKey": untaintRequest.Key,
 	})
+}
+
+func (h *NodeHandler) List(c *gin.Context) {
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	var nodeMetrics metricsv1.NodeMetricsList
+
+	var nodes corev1.NodeList
+	if err := cs.K8sClient.List(c.Request.Context(), &nodes); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list nodes: " + err.Error()})
+		return
+	}
+
+	if err := cs.K8sClient.List(c.Request.Context(), &nodeMetrics); err != nil {
+		klog.Warningf("Failed to list node metrics: %v", err)
+	}
+
+	// Get all pods to calculate resource requests per node
+	var pods corev1.PodList
+	if err := cs.K8sClient.List(c.Request.Context(), &pods); err != nil {
+		klog.Warningf("Failed to list pods for node resource calculation: %v", err)
+	}
+
+	// Group pods by node name and calculate resource requests
+	nodeResourceRequests := make(map[string]common.MetricsCell)
+	for _, pod := range pods.Items {
+		if pod.Spec.NodeName == "" {
+			continue // Skip pods not scheduled to any node
+		}
+
+		nodeName := pod.Spec.NodeName
+		if _, exists := nodeResourceRequests[nodeName]; !exists {
+			nodeResourceRequests[nodeName] = common.MetricsCell{}
+		}
+
+		metrics := nodeResourceRequests[nodeName]
+
+		// Calculate CPU and memory requests for this pod
+		for _, container := range pod.Spec.Containers {
+			if cpuRequest := container.Resources.Requests.Cpu(); cpuRequest != nil {
+				metrics.CPURequest += cpuRequest.MilliValue()
+			}
+			if memoryRequest := container.Resources.Requests.Memory(); memoryRequest != nil {
+				metrics.MemoryRequest += memoryRequest.Value()
+			}
+		}
+
+		nodeResourceRequests[nodeName] = metrics
+	}
+
+	nodeMetricsMap := lo.KeyBy(nodeMetrics.Items, func(item metricsv1.NodeMetrics) string {
+		return item.Name
+	})
+
+	result := &common.NodeListWithMetrics{
+		TypeMeta: nodes.TypeMeta,
+		ListMeta: nodes.ListMeta,
+		Items:    []*common.NodeWithMetrics{},
+	}
+	result.Items = make([]*common.NodeWithMetrics, len(nodes.Items))
+	for i, node := range nodes.Items {
+		metricsCell := &common.MetricsCell{}
+		metricsCell.CPULimit = node.Status.Allocatable.Cpu().MilliValue()
+		metricsCell.MemoryLimit = node.Status.Allocatable.Memory().Value()
+
+		if nm, ok := nodeMetricsMap[node.Name]; ok {
+			if cpuQuantity, ok := nm.Usage["cpu"]; ok {
+				metricsCell.CPUUsage = cpuQuantity.MilliValue()
+			}
+			if memQuantity, ok := nm.Usage["memory"]; ok {
+				metricsCell.MemoryUsage = memQuantity.Value()
+			}
+		}
+		if requests, exists := nodeResourceRequests[node.Name]; exists {
+			metricsCell.CPURequest = requests.CPURequest
+			metricsCell.MemoryRequest = requests.MemoryRequest
+		}
+		result.Items[i] = &common.NodeWithMetrics{
+			Node:    &node,
+			Metrics: metricsCell,
+		}
+	}
+	sort.Slice(result.Items, func(i, j int) bool {
+		return result.Items[i].Name < result.Items[j].Name
+	})
+	c.JSON(http.StatusOK, result)
+}
+
+func (h *NodeHandler) Describe(c *gin.Context) {
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	name := c.Param("name")
+	nd := describe.NodeDescriber{
+		Interface: cs.K8sClient.ClientSet,
+	}
+	out, err := nd.Describe("", name, describe.DescriberSettings{
+		ShowEvents: true,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"result": out})
 }
 
 func (h *NodeHandler) registerCustomRoutes(group *gin.RouterGroup) {

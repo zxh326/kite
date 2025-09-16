@@ -8,7 +8,7 @@ import { PodWithMetrics } from '@/types/api'
 import { getPodStatus } from '@/lib/k8s'
 import { formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import { PodMetricCell } from '@/components/pod-metrics-cell'
+import { MetricCell } from '@/components/metrics-cell'
 import { PodStatusIcon } from '@/components/pod-status-icon'
 import { ResourceTable } from '@/components/resource-table'
 
@@ -74,12 +74,16 @@ export function PodListPage() {
       columnHelper.accessor((row) => row.metrics?.cpuUsage || 0, {
         id: 'cpu',
         header: 'CPU',
-        cell: ({ row }) => <PodMetricCell pod={row.original} type="cpu" />,
+        cell: ({ row }) => (
+          <MetricCell metrics={row.original.metrics} type="cpu" />
+        ),
       }),
       columnHelper.accessor((row) => row.metrics?.memoryUsage || 0, {
         id: 'memory',
         header: 'Memory',
-        cell: ({ row }) => <PodMetricCell pod={row.original} type="memory" />,
+        cell: ({ row }) => (
+          <MetricCell metrics={row.original.metrics} type="memory" />
+        ),
       }),
       columnHelper.accessor((row) => row.status?.podIP, {
         id: 'podIP',

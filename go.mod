@@ -3,12 +3,14 @@ module github.com/zxh326/kite
 go 1.24.3
 
 require (
+	github.com/gin-contrib/gzip v1.2.3
 	github.com/gin-gonic/gin v1.10.1
 	github.com/glebarez/sqlite v1.11.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.66.1
+	github.com/samber/lo v1.51.0
 	golang.org/x/crypto v0.42.0
 	golang.org/x/net v0.44.0
 	gorm.io/driver/mysql v1.6.0

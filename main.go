@@ -14,6 +14,7 @@ import (
 
 	_ "net/http/pprof"
 
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/internal"
 	"github.com/zxh326/kite/pkg/auth"
@@ -188,6 +189,10 @@ func main() {
 	common.LoadEnvs()
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
+	if !common.DisableGZIP {
+		klog.Info("GZIP compression is enabled")
+		r.Use(gzip.Gzip(gzip.DefaultCompression))
+	}
 	r.Use(gin.Recovery())
 	r.Use(middleware.Logger())
 	r.Use(middleware.CORS())
