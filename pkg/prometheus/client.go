@@ -321,6 +321,29 @@ func (c *Client) GetDiskWriteUsage(ctx context.Context, namespace, podNamePrefix
 	return c.queryRange(ctx, query, start, now, step)
 }
 
+func FillMissingDataPoints(timeRange time.Duration, step time.Duration, existing []UsageDataPoint) []UsageDataPoint {
+	if len(existing) == 0 {
+		return existing
+	}
+
+	startTime := time.Now().Add(-timeRange)
+	firstTime := existing[0].Timestamp
+
+	if firstTime.Sub(startTime) <= step {
+		return existing
+	}
+
+	result := []UsageDataPoint{}
+	for t := startTime.Add(step); t.Before(firstTime); t = t.Add(step) {
+		result = append(result, UsageDataPoint{
+			Timestamp: t,
+			Value:     0.0,
+		})
+	}
+
+	return append(result, existing...)
+}
+
 // GetPodMetrics fetches metrics for a specific pod
 func (c *Client) GetPodMetrics(ctx context.Context, namespace, podName, container string, duration string) (*PodMetrics, error) {
 	var step time.Duration
@@ -371,12 +394,12 @@ func (c *Client) GetPodMetrics(ctx context.Context, namespace, podName, containe
 	}
 
 	return &PodMetrics{
-		CPU:        cpuData,
-		Memory:     memoryData,
-		NetworkIn:  networkInData,
-		NetworkOut: networkOutData,
-		DiskRead:   diskReadData,
-		DiskWrite:  diskWriteData,
+		CPU:        FillMissingDataPoints(timeRange, step, cpuData),
+		Memory:     FillMissingDataPoints(timeRange, step, memoryData),
+		NetworkIn:  FillMissingDataPoints(timeRange, step, networkInData),
+		NetworkOut: FillMissingDataPoints(timeRange, step, networkOutData),
+		DiskRead:   FillMissingDataPoints(timeRange, step, diskReadData),
+		DiskWrite:  FillMissingDataPoints(timeRange, step, diskWriteData),
 		Fallback:   false,
 	}, nil
 }
