@@ -91,6 +91,7 @@ run: backend ## Run the built application
 dev: backend ## Run in development mode
 	@echo "🔄 Starting development mode..."
 	@echo "🚀 Starting $(BINARY_NAME) server..."
+	CGO_ENABLED=0 go build -trimpath $(LDFLAGS) -o $(BINARY_NAME) .
 	./$(BINARY_NAME) -v=5 & \
 	BACKEND_PID=$$!; \
 	echo "Backend PID: $$BACKEND_PID"; \

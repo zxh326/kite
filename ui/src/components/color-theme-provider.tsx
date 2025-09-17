@@ -1,7 +1,15 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from 'react'
 
-export type ColorTheme = 'red' | 'green' | 'blue' | 'violet' | 'eye-care'
+export const colorThemes = {
+  default: '',
+  'eye-care': '',
+  darkmatter: '',
+  notebook: '',
+  'clean-slate': '',
+}
+
+export type ColorTheme = keyof typeof colorThemes
 
 type ColorThemeProviderProps = {
   children: React.ReactNode
@@ -15,7 +23,7 @@ type ColorThemeProviderState = {
 }
 
 const initialState: ColorThemeProviderState = {
-  colorTheme: 'blue',
+  colorTheme: 'default',
   setColorTheme: () => null,
 }
 
@@ -24,7 +32,7 @@ const ColorThemeProviderContext =
 
 export function ColorThemeProvider({
   children,
-  defaultColorTheme = 'blue',
+  defaultColorTheme = 'default',
   storageKey = 'vite-ui-color-theme',
   ...props
 }: ColorThemeProviderProps) {
@@ -37,11 +45,7 @@ export function ColorThemeProvider({
 
     // Remove all color themes
     root.classList.remove(
-      'color-red',
-      'color-green',
-      'color-blue',
-      'color-violet',
-      'color-eye-care'
+      ...Object.keys(colorThemes).map((theme) => `color-${theme}`)
     )
 
     // Add the current color theme

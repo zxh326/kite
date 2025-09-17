@@ -87,11 +87,8 @@ function AppContent() {
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-      <ColorThemeProvider
-        defaultColorTheme="blue"
-        storageKey="vite-ui-color-theme"
-      >
+    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+      <ColorThemeProvider>
         <ClusterProvider>
           <GlobalSearchProvider>
             <ClusterAwareApp />

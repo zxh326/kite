@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import { IconCheck, IconEdit, IconLoader, IconX } from '@tabler/icons-react'
+import { formatHex } from 'culori'
 import * as yaml from 'js-yaml'
 import { editor as monacoEditor } from 'monaco-editor'
 
@@ -8,6 +9,7 @@ import { ResourceType, ResourceTypeMap } from '@/types/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
+import { useColorTheme } from './color-theme-provider'
 import { useTheme } from './theme-provider'
 
 interface YamlEditorProps<T extends ResourceType> {
@@ -49,8 +51,19 @@ export function YamlEditor<T extends ResourceType>({
   const [isValidYaml, setIsValidYaml] = useState(true)
   const [validationError, setValidationError] = useState<string>('')
   const { actualTheme } = useTheme()
+  const { colorTheme } = useColorTheme()
   const editorRef = useRef<monacoEditor.IStandaloneCodeEditor | null>(null)
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  const getCardBackgroundColor = () => {
+    const card = getComputedStyle(document.documentElement)
+      .getPropertyValue('--card')
+      .trim()
+    if (!card) {
+      return actualTheme === 'dark' ? '#18181b' : '#ffffff'
+    }
+    return formatHex(card) || (actualTheme === 'dark' ? '#18181b' : '#ffffff')
+  }
 
   // Update editor value when value prop changes
   useEffect(() => {
@@ -181,24 +194,31 @@ export function YamlEditor<T extends ResourceType>({
           )}
           <div className="overflow-hidden h-[calc(100dvh-300px)]">
             <Editor
+              key={`yaml-editor-${colorTheme}-${actualTheme}`} // Force remount on theme change
               language="yaml"
-              theme={actualTheme === 'dark' ? 'custom-dark' : 'custom-vs'}
+              theme={
+                actualTheme === 'dark'
+                  ? `custom-dark-${colorTheme}`
+                  : `custom-vs-${colorTheme}`
+              }
               value={editorValue}
               beforeMount={(monaco) => {
-                monaco.editor.defineTheme('custom-dark', {
+                const cardBgColor = getCardBackgroundColor()
+                // Define themes with consistent names
+                monaco.editor.defineTheme(`custom-dark-${colorTheme}`, {
                   base: 'vs-dark',
                   inherit: true,
                   rules: [],
                   colors: {
-                    'editor.background': '#18181b',
+                    'editor.background': cardBgColor,
                   },
                 })
-                monaco.editor.defineTheme('custom-vs', {
+                monaco.editor.defineTheme(`custom-vs-${colorTheme}`, {
                   base: 'vs',
                   inherit: true,
                   rules: [],
                   colors: {
-                    'editor.background': '#ffffff',
+                    'editor.background': cardBgColor,
                   },
                 })
               }}

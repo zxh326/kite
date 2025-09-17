@@ -13,17 +13,13 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ColorTheme, useColorTheme } from '@/components/color-theme-provider'
+import {
+  ColorTheme,
+  colorThemes,
+  useColorTheme,
+} from '@/components/color-theme-provider'
 
 import { SidebarCustomizer } from './sidebar-customizer'
-
-const colorThemeIcons = {
-  blue: <div className="h-4 w-4 rounded-full bg-blue-500"></div>,
-  red: <div className="h-4 w-4 rounded-full bg-red-500"></div>,
-  green: <div className="h-4 w-4 rounded-full bg-green-500"></div>,
-  violet: <div className="h-4 w-4 rounded-full bg-violet-500"></div>,
-  'eye-care': <div className="h-4 w-4 rounded-full bg-amber-400"></div>,
-}
 
 export function UserMenu() {
   const { user, logout } = useAuth()
@@ -89,7 +85,7 @@ export function UserMenu() {
             <span>Color Theme</span>
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
-            {Object.entries(colorThemeIcons).map(([key, icon]) => {
+            {Object.entries(colorThemes).map(([key]) => {
               const isSelected = key === colorTheme
 
               return (
@@ -103,7 +99,6 @@ export function UserMenu() {
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    {icon}
                     <span className="capitalize">{key}</span>
                   </div>
                   {isSelected && <Check className="h-4 w-4 text-primary" />}
