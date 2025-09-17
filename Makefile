@@ -73,13 +73,13 @@ package-binaries: ## Package each kite binary file separately
 
 frontend: static ## Build frontend only
 
-static: ui/*/*.tsx ui/*/*.ts ui/*/*.css ui/package.json
+static: ui/src/**/*.tsx ui/src/**/*.ts ui/index.html ui/**/*.css ui/package.json
 	@echo "📦 Ensuring static files are built..."
 	cd $(UI_DIR) && pnpm run build
 
 backend: ${BINARY_NAME} ## Build backend only
 
-$(BINARY_NAME): main.go pkg/*/*.go go.mod static
+$(BINARY_NAME): main.go pkg/**/*.go go.mod static
 	@echo "🏗️ Building backend..."
 	CGO_ENABLED=0 go build -trimpath $(LDFLAGS) -o $(BINARY_NAME) .
 
