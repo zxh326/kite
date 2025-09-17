@@ -19,7 +19,7 @@ LDFLAGS=-ldflags "-s -w \
 	-X 'github.com/zxh326/kite/pkg/version.CommitID=$(COMMIT_ID)'"
 
 # Default target
-.DEFAULT_GOAL := help
+.DEFAULT_GOAL := build
 DOCKER_TAG=latest
 
 LOCALBIN ?= $(shell pwd)/bin
@@ -71,11 +71,15 @@ package-binaries: ## Package each kite binary file separately
 	done
 	@echo "✅ All kite binaries packaged successfully!"
 
-frontend: ## Build frontend only
-	@echo "📦 Building frontend..."
-	cd $(UI_DIR) && npm run build
+frontend: static ## Build frontend only
 
-backend: ## Build backend only
+static: ui/*/*.tsx ui/*/*.ts ui/*/*.css ui/package.json
+	@echo "📦 Ensuring static files are built..."
+	cd $(UI_DIR) && pnpm run build
+
+backend: ${BINARY_NAME} ## Build backend only
+
+$(BINARY_NAME): main.go pkg/*/*.go go.mod static
 	@echo "🏗️ Building backend..."
 	CGO_ENABLED=0 go build -trimpath $(LDFLAGS) -o $(BINARY_NAME) .
 
@@ -84,10 +88,8 @@ run: backend ## Run the built application
 	@echo "🚀 Starting $(BINARY_NAME) server..."
 	./$(BINARY_NAME)
 
-dev: ## Run in development mode
+dev: backend ## Run in development mode
 	@echo "🔄 Starting development mode..."
-	@echo "🏗️ Building backend..."
-	go build $(LDFLAGS) -o $(BINARY_NAME) .
 	@echo "🚀 Starting $(BINARY_NAME) server..."
 	./$(BINARY_NAME) -v=5 & \
 	BACKEND_PID=$$!; \
@@ -129,10 +131,6 @@ docs-dev: ## Start documentation server in development mode
 docs-build: ## Build documentation
 	@echo "📚 Building documentation..."
 	cd docs && pnpm run docs:build
-
-release-helm-chart: ## Release Helm chart to GitHub Pages
-	@echo "🚀 Releasing Helm chart..."
-	./scripts/release-chart.sh $(shell git describe --tags --match 'v*' | grep -oE '[0-9]+\.[0-9][0-9]*(\.[0-9]+)?')
 
 define go-install-tool
 @[ -f "$(1)-$(3)" ] || { \

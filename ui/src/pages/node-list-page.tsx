@@ -7,12 +7,10 @@ import { NodeWithMetrics } from '@/types/api'
 import { formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { MetricCell } from '@/components/metrics-cell'
+import { NodeStatusIcon } from '@/components/node-status-icon'
 import { ResourceTable } from '@/components/resource-table'
 
-function getNodeStatus(node: NodeWithMetrics): {
-  status: string
-  color: string
-} {
+function getNodeStatus(node: NodeWithMetrics): string {
   const conditions = node.status?.conditions || []
   const isUnschedulable = node.spec?.unschedulable || false
 
@@ -22,45 +20,39 @@ function getNodeStatus(node: NodeWithMetrics): {
 
   if (isUnschedulable) {
     if (isReady) {
-      return {
-        status: 'Ready,SchedulingDisabled',
-        color: 'bg-yellow-100 text-yellow-800',
-      }
+      return 'Ready,SchedulingDisabled'
     } else {
-      return {
-        status: 'NotReady,SchedulingDisabled',
-        color: 'bg-red-100 text-red-800',
-      }
+      return 'NotReady,SchedulingDisabled'
     }
   }
 
   if (isReady) {
-    return { status: 'Ready', color: 'bg-green-100 text-green-800' }
+    return 'Ready'
   }
 
   const networkUnavailable = conditions.find(
     (c) => c.type === 'NetworkUnavailable'
   )
   if (networkUnavailable?.status === 'True') {
-    return { status: 'NetworkUnavailable', color: 'bg-red-100 text-red-800' }
+    return 'NetworkUnavailable'
   }
 
   const memoryPressure = conditions.find((c) => c.type === 'MemoryPressure')
   if (memoryPressure?.status === 'True') {
-    return { status: 'MemoryPressure', color: 'bg-yellow-100 text-yellow-800' }
+    return 'MemoryPressure'
   }
 
   const diskPressure = conditions.find((c) => c.type === 'DiskPressure')
   if (diskPressure?.status === 'True') {
-    return { status: 'DiskPressure', color: 'bg-yellow-100 text-yellow-800' }
+    return 'DiskPressure'
   }
 
   const pidPressure = conditions.find((c) => c.type === 'PIDPressure')
   if (pidPressure?.status === 'True') {
-    return { status: 'PIDPressure', color: 'bg-yellow-100 text-yellow-800' }
+    return 'PIDPressure'
   }
 
-  return { status: 'NotReady', color: 'bg-red-100 text-red-800' }
+  return 'NotReady'
 }
 
 function getNodeRoles(node: NodeWithMetrics): string[] {
@@ -143,8 +135,13 @@ export function NodeListPage() {
         id: 'status',
         header: t('common.status'),
         cell: ({ getValue }) => {
-          const { status, color } = getValue()
-          return <Badge className={`${color} border-0`}>{status}</Badge>
+          const status = getValue()
+          return (
+            <Badge variant="outline" className="text-muted-foreground px-1.5">
+              <NodeStatusIcon status={status} />
+              {status}
+            </Badge>
+          )
         },
       }),
       columnHelper.accessor((row) => getNodeRoles(row), {
@@ -238,7 +235,7 @@ export function NodeListPage() {
         (node.status?.nodeInfo?.kubeletVersion?.toLowerCase() || '').includes(
           lowerQuery
         ) ||
-        getNodeStatus(node).status.toLowerCase().includes(lowerQuery) ||
+        getNodeStatus(node).toLowerCase().includes(lowerQuery) ||
         roles.some((role) => role.toLowerCase().includes(lowerQuery)) ||
         ip.toLowerCase().includes(lowerQuery)
       )
