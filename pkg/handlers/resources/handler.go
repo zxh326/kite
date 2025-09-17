@@ -126,6 +126,7 @@ func registerClusterScopeRoutes(group *gin.RouterGroup, handler resourceHandler)
 	group.PUT("/_all/:name", handler.Update)
 	group.DELETE("/_all/:name", handler.Delete)
 	group.GET("/_all/:name/history", handler.ListHistory)
+	group.GET("/_all/:name/describe", handler.Describe)
 }
 
 func registerNamespaceScopeRoutes(group *gin.RouterGroup, handler resourceHandler) {

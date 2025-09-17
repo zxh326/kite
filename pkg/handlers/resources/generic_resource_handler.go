@@ -20,7 +20,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
-	"k8s.io/kubectl/pkg/describe"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 )
@@ -471,21 +470,5 @@ func (h *GenericResourceHandler[T, V]) ListHistory(c *gin.Context) {
 }
 
 func (h *GenericResourceHandler[T, V]) Describe(c *gin.Context) {
-	cs := c.MustGet("cluster").(*cluster.ClientSet)
-	namespace := c.Param("namespace")
-	name := c.Param("name")
-	if h.Name() != "pods" {
-		return
-	}
-	pd := describe.PodDescriber{
-		Interface: cs.K8sClient.ClientSet,
-	}
-	out, err := pd.Describe(namespace, name, describe.DescriberSettings{
-		ShowEvents: true,
-	})
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"result": out})
+	c.JSON(http.StatusOK, gin.H{"result": "not implemented"})
 }

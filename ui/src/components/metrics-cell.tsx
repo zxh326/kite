@@ -1,39 +1,38 @@
 import { useCallback, useMemo } from 'react'
 
-import { PodWithMetrics } from '@/types/api'
+import { MetricsData } from '@/types/api'
 import { formatMemory } from '@/lib/utils'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
-export function PodMetricCell({
-  pod,
+export function MetricCell({
+  metrics,
   type,
+  limitLabel = 'Limit',
+  showPercentage = false,
 }: {
-  pod?: PodWithMetrics
+  metrics?: MetricsData
   type: 'cpu' | 'memory'
+  limitLabel?: string // e.g., "Limit" or "Capacity"
+  showPercentage?: boolean // Whether to show percentage in the display
 }) {
   const metricValue =
-    type === 'cpu'
-      ? pod?.metrics?.cpuUsage || 0
-      : pod?.metrics?.memoryUsage || 0
+    type === 'cpu' ? metrics?.cpuUsage || 0 : metrics?.memoryUsage || 0
 
-  const metricLimit =
-    type === 'cpu' ? pod?.metrics?.cpuLimit : pod?.metrics?.memoryLimit
+  const metricLimit = type === 'cpu' ? metrics?.cpuLimit : metrics?.memoryLimit
 
   const metricRequest =
-    type === 'cpu' ? pod?.metrics?.cpuRequest : pod?.metrics?.memoryRequest
+    type === 'cpu' ? metrics?.cpuRequest : metrics?.memoryRequest
 
   const formatValue = useCallback(
-    (val?: number) =>
-      val ? (type === 'cpu' ? `${val}m` : formatMemory(val)) : '-',
+    (val?: number) => {
+      if (val === undefined || val === null) return '-'
+      return type === 'cpu' ? `${val}m` : formatMemory(val)
+    },
     [type]
   )
 
   return useMemo(() => {
-    if (metricValue === 0) {
-      return <span className="text-muted-foreground">-</span>
-    }
-
     const percentage = metricLimit
       ? Math.min((metricValue / metricLimit) * 100, 100)
       : 0
@@ -50,7 +49,7 @@ export function PodMetricCell({
     }
 
     return (
-      <div className="flex items-center justify-center gap-2">
+      <div className="flex items-center justify-center gap-1">
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="w-14 h-2 relative">
@@ -79,15 +78,30 @@ export function PodMetricCell({
               <span className="text-right">{formatValue(metricValue)}</span>
               <span>Request:</span>
               <span className="text-right">{formatValue(metricRequest)}</span>
-              <span>Limit:</span>
+              <span>{limitLabel}:</span>
               <span className="text-right">{formatValue(metricLimit)}</span>
             </div>
           </TooltipContent>
         </Tooltip>
-        <span className="text-xs text-muted-foreground min-w-fit">
+        <span
+          className={`${type === 'cpu' ? 'w-[4ch]' : 'w-[10ch]'} text-right inline-block text-xs text-muted-foreground whitespace-nowrap tabular-nums`}
+        >
           {formatValue(metricValue)}
+          {showPercentage && metricLimit && metricValue > 0 && (
+            <span className="text-[10px] opacity-70">
+              ({percentage.toFixed(0)}%)
+            </span>
+          )}
         </span>
       </div>
     )
-  }, [metricValue, metricLimit, metricRequest, formatValue])
+  }, [
+    metricLimit,
+    metricValue,
+    metricRequest,
+    formatValue,
+    limitLabel,
+    type,
+    showPercentage,
+  ])
 }

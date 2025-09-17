@@ -32,6 +32,8 @@ var (
 	AnonymousUserEnabled = false
 
 	CookieExpirationSeconds = 2 * JWTExpirationSeconds // double jwt
+
+	DisableGZIP = false
 )
 
 func LoadEnvs() {
@@ -74,5 +76,8 @@ func LoadEnvs() {
 	}
 	if v := os.Getenv("HOST"); v != "" {
 		Host = v
+	}
+	if v := os.Getenv("DISABLE_GZIP"); v == "true" {
+		DisableGZIP = true
 	}
 }

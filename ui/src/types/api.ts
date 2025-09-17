@@ -23,7 +23,6 @@ import {
   Namespace,
   NamespaceList,
   Node,
-  NodeList,
   PersistentVolume,
   PersistentVolumeClaim,
   PersistentVolumeClaimList,
@@ -147,7 +146,10 @@ export interface ResourcesTypeMap {
     items: CustomResource[]
     metadata?: listMetadataType
   }
-  nodes: NodeList
+  nodes: {
+    items: NodeWithMetrics[]
+    metadata?: listMetadataType
+  }
   events: EventList
   persistentvolumes: PersistentVolumeList
   storageclasses: StorageClassList
@@ -182,15 +184,21 @@ export interface PodMetrics {
   }[]
 }
 
+export type MetricsData = {
+  cpuUsage?: number
+  memoryUsage?: number
+  cpuLimit?: number
+  memoryLimit?: number
+  cpuRequest?: number
+  memoryRequest?: number
+}
+
 export type PodWithMetrics = Pod & {
-  metrics?: {
-    cpuUsage?: number // in millicores
-    memoryUsage?: number // in bytes
-    cpuLimit?: number // in millicores
-    memoryLimit?: number // in bytes
-    cpuRequest?: number // in millicores
-    memoryRequest?: number // in bytes
-  }
+  metrics?: MetricsData
+}
+
+export type NodeWithMetrics = Node & {
+  metrics?: MetricsData
 }
 
 export interface ResourceTypeMap {
@@ -208,7 +216,7 @@ export interface ResourceTypeMap {
   namespaces: Namespace
   crds: CustomResourceDefinition
   crs: CustomResource
-  nodes: Node
+  nodes: NodeWithMetrics
   events: Event
   persistentvolumes: PersistentVolume
   storageclasses: StorageClass

@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import {
   deleteResource,
   updateResource,
-  usePodDescribe,
+  useDescribe,
   useResource,
 } from '@/lib/api'
 import {
@@ -108,7 +108,7 @@ export function PodDetail(props: { namespace: string; name: string }) {
     return getPodStatus(pod)
   }, [pod])
 
-  const { data: describeText } = usePodDescribe(namespace, name, {
+  const { data: describeText } = useDescribe('pods', name, namespace, {
     enabled: isDescribeOpen,
     staleTime: 0,
   })
@@ -159,7 +159,7 @@ export function PodDetail(props: { namespace: string; name: string }) {
                 Describe
               </Button>
             </DialogTrigger>
-            <DialogContent className="!max-w-6xl sm:!max-w-6xl ">
+            <DialogContent className="!max-w-dvw">
               <TextViewer
                 title={`kubectl describe pods -n ${namespace} ${name}`}
                 value={describeText?.result || ''}

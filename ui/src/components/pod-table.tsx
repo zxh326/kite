@@ -3,11 +3,11 @@ import { IconLoader } from '@tabler/icons-react'
 import { Pod } from 'kubernetes-types/core/v1'
 import { Link } from 'react-router-dom'
 
-import { PodWithMetrics } from '@/types/api'
+import { MetricsData, PodWithMetrics } from '@/types/api'
 import { getPodStatus } from '@/lib/k8s'
 import { formatDate } from '@/lib/utils'
 
-import { PodMetricCell } from './pod-metrics-cell'
+import { MetricCell } from './metrics-cell'
 import { PodStatusIcon } from './pod-status-icon'
 import { Column, SimpleTable } from './simple-table'
 import { Badge } from './ui/badge'
@@ -77,19 +77,19 @@ export function PodTable(props: {
       {
         header: 'CPU',
         accessor: (pod: PodWithMetrics) => {
-          return pod
+          return pod.metrics
         },
         cell: (value: unknown) => {
-          return <PodMetricCell type="cpu" pod={value as PodWithMetrics} />
+          return <MetricCell type="cpu" metrics={value as MetricsData} />
         },
       },
       {
         header: 'Memory',
         accessor: (pod: PodWithMetrics) => {
-          return pod
+          return pod.metrics
         },
         cell: (value: unknown) => {
-          return <PodMetricCell type="memory" pod={value as PodWithMetrics} />
+          return <MetricCell type="memory" metrics={value as MetricsData} />
         },
       },
       {
