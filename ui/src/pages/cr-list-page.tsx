@@ -37,19 +37,28 @@ export function CRListPage() {
     const additionalColumns =
       crdData?.spec.versions[0].additionalPrinterColumns?.map(
         (printerColumn) => {
-          return columnHelper.accessor(get(crd, printerColumn.jsonPath), {
+          const jsonPath = printerColumn.jsonPath.startsWith('.')
+            ? printerColumn.jsonPath.slice(1)
+            : printerColumn.jsonPath
+
+          return columnHelper.accessor((row) => get(row, jsonPath), {
+            id: jsonPath || printerColumn.name,
             header: printerColumn.name,
-            cell: ({ row }) => {
+            cell: ({ getValue }) => {
               const type = printerColumn.type
-              const value = get(
-                row.original,
-                printerColumn.jsonPath.slice(1),
-                '-'
-              )
+              const value = getValue()
+              if (!value) {
+                return <span className="text-sm text-muted-foreground">-</span>
+              }
+              if (type === 'date') {
+                return (
+                  <span className="text-sm text-muted-foreground">
+                    {formatDate(value)}
+                  </span>
+                )
+              }
               return (
-                <span className="text-sm text-muted-foreground">
-                  {type === 'date' ? formatDate(value) : value}
-                </span>
+                <span className="text-sm text-muted-foreground">{value}</span>
               )
             },
           })

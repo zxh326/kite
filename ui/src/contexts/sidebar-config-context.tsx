@@ -456,7 +456,10 @@ export const SidebarConfigProvider: React.FC<SidebarConfigProviderProps> = ({
         return group
       })
 
-      updateConfig({ groups })
+      const pinnedItems = config.pinnedItems.filter((item) => item !== itemID)
+      const hiddenItems = config.hiddenItems.filter((item) => item !== itemID)
+
+      updateConfig({ groups, pinnedItems, hiddenItems })
     },
     [config, updateConfig]
   )
