@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { DiffEditor } from '@monaco-editor/react'
+import { formatHex } from 'culori'
 import * as yaml from 'js-yaml'
 import { editor as monacoEditor } from 'monaco-editor'
 import { useTranslation } from 'react-i18next'
@@ -19,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
+import { useColorTheme } from './color-theme-provider'
 import { useTheme } from './theme-provider'
 
 interface YamlDiffViewerProps {
@@ -57,6 +59,17 @@ export function YamlDiffViewer({
 }: YamlDiffViewerProps) {
   const { t } = useTranslation()
   const { actualTheme } = useTheme()
+  const { colorTheme } = useColorTheme()
+
+  const getCardBackgroundColor = () => {
+    const card = getComputedStyle(document.documentElement)
+      .getPropertyValue('--background')
+      .trim()
+    if (!card) {
+      return actualTheme === 'dark' ? '#18181b' : '#ffffff'
+    }
+    return formatHex(card) || (actualTheme === 'dark' ? '#18181b' : '#ffffff')
+  }
   const editorRef = useRef<monacoEditor.IStandaloneDiffEditor | null>(null)
   const [diffMode, setDiffMode] = useState<DiffMode>('previous-vs-modified')
 
@@ -194,7 +207,30 @@ export function YamlDiffViewer({
           <DiffEditor
             height={height}
             language="yaml"
-            theme={actualTheme === 'dark' ? 'vs-dark' : 'light'}
+            beforeMount={(monaco) => {
+              const cardBgColor = getCardBackgroundColor()
+              monaco.editor.defineTheme(`custom-dark-${colorTheme}`, {
+                base: 'vs-dark',
+                inherit: true,
+                rules: [],
+                colors: {
+                  'editor.background': cardBgColor,
+                },
+              })
+              monaco.editor.defineTheme(`custom-vs-${colorTheme}`, {
+                base: 'vs',
+                inherit: true,
+                rules: [],
+                colors: {
+                  'editor.background': cardBgColor,
+                },
+              })
+            }}
+            theme={
+              actualTheme === 'dark'
+                ? `custom-dark-${colorTheme}`
+                : `custom-vs-${colorTheme}`
+            }
             options={{
               readOnly: true,
               minimap: { enabled: true },

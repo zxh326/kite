@@ -204,7 +204,6 @@ export function YamlEditor<T extends ResourceType>({
               value={editorValue}
               beforeMount={(monaco) => {
                 const cardBgColor = getCardBackgroundColor()
-                // Define themes with consistent names
                 monaco.editor.defineTheme(`custom-dark-${colorTheme}`, {
                   base: 'vs-dark',
                   inherit: true,

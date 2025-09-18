@@ -1,5 +1,7 @@
 import { Editor } from '@monaco-editor/react'
+import { formatHex } from 'culori'
 
+import { useColorTheme } from './color-theme-provider'
 import { useTheme } from './theme-provider'
 
 interface SimpleYamlEditorProps {
@@ -15,8 +17,18 @@ export function SimpleYamlEditor({
   disabled = false,
   height = '400px',
 }: SimpleYamlEditorProps) {
-  const { theme } = useTheme()
+  const { actualTheme } = useTheme()
+  const { colorTheme } = useColorTheme()
 
+  const getCardBackgroundColor = () => {
+    const card = getComputedStyle(document.documentElement)
+      .getPropertyValue('--background')
+      .trim()
+    if (!card) {
+      return actualTheme === 'dark' ? '#18181b' : '#ffffff'
+    }
+    return formatHex(card) || (actualTheme === 'dark' ? '#18181b' : '#ffffff')
+  }
   return (
     <div className="border rounded-md overflow-hidden">
       <Editor
@@ -25,24 +37,29 @@ export function SimpleYamlEditor({
         value={value}
         onChange={onChange}
         beforeMount={(monaco) => {
-          monaco.editor.defineTheme('custom-dark', {
+          const cardBgColor = getCardBackgroundColor()
+          monaco.editor.defineTheme(`custom-dark-${colorTheme}`, {
             base: 'vs-dark',
             inherit: true,
             rules: [],
             colors: {
-              'editor.background': '#18181b',
+              'editor.background': cardBgColor,
             },
           })
-          monaco.editor.defineTheme('custom-vs', {
+          monaco.editor.defineTheme(`custom-vs-${colorTheme}`, {
             base: 'vs',
             inherit: true,
             rules: [],
             colors: {
-              'editor.background': '#ffffff',
+              'editor.background': cardBgColor,
             },
           })
         }}
-        theme={theme === 'dark' ? 'custom-dark' : 'custom-vs'}
+        theme={
+          actualTheme === 'dark'
+            ? `custom-dark-${colorTheme}`
+            : `custom-vs-${colorTheme}`
+        }
         options={{
           minimap: { enabled: false },
           scrollBeyondLastLine: false,
