@@ -19,7 +19,10 @@
     "refresh": "Refresh",
     "language": "Language",
     "close": "Close",
-    "done": "Done"
+    "done": "Done",
+    "desired": "Desired",
+    "current": "Current",
+    "available": "Available"
   },
   "globalSearch": {
     "title": "Global Search",
