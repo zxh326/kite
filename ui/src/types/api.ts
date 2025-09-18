@@ -14,6 +14,10 @@ import {
   StatefulSet,
   StatefulSetList,
 } from 'kubernetes-types/apps/v1'
+import {
+  HorizontalPodAutoscaler,
+  HorizontalPodAutoscalerList,
+} from 'kubernetes-types/autoscaling/v2'
 import { CronJob, CronJobList, Job, JobList } from 'kubernetes-types/batch/v1'
 import {
   ConfigMap,
@@ -107,6 +111,7 @@ export type ResourceType =
   | 'rolebindings'
   | 'clusterroles'
   | 'clusterrolebindings'
+  | 'horizontalpodautoscalers'
 
 export const clusterScopeResources: ResourceType[] = [
   'crds',
@@ -163,6 +168,7 @@ export interface ResourcesTypeMap {
   rolebindings: RoleBindingList
   clusterroles: ClusterRoleList
   clusterrolebindings: ClusterRoleBindingList
+  horizontalpodautoscalers: HorizontalPodAutoscalerList
 }
 
 export interface PodMetrics {
@@ -227,6 +233,7 @@ export interface ResourceTypeMap {
   rolebindings: RoleBinding
   clusterroles: ClusterRole
   clusterrolebindings: ClusterRoleBinding
+  horizontalpodautoscalers: HorizontalPodAutoscaler
 }
 
 export interface RecentEvent {

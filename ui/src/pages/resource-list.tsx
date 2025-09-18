@@ -7,6 +7,7 @@ import { CRDListPage } from './crd-list-page'
 import { DaemonSetListPage } from './daemonset-list-page'
 import { DeploymentListPage } from './deployment-list-page'
 import { GatewayListPage } from './gateway-list-page'
+import { HorizontalPodAutoscalerListPage } from './horizontalpodautoscaler-list-page'
 import { HTTPRouteListPage } from './httproute-list-page'
 import { IngressListPage } from './ingress-list-page'
 import { JobListPage } from './job-list-page'
@@ -53,6 +54,8 @@ export function ResourceList() {
       return <GatewayListPage />
     case 'httproutes':
       return <HTTPRouteListPage />
+    case 'horizontalpodautoscalers':
+      return <HorizontalPodAutoscalerListPage />
     default:
       return <SimpleListPage resourceType={resource as ResourceType} />
   }

@@ -44,6 +44,7 @@ export function DynamicBreadcrumb() {
       pvcs: t('sidebar.short.pvcs'),
       crds: t('nav.crds'),
       crs: t('nav.customResources'),
+      horizontalpodautoscalers: t('nav.horizontalpodautoscalers'),
     }
 
     // Helper function to create breadcrumb item
