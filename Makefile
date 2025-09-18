@@ -47,6 +47,16 @@ build: frontend backend ## Build both frontend and backend
 	@echo "✅ Build completed successfully!"
 	@echo "🚀 Run './$(BINARY_NAME)' to start the server"
 
+clean-frontend: ## Clean frontend build artifacts
+	cd $(UI_DIR) && rm -rf dist node_modules/.vite
+	rm -rf static
+
+clean-backend: ## Clean backend build artifacts
+	rm -rf $(BINARY_NAME) bin/
+
+clean: clean-frontend clean-backend ## Clean all build artifacts
+	@echo "🧹 All build artifacts cleaned!"
+
 cross-compile: frontend ## Cross-compile for multiple architectures
 	@echo "🔄 Cross-compiling for multiple architectures..."
 	mkdir -p bin
