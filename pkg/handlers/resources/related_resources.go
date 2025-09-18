@@ -11,6 +11,7 @@ import (
 	"github.com/zxh326/kite/pkg/common"
 	"github.com/zxh326/kite/pkg/kube"
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -247,6 +248,8 @@ func GetRelatedResources(c *gin.Context) {
 		}
 	case *gatewayapiv1.HTTPRoute:
 		result = getHTTPRouteRelatedResouces(res, namespace)
+	case *autoscalingv2.HorizontalPodAutoscaler:
+		result = getAutoScalingRelatedResources(res, namespace)
 	}
 
 	if podSpec != nil && selector != nil {
@@ -338,5 +341,17 @@ func getHTTPRouteRelatedResouces(res *gatewayapiv1.HTTPRoute, namespace string) 
 			})
 		}
 	}
+	return result
+}
+
+func getAutoScalingRelatedResources(res *autoscalingv2.HorizontalPodAutoscaler, namespace string) []common.RelatedResource {
+	var result []common.RelatedResource
+	scaleTarget := res.Spec.ScaleTargetRef
+	result = append(result, common.RelatedResource{
+		Type:       strings.ToLower(scaleTarget.Kind) + "s",
+		APIVersion: scaleTarget.APIVersion,
+		Name:       scaleTarget.Name,
+		Namespace:  namespace,
+	})
 	return result
 }

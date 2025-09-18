@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
+  IconArrowsHorizontal,
   IconBox,
   IconBoxMultiple,
   IconLoadBalancer,
@@ -63,6 +64,10 @@ const RESOURCE_CONFIG: Record<
   daemonsets: {
     label: 'nav.daemonsets',
     icon: IconTopologyBus,
+  },
+  horizontalpodautoscalers: {
+    label: 'nav.horizontalpodautoscalers',
+    icon: IconArrowsHorizontal,
   },
 }
 

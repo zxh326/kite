@@ -9,6 +9,7 @@ import {
 import * as React from 'react'
 import {
   Icon,
+  IconArrowsHorizontal,
   IconBell,
   IconBox,
   IconBoxMultiple,
@@ -68,6 +69,7 @@ const iconMap = {
   IconServer2,
   IconBell,
   IconCode,
+  IconArrowsHorizontal,
 }
 
 const getIconName = (iconComponent: React.ComponentType): string => {
@@ -159,6 +161,11 @@ export const SidebarConfigProvider: React.FC<SidebarConfigProviderProps> = ({
       'sidebar.groups.config': [
         { titleKey: 'nav.configMaps', url: '/configmaps', icon: IconMap },
         { titleKey: 'nav.secrets', url: '/secrets', icon: IconLock },
+        {
+          titleKey: 'nav.horizontalpodautoscalers',
+          url: '/horizontalpodautoscalers',
+          icon: IconArrowsHorizontal,
+        },
       ],
       'sidebar.groups.security': [
         {

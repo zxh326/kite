@@ -81,7 +81,8 @@
     "roles": "Roles",
     "rolebindings": "Role Bindings",
     "clusterroles": "Cluster Roles",
-    "clusterrolebindings": "Cluster Role Bindings"
+    "clusterrolebindings": "Cluster Role Bindings",
+    "horizontalpodautoscalers": "HPA"
   },
   "overview": {
     "title": "Overview",
