@@ -98,7 +98,7 @@ run: backend ## Run the built application
 	@echo "🚀 Starting $(BINARY_NAME) server..."
 	./$(BINARY_NAME)
 
-dev: backend ## Run in development mode
+dev: ## Run in development mode
 	@echo "🔄 Starting development mode..."
 	@echo "🚀 Starting $(BINARY_NAME) server..."
 	CGO_ENABLED=0 go build -trimpath $(LDFLAGS) -o $(BINARY_NAME) .

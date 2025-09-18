@@ -35,6 +35,7 @@ export function RelatedResourcesTable(props: {
       {
         header: 'Kind',
         accessor: (rs: RelatedResources) => rs.type,
+        align: 'left',
         cell: (value: unknown) => (
           <Badge className="capitalize">{value as string}</Badge>
         ),

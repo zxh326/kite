@@ -124,6 +124,7 @@ export function VolumeTable({
       header: 'Name',
       accessor: (item) => item.name,
       cell: (value) => <span className="font-medium">{value as string}</span>,
+      align: 'left',
     },
     {
       header: 'Type',
@@ -142,6 +143,7 @@ export function VolumeTable({
     {
       header: 'Volume Mounts',
       accessor: (item) => item.mounts,
+      align: 'left',
       cell: (value) => {
         const mounts = value as string
         if (mounts === 'No mounts') {

@@ -91,6 +91,11 @@ interface SidebarConfigContextType {
   getIconComponent: (
     iconName: string
   ) => React.ForwardRefExoticComponent<IconProps & React.RefAttributes<Icon>>
+  createCustomGroup: (groupName: string) => void
+  addCRDToGroup: (groupId: string, crdName: string, kind: string) => void
+  removeCRDToGroup: (groupId: string, crdName: string) => void
+  removeCustomGroup: (groupId: string) => void
+  moveGroup: (groupId: string, direction: 'up' | 'down') => void
 }
 
 const SidebarConfigContext = createContext<
@@ -342,6 +347,148 @@ export const SidebarConfigProvider: React.FC<SidebarConfigProviderProps> = ({
     [config, updateConfig]
   )
 
+  const moveGroup = useCallback(
+    (groupId: string, direction: 'up' | 'down') => {
+      if (!config) return
+
+      const sortedGroups = [...config.groups].sort((a, b) => a.order - b.order)
+      const currentIndex = sortedGroups.findIndex(
+        (group) => group.id === groupId
+      )
+      if (currentIndex === -1) return
+
+      const targetIndex =
+        direction === 'up' ? currentIndex - 1 : currentIndex + 1
+
+      if (targetIndex < 0 || targetIndex >= sortedGroups.length) {
+        return
+      }
+
+      const reordered = [...sortedGroups]
+      const [movedGroup] = reordered.splice(currentIndex, 1)
+      reordered.splice(targetIndex, 0, movedGroup)
+
+      const groups = reordered.map((group, index) => ({
+        ...group,
+        order: index,
+      }))
+      const groupOrder = groups.map((group) => group.id)
+
+      updateConfig({ groups, groupOrder })
+    },
+    [config, updateConfig]
+  )
+
+  const createCustomGroup = useCallback(
+    (groupName: string) => {
+      if (!config) return
+
+      const groupId = `custom-${groupName.toLowerCase().replace(/\s+/g, '-')}`
+
+      // Check if group already exists
+      if (config.groups.find((g) => g.id === groupId)) {
+        return
+      }
+
+      const newGroup: SidebarGroup = {
+        id: groupId,
+        nameKey: groupName,
+        items: [],
+        visible: true,
+        collapsed: false,
+        order: config.groups.length,
+        isCustom: true,
+      }
+
+      const groups = [...config.groups, newGroup]
+      updateConfig({ groups, groupOrder: [...config.groupOrder, groupId] })
+    },
+    [config, updateConfig]
+  )
+
+  const addCRDToGroup = useCallback(
+    (groupId: string, crdName: string, kind: string) => {
+      if (!config) return
+
+      const groups = config.groups.map((group) => {
+        if (group.id === groupId) {
+          const itemId = `${groupId}-${crdName.replace(/[^a-zA-Z0-9]/g, '-')}`
+
+          // Check if CRD already exists in this group
+          if (group.items.find((item) => item.id === itemId)) {
+            return group
+          }
+
+          const newItem: SidebarItem = {
+            id: itemId,
+            titleKey: kind,
+            url: `/crds/${crdName}`,
+            icon: 'IconCode',
+            visible: true,
+            pinned: false,
+            order: group.items.length,
+          }
+
+          return {
+            ...group,
+            items: [...group.items, newItem],
+          }
+        }
+        return group
+      })
+
+      updateConfig({ groups })
+    },
+    [config, updateConfig]
+  )
+
+  const removeCRDToGroup = useCallback(
+    (groupId: string, itemID: string) => {
+      if (!config) return
+      const groups = config.groups.map((group) => {
+        if (group.id === groupId) {
+          const newItems = group.items.filter((item) => item.id !== itemID)
+          return {
+            ...group,
+            items: newItems,
+          }
+        }
+        return group
+      })
+
+      const pinnedItems = config.pinnedItems.filter((item) => item !== itemID)
+      const hiddenItems = config.hiddenItems.filter((item) => item !== itemID)
+
+      updateConfig({ groups, pinnedItems, hiddenItems })
+    },
+    [config, updateConfig]
+  )
+
+  const removeCustomGroup = useCallback(
+    (groupId: string) => {
+      if (!config) return
+
+      // Only allow removing custom groups
+      const group = config.groups.find((g) => g.id === groupId)
+      if (!group?.isCustom) return
+
+      const groups = config.groups.filter((g) => g.id !== groupId)
+      const groupOrder = config.groupOrder.filter((id) => id !== groupId)
+
+      // Remove any pinned items from this group
+      const groupItemIds = group.items.map((item) => item.id)
+      const pinnedItems = config.pinnedItems.filter(
+        (itemId) => !groupItemIds.includes(itemId)
+      )
+      const hiddenItems = config.hiddenItems.filter(
+        (itemId) => !groupItemIds.includes(itemId)
+      )
+
+      updateConfig({ groups, groupOrder, pinnedItems, hiddenItems })
+    },
+    [config, updateConfig]
+  )
+
   const resetConfig = useCallback(() => {
     const defaultConfig = generateDefaultConfig()
     saveConfig(defaultConfig)
@@ -367,6 +514,11 @@ export const SidebarConfigProvider: React.FC<SidebarConfigProviderProps> = ({
     toggleGroupCollapse,
     resetConfig,
     getIconComponent,
+    createCustomGroup,
+    addCRDToGroup,
+    removeCRDToGroup,
+    removeCustomGroup,
+    moveGroup,
   }
 
   return (
