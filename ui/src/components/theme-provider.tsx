@@ -53,6 +53,7 @@ export function ThemeProvider({
         setActualTheme(systemTheme)
       }
 
+      handleChange()
       mediaQuery.addEventListener('change', handleChange)
       return () => mediaQuery.removeEventListener('change', handleChange)
     }
