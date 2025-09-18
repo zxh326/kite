@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { Check, LogOut, Palette } from 'lucide-react'
 
@@ -24,6 +25,7 @@ import { SidebarCustomizer } from './sidebar-customizer'
 export function UserMenu() {
   const { user, logout } = useAuth()
   const { colorTheme, setColorTheme } = useColorTheme()
+  const [open, setOpen] = useState(false)
 
   if (!user) return null
 
@@ -45,7 +47,7 @@ export function UserMenu() {
   }
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="size-sm">
@@ -108,7 +110,7 @@ export function UserMenu() {
           </DropdownMenuSubContent>
         </DropdownMenuSub>
 
-        <SidebarCustomizer />
+        <SidebarCustomizer onOpenChange={(d) => setOpen(d)} />
 
         {user.provider !== 'Anonymous' && (
           <>

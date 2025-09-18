@@ -59,6 +59,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     if (url === '/') {
       return location.pathname === '/'
     }
+    if (url === '/crds') {
+      return location.pathname == '/crds'
+    }
     return location.pathname.startsWith(url)
   }
 
@@ -148,7 +151,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenu>
                 {pinnedItems.map((item) => {
                   const IconComponent = getIconComponent(item.icon)
-                  const title = item.titleKey ? t(item.titleKey) : ''
+                  const title = item.titleKey
+                    ? t(item.titleKey, { defaultValue: item.titleKey })
+                    : ''
                   return (
                     <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton
@@ -179,7 +184,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarGroupLabel asChild>
                 <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors group-data-[state=open]:text-foreground">
                   <span className="uppercase tracking-wide text-xs font-bold">
-                    {group.nameKey ? t(group.nameKey) : ''}
+                    {group.nameKey
+                      ? t(group.nameKey, { defaultValue: group.nameKey })
+                      : ''}
                   </span>
                   <ChevronDown className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
                 </CollapsibleTrigger>
@@ -189,7 +196,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <SidebarMenu>
                     {group.items.map((item) => {
                       const IconComponent = getIconComponent(item.icon)
-                      const title = item.titleKey ? t(item.titleKey) : ''
+                      const title = item.titleKey
+                        ? t(item.titleKey, { defaultValue: item.titleKey })
+                        : ''
                       return (
                         <SidebarMenuItem key={item.id}>
                           <SidebarMenuButton

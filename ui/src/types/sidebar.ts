@@ -15,6 +15,7 @@ export interface SidebarGroup {
   visible: boolean
   collapsed: boolean
   order: number
+  isCustom?: boolean
 }
 
 export interface SidebarConfig {
