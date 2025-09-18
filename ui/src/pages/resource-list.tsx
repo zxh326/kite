@@ -4,6 +4,7 @@ import { ResourceType } from '@/types/api'
 
 import { ConfigMapListPage } from './configmap-list-page'
 import { CRDListPage } from './crd-list-page'
+import { CronJobListPage } from './cronjob-list-page'
 import { DaemonSetListPage } from './daemonset-list-page'
 import { DeploymentListPage } from './deployment-list-page'
 import { GatewayListPage } from './gateway-list-page'
@@ -38,6 +39,8 @@ export function ResourceList() {
       return <ServiceListPage />
     case 'jobs':
       return <JobListPage />
+    case 'cronjobs':
+      return <CronJobListPage />
     case 'statefulsets':
       return <StatefulSetListPage />
     case 'daemonsets':

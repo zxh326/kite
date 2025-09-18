@@ -3,8 +3,10 @@ import { useParams } from 'react-router-dom'
 import { ResourceType } from '@/types/api'
 import { Card, CardContent } from '@/components/ui/card'
 
+import { CronJobDetail } from './cronjob-detail'
 import { DaemonSetDetail } from './daemonset-detail'
 import { DeploymentDetail } from './deployment-detail'
+import { JobDetail } from './job-detail'
 import { NodeDetail } from './node-detail'
 import { PodDetail } from './pod-detail'
 import { SecretDetail } from './secret-detail'
@@ -36,6 +38,10 @@ export function ResourceDetail() {
       return <DaemonSetDetail namespace={namespace!} name={name} />
     case 'statefulsets':
       return <StatefulSetDetail namespace={namespace!} name={name} />
+    case 'jobs':
+      return <JobDetail namespace={namespace!} name={name} />
+    case 'cronjobs':
+      return <CronJobDetail namespace={namespace!} name={name} />
     case 'secrets':
       return <SecretDetail namespace={namespace!} name={name} />
     case 'nodes':

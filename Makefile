@@ -83,7 +83,7 @@ package-binaries: ## Package each kite binary file separately
 
 frontend: static ## Build frontend only
 
-static: ui/src/**/*.tsx ui/src/**/*.ts ui/index.html ui/**/*.css ui/package.json
+static: ui/src/**/*.tsx ui/src/**/*.ts ui/index.html ui/**/*.css ui/package.json ui/vite.config.ts
 	@echo "📦 Ensuring static files are built..."
 	cd $(UI_DIR) && pnpm run build
 

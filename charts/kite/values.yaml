@@ -33,7 +33,10 @@ jwtSecret: "kite-default-jwt-secret-key-change-in-production"
 # change this in production
 encryptKey: "kite-default-encryption-key-change-in-production"
 
-## Hostname for the application
+# External Host for the application
+# Used in generate OAuth redirect URLs
+# Leave empty to obtain from request headers
+# Example: https://kite.zzde.me
 host: ""
 
 # Database configuration
