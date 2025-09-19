@@ -223,6 +223,63 @@ data:
 stringData:
   database-url: "postgresql://user:pass@localhost:5432/mydb"`,
   },
+  {
+    name: 'Daemonset',
+    description: 'A DaemonSet to run pods on all nodes',
+    yaml: `apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: example-daemonset
+spec:
+  selector:
+    matchLabels:
+      app: example
+  template:
+    metadata:
+      labels:
+        app: example
+    spec:
+      containers:
+        - name: busybox
+          image: busybox:1.35
+          args:
+            - /bin/sh
+            - -c
+            - 'while true; do echo alive; sleep 60; done'
+`,
+  },
+  {
+    name: 'Ingress',
+    description: 'An Ingress to route external traffic',
+    yaml: `apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: example-service
+                port:
+                  number: 80
+`,
+  },
+  {
+    name: 'Namespace',
+    description: 'A Namespace for resource isolation',
+    yaml: `apiVersion: v1
+kind: Namespace
+metadata:
+  name: example-namespace
+`,
+  },
 ]
 
 export const getTemplateByName = (
