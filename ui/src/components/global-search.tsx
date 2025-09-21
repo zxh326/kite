@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSidebarConfig } from '@/contexts/sidebar-config-context'
 import {
   IconArrowsHorizontal,
   IconBox,
   IconBoxMultiple,
+  IconLayoutDashboard,
   IconLoadBalancer,
   IconLoader,
   IconLock,
@@ -71,6 +73,16 @@ const RESOURCE_CONFIG: Record<
   },
 }
 
+interface SidebarSearchItem {
+  id: string
+  title: string
+  url: string
+  Icon: React.ComponentType<{ className?: string }>
+  groupLabel?: string
+  searchText: string
+  isPinned: boolean
+}
+
 interface GlobalSearchProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -82,6 +94,76 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
   const [results, setResults] = useState<SearchResult[] | null>([])
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
+  const { config, getIconComponent } = useSidebarConfig()
+
+  const sidebarItems = useMemo<SidebarSearchItem[]>(() => {
+    const overviewTitle = t('nav.overview')
+    const items: SidebarSearchItem[] = [
+      {
+        id: 'sidebar-overview',
+        title: overviewTitle,
+        url: '/',
+        Icon: IconLayoutDashboard,
+        groupLabel: undefined,
+        searchText: `${overviewTitle} overview home dashboard /`.toLowerCase(),
+        isPinned: false,
+      },
+    ]
+
+    if (!config) {
+      return items
+    }
+
+    const pinnedItems = new Set(config.pinnedItems)
+
+    config.groups.forEach((group) => {
+      const groupLabel = group.nameKey
+        ? t(group.nameKey, { defaultValue: group.nameKey })
+        : ''
+
+      group.items
+        .slice()
+        .sort((a, b) => a.order - b.order)
+        .forEach((item) => {
+          const title = item.titleKey
+            ? t(item.titleKey, { defaultValue: item.titleKey })
+            : item.id
+          const Icon = getIconComponent(item.icon)
+          const searchTerms = [title, groupLabel, item.url, item.titleKey]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase()
+
+          items.push({
+            id: item.id,
+            title,
+            url: item.url,
+            Icon,
+            groupLabel,
+            searchText: searchTerms,
+            isPinned: pinnedItems.has(item.id),
+          })
+        })
+    })
+
+    return items
+  }, [config, getIconComponent, t])
+
+  const sidebarResults = useMemo(() => {
+    const trimmedQuery = query.trim().toLowerCase()
+    if (!trimmedQuery) {
+      return []
+    }
+
+    return sidebarItems
+      .filter((item) => item.searchText.includes(trimmedQuery))
+      .sort((a, b) => {
+        if (a.isPinned !== b.isPinned) {
+          return a.isPinned ? -1 : 1
+        }
+        return a.title.localeCompare(b.title)
+      })
+  }, [query, sidebarItems])
 
   // Use favorites hook
   const {
@@ -193,6 +275,42 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
               )}
             </CommandEmpty>
 
+            {sidebarResults.length > 0 && (
+              <CommandGroup heading={t('globalSearch.navigation')}>
+                {sidebarResults.map((item) => {
+                  const Icon = item.Icon
+                  return (
+                    <CommandItem
+                      key={`nav-${item.id}`}
+                      value={`${item.title} ${item.groupLabel || ''} ${item.url}`}
+                      onSelect={() => handleSelect(item.url)}
+                      className="flex items-center gap-3 py-3"
+                    >
+                      <Icon className="h-4 w-4 text-sidebar-primary" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{item.title}</span>
+                          {item.groupLabel ? (
+                            <Badge className="text-xs" variant="outline">
+                              {item.groupLabel}
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {item.url}
+                        </div>
+                      </div>
+                      {item.isPinned ? (
+                        <Badge className="text-xs" variant="secondary">
+                          {t('sidebar.pinned', 'Pinned')}
+                        </Badge>
+                      ) : null}
+                    </CommandItem>
+                  )
+                })}
+              </CommandGroup>
+            )}
+
             {results && results.length > 0 && (
               <CommandGroup
                 heading={
@@ -221,7 +339,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
                       onSelect={() => handleSelect(path)}
                       className="flex items-center gap-3 py-3"
                     >
-                      <Icon className="h-4 w-4 text-muted-foreground" />
+                      <Icon className="h-4 w-4 text-sidebar-primary" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{result.name}</span>
