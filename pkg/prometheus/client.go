@@ -523,11 +523,8 @@ func FillMissingDataPoints(timeRange time.Duration, step time.Duration, existing
 	return append(result, existing...)
 }
 
-// GetWorkloadMetrics fetches aggregated metrics for a workload using label selector
-func (c *Client) GetWorkloadMetrics(ctx context.Context, namespace, labelSelector, container string, duration string) (*PodMetrics, error) {
-	var step time.Duration
-	var timeRange time.Duration
-
+// Helper function to validate duration and get time parameters
+func validateDurationAndGetTimeParams(duration string) (timeRange, step time.Duration, err error) {
 	switch duration {
 	case "30m":
 		timeRange = 30 * time.Minute
@@ -539,7 +536,16 @@ func (c *Client) GetWorkloadMetrics(ctx context.Context, namespace, labelSelecto
 		timeRange = 24 * time.Hour
 		step = 5 * time.Minute
 	default:
-		return nil, fmt.Errorf("unsupported duration: %s", duration)
+		return 0, 0, fmt.Errorf("unsupported duration: %s", duration)
+	}
+	return timeRange, step, nil
+}
+
+// GetWorkloadMetrics fetches aggregated metrics for a workload using label selector
+func (c *Client) GetWorkloadMetrics(ctx context.Context, namespace, labelSelector, container string, duration string) (*PodMetrics, error) {
+	timeRange, step, err := validateDurationAndGetTimeParams(duration)
+	if err != nil {
+		return nil, err
 	}
 
 	cpuData, err := c.GetCPUUsageByLabelSelector(ctx, namespace, labelSelector, container, timeRange, step)
