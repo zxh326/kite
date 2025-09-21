@@ -14,6 +14,8 @@ interface User {
   avatar_url: string
   provider: string
   roles?: { name: string }[]
+
+  isAdmin(): boolean
 }
 
 interface AuthContextType {
@@ -68,7 +70,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (response.ok) {
         const data = await response.json()
-        setUser(data.user)
+        const user = data.user as User
+        user.isAdmin = function () {
+          return (
+            this.roles?.some(
+              (role: { name: string }) => role.name === 'admin'
+            ) || false
+          )
+        }
+        setUser(user)
       } else {
         setUser(null)
       }

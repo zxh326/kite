@@ -1,20 +1,26 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useAuth } from '@/contexts/auth-context'
+import { useSidebarConfig } from '@/contexts/sidebar-config-context'
 import {
   IconArrowsHorizontal,
   IconBox,
   IconBoxMultiple,
+  IconLayoutDashboard,
   IconLoadBalancer,
   IconLoader,
   IconLock,
   IconMap,
+  IconMoon,
   IconNetwork,
   IconPlayerPlay,
   IconRocket,
   IconRoute,
   IconRouter,
   IconServer2,
+  IconSettings,
   IconStar,
   IconStarFilled,
+  IconSun,
   IconTopologyBus,
 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
@@ -38,6 +44,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useTheme } from '@/components/theme-provider'
 
 // Define resource types and their display properties
 const RESOURCE_CONFIG: Record<
@@ -71,6 +78,16 @@ const RESOURCE_CONFIG: Record<
   },
 }
 
+interface SidebarSearchItem {
+  id: string
+  title: string
+  url: string
+  Icon: React.ComponentType<{ className?: string }>
+  groupLabel?: string
+  searchText: string
+  isPinned: boolean
+}
+
 interface GlobalSearchProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -82,6 +99,170 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
   const [results, setResults] = useState<SearchResult[] | null>([])
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const { config, getIconComponent } = useSidebarConfig()
+  const { setTheme, actualTheme } = useTheme()
+
+  // Simple theme toggle function
+  const toggleTheme = useCallback(() => {
+    if (actualTheme === 'dark') {
+      setTheme('light')
+    } else {
+      setTheme('dark')
+    }
+  }, [actualTheme, setTheme])
+
+  const themeToggleOption = useMemo(() => {
+    return {
+      id: 'toggle-theme',
+      label: t('globalSearch.toggleTheme'),
+      icon: actualTheme === 'dark' ? IconSun : IconMoon,
+      action: toggleTheme,
+    }
+  }, [actualTheme, t, toggleTheme])
+
+  const sidebarItems = useMemo<SidebarSearchItem[]>(() => {
+    const overviewTitle = t('nav.overview')
+    const items: SidebarSearchItem[] = [
+      {
+        id: 'sidebar-overview',
+        title: overviewTitle,
+        url: '/',
+        Icon: IconLayoutDashboard,
+        groupLabel: undefined,
+        searchText: `${overviewTitle} overview home dashboard /`.toLowerCase(),
+        isPinned: false,
+      },
+      ...(user?.isAdmin()
+        ? [
+            {
+              id: 'settings',
+              title: t('settings.nav', 'Settings'),
+              url: '/settings',
+              Icon: IconSettings,
+              groupLabel: 'Settings',
+              searchText:
+                `${t('settings.nav', 'Settings')} admin`.toLowerCase(),
+              isPinned: false,
+            },
+            {
+              id: 'clusters',
+              title: t('settings.tabs.clusters', 'Cluster'),
+              url: '/settings?tab=clusters',
+              Icon: IconSettings,
+              groupLabel: 'Settings',
+              searchText:
+                `${t('settings.tabs.clusters', 'Cluster')} settings cluster admin`.toLowerCase(),
+              isPinned: false,
+            },
+            {
+              id: 'oauth',
+              title: t('settings.tabs.oauth', 'OAuth'),
+              url: '/settings?tab=oauth',
+              Icon: IconSettings,
+              groupLabel: 'Settings',
+              searchText:
+                `${t('settings.tabs.oauth', 'OAuth')} settings oauth admin`.toLowerCase(),
+              isPinned: false,
+            },
+            {
+              id: 'rbac',
+              title: t('settings.tabs.rbac', 'RBAC'),
+              url: '/settings?tab=rbac',
+              Icon: IconSettings,
+              groupLabel: 'Settings',
+              searchText:
+                `${t('settings.tabs.rbac', 'RBAC')} settings rbac admin`.toLowerCase(),
+              isPinned: false,
+            },
+            {
+              id: 'users',
+              title: t('settings.tabs.users', 'User'),
+              url: '/settings?tab=users',
+              Icon: IconSettings,
+              groupLabel: 'Settings',
+              searchText:
+                `${t('settings.tabs.users', 'User')} settings user admin`.toLowerCase(),
+              isPinned: false,
+            },
+          ]
+        : []),
+    ]
+
+    if (!config) {
+      return items
+    }
+
+    const pinnedItems = new Set(config.pinnedItems)
+
+    config.groups.forEach((group) => {
+      const groupLabel = group.nameKey
+        ? t(group.nameKey, { defaultValue: group.nameKey })
+        : ''
+
+      group.items
+        .slice()
+        .sort((a, b) => a.order - b.order)
+        .forEach((item) => {
+          const title = item.titleKey
+            ? t(item.titleKey, { defaultValue: item.titleKey })
+            : item.id
+          const Icon = getIconComponent(item.icon)
+          const searchTerms = [title, groupLabel, item.url, item.titleKey]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase()
+
+          items.push({
+            id: item.id,
+            title,
+            url: item.url,
+            Icon,
+            groupLabel,
+            searchText: searchTerms,
+            isPinned: pinnedItems.has(item.id),
+          })
+        })
+    })
+
+    return items
+  }, [config, getIconComponent, t, user])
+
+  const sidebarResults = useMemo(() => {
+    const trimmedQuery = query.trim().toLowerCase()
+    if (!trimmedQuery) {
+      return []
+    }
+
+    return sidebarItems
+      .filter((item) => item.searchText.includes(trimmedQuery))
+      .sort((a, b) => {
+        if (a.isPinned !== b.isPinned) {
+          return a.isPinned ? -1 : 1
+        }
+        return a.title.localeCompare(b.title)
+      })
+  }, [query, sidebarItems])
+
+  // Filter theme option based on query
+  const showThemeToggle = useMemo(() => {
+    const trimmedQuery = query.trim().toLowerCase()
+    if (!trimmedQuery) {
+      return false
+    }
+
+    const themeKeywords = [
+      t('globalSearch.toggleTheme').toLowerCase(),
+      'theme',
+      'toggle',
+      'mode',
+    ]
+
+    return themeKeywords.some(
+      (keyword) =>
+        keyword.includes(trimmedQuery) || trimmedQuery.includes(keyword)
+    )
+  }, [query, t])
 
   // Use favorites hook
   const {
@@ -151,6 +332,16 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
     [navigate, onOpenChange]
   )
 
+  // Handle theme action
+  const handleThemeAction = useCallback(
+    (action: () => void) => {
+      action()
+      onOpenChange(false)
+      setQuery('')
+    },
+    [onOpenChange]
+  )
+
   // Clear state when dialog closes
   useEffect(() => {
     if (!open) {
@@ -193,6 +384,67 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
               )}
             </CommandEmpty>
 
+            {sidebarResults.length > 0 && (
+              <CommandGroup heading={t('globalSearch.navigation')}>
+                {sidebarResults.map((item) => {
+                  const Icon = item.Icon
+                  return (
+                    <CommandItem
+                      key={`nav-${item.id}`}
+                      value={`${item.title} ${item.groupLabel || ''} ${item.url}`}
+                      onSelect={() => handleSelect(item.url)}
+                      className="flex items-center gap-3 py-3"
+                    >
+                      <Icon className="h-4 w-4 text-sidebar-primary" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{item.title}</span>
+                          {item.groupLabel ? (
+                            <Badge className="text-xs" variant="outline">
+                              {item.groupLabel}
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {item.url}
+                        </div>
+                      </div>
+                      {item.isPinned ? (
+                        <Badge className="text-xs" variant="secondary">
+                          {t('sidebar.pinned', 'Pinned')}
+                        </Badge>
+                      ) : null}
+                    </CommandItem>
+                  )
+                })}
+              </CommandGroup>
+            )}
+
+            {showThemeToggle && (
+              <CommandGroup heading={t('globalSearch.actions')}>
+                <CommandItem
+                  key={themeToggleOption.id}
+                  value={`${themeToggleOption.label} theme toggle mode`}
+                  onSelect={() => handleThemeAction(themeToggleOption.action)}
+                  className="flex items-center gap-3 py-3"
+                >
+                  <themeToggleOption.icon className="h-4 w-4 text-sidebar-primary" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">
+                        {themeToggleOption.label}
+                      </span>
+                      <Badge className="text-xs" variant="outline">
+                        {actualTheme === 'dark'
+                          ? 'Switch to Light'
+                          : 'Switch to Dark'}
+                      </Badge>
+                    </div>
+                  </div>
+                </CommandItem>
+              </CommandGroup>
+            )}
+
             {results && results.length > 0 && (
               <CommandGroup
                 heading={
@@ -221,7 +473,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
                       onSelect={() => handleSelect(path)}
                       className="flex items-center gap-3 py-3"
                     >
-                      <Icon className="h-4 w-4 text-muted-foreground" />
+                      <Icon className="h-4 w-4 text-sidebar-primary" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{result.name}</span>

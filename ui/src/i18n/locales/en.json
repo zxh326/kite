@@ -32,7 +32,11 @@
     "emptyHint": "Type at least 3 characters to search or see favorites below...",
     "favorites": "Favorites",
     "resources": "Resources",
-    "noResults": "No results found"
+    "noResults": "No results found",
+    "navigation": "Navigation",
+    "hidden": "Hidden",
+    "actions": "Actions",
+    "toggleTheme": "Toggle Theme"
   },
   "sidebar": {
     "groups": {
