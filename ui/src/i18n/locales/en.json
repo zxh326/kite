@@ -34,7 +34,9 @@
     "resources": "Resources",
     "noResults": "No results found",
     "navigation": "Navigation",
-    "hidden": "Hidden"
+    "hidden": "Hidden",
+    "actions": "Actions",
+    "toggleTheme": "Toggle Theme"
   },
   "sidebar": {
     "groups": {
