@@ -119,7 +119,12 @@ func (h *PromHandler) GetPodMetrics(c *gin.Context) {
 	var podMetrics *prometheus.PodMetrics
 	var err error
 	if cs.PromClient != nil {
-		podMetrics, err = cs.PromClient.GetPodMetrics(ctx, namespace, podName, container, duration)
+		// Check if we have a label selector - use workload metrics
+		if labelSelector != "" {
+			podMetrics, err = cs.PromClient.GetWorkloadMetrics(ctx, namespace, labelSelector, container, duration)
+		} else {
+			podMetrics, err = cs.PromClient.GetPodMetrics(ctx, namespace, podName, container, duration)
+		}
 		if err == nil && podMetrics != nil {
 			podMetrics.Fallback = false
 			c.JSON(http.StatusOK, podMetrics)

@@ -321,6 +321,185 @@ func (c *Client) GetDiskWriteUsage(ctx context.Context, namespace, podNamePrefix
 	return c.queryRange(ctx, query, start, now, step)
 }
 
+// Helper functions for workload metrics using label selectors
+func (c *Client) GetCPUUsageByLabelSelector(ctx context.Context, namespace, labelSelector, container string, timeRange, step time.Duration) ([]UsageDataPoint, error) {
+	now := time.Now()
+	start := now.Add(-timeRange)
+
+	conditions := []string{
+		`container!="POD"`,
+		`container!=""`,
+	}
+	if namespace != "" {
+		conditions = append(conditions, fmt.Sprintf(`namespace="%s"`, namespace))
+	}
+	if container != "" {
+		conditions = append(conditions, fmt.Sprintf(`container="%s"`, container))
+	}
+	
+	// For label selector, we'll try to use pod labels directly if available
+	// If not, fall back to basic aggregation within the namespace
+	if labelSelector != "" {
+		// Try to use pod labels in container metrics (some Prometheus setups have these)
+		labelPairs := strings.Split(labelSelector, ",")
+		for _, pair := range labelPairs {
+			if keyValue := strings.Split(strings.TrimSpace(pair), "="); len(keyValue) == 2 {
+				key := strings.TrimSpace(keyValue[0])
+				value := strings.TrimSpace(keyValue[1])
+				// Try to use pod_label_* format if available
+				conditions = append(conditions, fmt.Sprintf(`pod_label_%s="%s"`, key, value))
+			}
+		}
+	}
+	
+	query := fmt.Sprintf(`sum(rate(container_cpu_usage_seconds_total{%s}[1m]))`, strings.Join(conditions, ","))
+	return c.queryRange(ctx, query, start, now, step)
+}
+
+func (c *Client) GetMemoryUsageByLabelSelector(ctx context.Context, namespace, labelSelector, container string, timeRange, step time.Duration) ([]UsageDataPoint, error) {
+	now := time.Now()
+	start := now.Add(-timeRange)
+
+	conditions := []string{
+		`container!="POD"`,
+		`container!=""`,
+	}
+	if namespace != "" {
+		conditions = append(conditions, fmt.Sprintf(`namespace="%s"`, namespace))
+	}
+	if container != "" {
+		conditions = append(conditions, fmt.Sprintf(`container="%s"`, container))
+	}
+	
+	if labelSelector != "" {
+		labelPairs := strings.Split(labelSelector, ",")
+		for _, pair := range labelPairs {
+			if keyValue := strings.Split(strings.TrimSpace(pair), "="); len(keyValue) == 2 {
+				key := strings.TrimSpace(keyValue[0])
+				value := strings.TrimSpace(keyValue[1])
+				conditions = append(conditions, fmt.Sprintf(`pod_label_%s="%s"`, key, value))
+			}
+		}
+	}
+	
+	query := fmt.Sprintf(`sum(container_memory_usage_bytes{%s}) / 1024 / 1024`, strings.Join(conditions, ","))
+	return c.queryRange(ctx, query, start, now, step)
+}
+
+func (c *Client) GetNetworkInUsageByLabelSelector(ctx context.Context, namespace, labelSelector, container string, timeRange, step time.Duration) ([]UsageDataPoint, error) {
+	now := time.Now()
+	start := now.Add(-timeRange)
+
+	conditions := []string{}
+	if namespace != "" {
+		conditions = append(conditions, fmt.Sprintf(`namespace="%s"`, namespace))
+	}
+	if container != "" {
+		conditions = append(conditions, fmt.Sprintf(`container="%s"`, container))
+	}
+	
+	if labelSelector != "" {
+		labelPairs := strings.Split(labelSelector, ",")
+		for _, pair := range labelPairs {
+			if keyValue := strings.Split(strings.TrimSpace(pair), "="); len(keyValue) == 2 {
+				key := strings.TrimSpace(keyValue[0])
+				value := strings.TrimSpace(keyValue[1])
+				conditions = append(conditions, fmt.Sprintf(`pod_label_%s="%s"`, key, value))
+			}
+		}
+	}
+	
+	query := fmt.Sprintf(`sum(rate(container_network_receive_bytes_total{%s}[1m]))`, strings.Join(conditions, ","))
+	return c.queryRange(ctx, query, start, now, step)
+}
+
+func (c *Client) GetNetworkOutUsageByLabelSelector(ctx context.Context, namespace, labelSelector, container string, timeRange, step time.Duration) ([]UsageDataPoint, error) {
+	now := time.Now()
+	start := now.Add(-timeRange)
+
+	conditions := []string{}
+	if namespace != "" {
+		conditions = append(conditions, fmt.Sprintf(`namespace="%s"`, namespace))
+	}
+	if container != "" {
+		conditions = append(conditions, fmt.Sprintf(`container="%s"`, container))
+	}
+	
+	if labelSelector != "" {
+		labelPairs := strings.Split(labelSelector, ",")
+		for _, pair := range labelPairs {
+			if keyValue := strings.Split(strings.TrimSpace(pair), "="); len(keyValue) == 2 {
+				key := strings.TrimSpace(keyValue[0])
+				value := strings.TrimSpace(keyValue[1])
+				conditions = append(conditions, fmt.Sprintf(`pod_label_%s="%s"`, key, value))
+			}
+		}
+	}
+	
+	query := fmt.Sprintf(`sum(rate(container_network_transmit_bytes_total{%s}[1m]))`, strings.Join(conditions, ","))
+	return c.queryRange(ctx, query, start, now, step)
+}
+
+func (c *Client) GetDiskReadUsageByLabelSelector(ctx context.Context, namespace, labelSelector, container string, timeRange, step time.Duration) ([]UsageDataPoint, error) {
+	now := time.Now()
+	start := now.Add(-timeRange)
+
+	conditions := []string{
+		`container!="POD"`,
+		`container!=""`,
+	}
+	if namespace != "" {
+		conditions = append(conditions, fmt.Sprintf(`namespace="%s"`, namespace))
+	}
+	if container != "" {
+		conditions = append(conditions, fmt.Sprintf(`container="%s"`, container))
+	}
+	
+	if labelSelector != "" {
+		labelPairs := strings.Split(labelSelector, ",")
+		for _, pair := range labelPairs {
+			if keyValue := strings.Split(strings.TrimSpace(pair), "="); len(keyValue) == 2 {
+				key := strings.TrimSpace(keyValue[0])
+				value := strings.TrimSpace(keyValue[1])
+				conditions = append(conditions, fmt.Sprintf(`pod_label_%s="%s"`, key, value))
+			}
+		}
+	}
+	
+	query := fmt.Sprintf(`sum(rate(container_fs_reads_bytes_total{%s}[1m]))`, strings.Join(conditions, ","))
+	return c.queryRange(ctx, query, start, now, step)
+}
+
+func (c *Client) GetDiskWriteUsageByLabelSelector(ctx context.Context, namespace, labelSelector, container string, timeRange, step time.Duration) ([]UsageDataPoint, error) {
+	now := time.Now()
+	start := now.Add(-timeRange)
+
+	conditions := []string{
+		`container!="POD"`,
+		`container!=""`,
+	}
+	if namespace != "" {
+		conditions = append(conditions, fmt.Sprintf(`namespace="%s"`, namespace))
+	}
+	if container != "" {
+		conditions = append(conditions, fmt.Sprintf(`container="%s"`, container))
+	}
+	
+	if labelSelector != "" {
+		labelPairs := strings.Split(labelSelector, ",")
+		for _, pair := range labelPairs {
+			if keyValue := strings.Split(strings.TrimSpace(pair), "="); len(keyValue) == 2 {
+				key := strings.TrimSpace(keyValue[0])
+				value := strings.TrimSpace(keyValue[1])
+				conditions = append(conditions, fmt.Sprintf(`pod_label_%s="%s"`, key, value))
+			}
+		}
+	}
+	
+	query := fmt.Sprintf(`sum(rate(container_fs_writes_bytes_total{%s}[1m]))`, strings.Join(conditions, ","))
+	return c.queryRange(ctx, query, start, now, step)
+}
+
 func FillMissingDataPoints(timeRange time.Duration, step time.Duration, existing []UsageDataPoint) []UsageDataPoint {
 	if len(existing) == 0 {
 		return existing
@@ -342,6 +521,66 @@ func FillMissingDataPoints(timeRange time.Duration, step time.Duration, existing
 	}
 
 	return append(result, existing...)
+}
+
+// GetWorkloadMetrics fetches aggregated metrics for a workload using label selector
+func (c *Client) GetWorkloadMetrics(ctx context.Context, namespace, labelSelector, container string, duration string) (*PodMetrics, error) {
+	var step time.Duration
+	var timeRange time.Duration
+
+	switch duration {
+	case "30m":
+		timeRange = 30 * time.Minute
+		step = 15 * time.Second
+	case "1h":
+		timeRange = 1 * time.Hour
+		step = 1 * time.Minute
+	case "24h":
+		timeRange = 24 * time.Hour
+		step = 5 * time.Minute
+	default:
+		return nil, fmt.Errorf("unsupported duration: %s", duration)
+	}
+
+	cpuData, err := c.GetCPUUsageByLabelSelector(ctx, namespace, labelSelector, container, timeRange, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying workload CPU usage: %w", err)
+	}
+	
+	memoryData, err := c.GetMemoryUsageByLabelSelector(ctx, namespace, labelSelector, container, timeRange, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying workload Memory usage: %w", err)
+	}
+
+	networkInData, err := c.GetNetworkInUsageByLabelSelector(ctx, namespace, labelSelector, container, timeRange, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying workload Network incoming usage: %w", err)
+	}
+
+	networkOutData, err := c.GetNetworkOutUsageByLabelSelector(ctx, namespace, labelSelector, container, timeRange, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying workload Network outgoing usage: %w", err)
+	}
+
+	diskReadData, err := c.GetDiskReadUsageByLabelSelector(ctx, namespace, labelSelector, container, timeRange, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying workload Disk read usage: %w", err)
+	}
+
+	diskWriteData, err := c.GetDiskWriteUsageByLabelSelector(ctx, namespace, labelSelector, container, timeRange, step)
+	if err != nil {
+		return nil, fmt.Errorf("error querying workload Disk write usage: %w", err)
+	}
+
+	return &PodMetrics{
+		CPU:        FillMissingDataPoints(timeRange, step, cpuData),
+		Memory:     FillMissingDataPoints(timeRange, step, memoryData),
+		NetworkIn:  FillMissingDataPoints(timeRange, step, networkInData),
+		NetworkOut: FillMissingDataPoints(timeRange, step, networkOutData),
+		DiskRead:   FillMissingDataPoints(timeRange, step, diskReadData),
+		DiskWrite:  FillMissingDataPoints(timeRange, step, diskWriteData),
+		Fallback:   false,
+	}, nil
 }
 
 // GetPodMetrics fetches metrics for a specific pod
