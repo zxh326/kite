@@ -44,7 +44,7 @@ export function SiteHeader() {
                   orientation="vertical"
                   className="mx-2 data-[orientation=vertical]:h-4"
                 />
-                {user?.roles?.some((role) => role.name === 'admin') && (
+                {user?.isAdmin() && (
                   <Button
                     variant="ghost"
                     size="icon"
