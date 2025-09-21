@@ -230,7 +230,6 @@ func NewClusterManager() (*ClusterManager, error) {
 	go func() {
 		ticker := time.NewTicker(1 * time.Minute)
 		defer ticker.Stop()
-		syncNow <- struct{}{}
 		for {
 			select {
 			case <-ticker.C:
@@ -244,5 +243,9 @@ func NewClusterManager() (*ClusterManager, error) {
 			}
 		}
 	}()
+
+	if err := syncClusters(cm); err != nil {
+		klog.Warningf("Failed to sync clusters: %v", err)
+	}
 	return cm, nil
 }
