@@ -137,11 +137,12 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
         ? [
             {
               id: 'settings',
-              title: t('nav.settings'),
+              title: t('settings.nav', 'Settings'),
               url: '/settings',
               Icon: IconSettings,
               groupLabel: 'Settings',
-              searchText: `${t('nav.settings')} settings admin`.toLowerCase(),
+              searchText:
+                `${t('settings.nav', 'Settings')} admin`.toLowerCase(),
               isPinned: false,
             },
             {
