@@ -33,7 +33,8 @@ var (
 
 	CookieExpirationSeconds = 2 * JWTExpirationSeconds // double jwt
 
-	DisableGZIP = false
+	DisableGZIP         = false
+	DisableVersionCheck = false
 )
 
 func LoadEnvs() {
@@ -79,5 +80,9 @@ func LoadEnvs() {
 	}
 	if v := os.Getenv("DISABLE_GZIP"); v == "true" {
 		DisableGZIP = true
+	}
+
+	if v := os.Getenv("DISABLE_VERSION_CHECK"); v == "true" {
+		DisableVersionCheck = true
 	}
 }

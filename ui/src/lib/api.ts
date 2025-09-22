@@ -904,6 +904,8 @@ export interface VersionInfo {
   version: string
   buildDate: string
   commitId: string
+  hasNewVersion: boolean
+  releaseUrl: string
 }
 
 export const fetchVersionInfo = (): Promise<VersionInfo> => {
