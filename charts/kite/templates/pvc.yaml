@@ -7,11 +7,11 @@ metadata:
     {{- include "kite.labels" . | nindent 4 }}
 spec:
   accessModes:
-    {{- toYaml .Values.db.sqlite.persistence.accessModes | nindent 4 }}
+    {{- toYaml .Values.db.sqlite.persistence.pvc.accessModes | nindent 4 }}
   resources:
     requests:
-      storage: {{ .Values.db.sqlite.persistence.size }}
-  {{- if .Values.db.sqlite.persistence.storageClass }}
-  storageClassName: {{ .Values.db.sqlite.persistence.storageClass }}
+      storage: {{ .Values.db.sqlite.persistence.pvc.size }}
+  {{- if .Values.db.sqlite.persistence.pvc.storageClass }}
+  storageClassName: {{ .Values.db.sqlite.persistence.pvc.storageClass }}
   {{- end }}
 {{- end }}
