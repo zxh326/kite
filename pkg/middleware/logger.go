@@ -12,6 +12,7 @@ var unlogPath = []string{
 	"/healthz",
 	"/assets/",
 	"/favicon.ico",
+	"/metrics",
 }
 
 func Logger() gin.HandlerFunc {

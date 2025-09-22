@@ -16,6 +16,8 @@ import (
 
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/zxh326/kite/internal"
 	"github.com/zxh326/kite/pkg/auth"
 	"github.com/zxh326/kite/pkg/cluster"
@@ -28,6 +30,7 @@ import (
 	"github.com/zxh326/kite/pkg/utils"
 	"github.com/zxh326/kite/pkg/version"
 	"k8s.io/klog/v2"
+	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
 //go:embed static
@@ -65,6 +68,10 @@ func setupStatic(r *gin.Engine) {
 }
 
 func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
+	r.GET("/metrics", gin.WrapH(promhttp.HandlerFor(prometheus.Gatherers{
+		prometheus.DefaultGatherer,
+		ctrlmetrics.Registry,
+	}, promhttp.HandlerOpts{})))
 	r.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
@@ -189,9 +196,10 @@ func main() {
 	common.LoadEnvs()
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
+	r.Use(middleware.Metrics())
 	if !common.DisableGZIP {
 		klog.Info("GZIP compression is enabled")
-		r.Use(gzip.Gzip(gzip.DefaultCompression))
+		r.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{"/metrics"})))
 	}
 	r.Use(gin.Recovery())
 	r.Use(middleware.Logger())

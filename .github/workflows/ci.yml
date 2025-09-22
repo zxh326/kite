@@ -92,11 +92,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Docker Hub
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: pnpm/action-setup@v4
         with:
@@ -122,10 +123,10 @@ jobs:
         id: tags
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "tags=zzde/kite:pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            echo "tags=ghcr.io/${{ github.repository_owner }}/kite:pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
             echo "image_tag=pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
           else
-            echo "tags=zzde/kite:main" >> $GITHUB_OUTPUT
+            echo "tags=ghcr.io/${{ github.repository_owner }}/kite:main" >> $GITHUB_OUTPUT
             echo "image_tag=main" >> $GITHUB_OUTPUT
           fi
 
@@ -149,25 +150,8 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const imageTag = '${{ steps.tags.outputs.image_tag }}';
-            const imageName = 'zzde/kite:' + imageTag;
-
-            // Get image size from Docker Hub API
-            let imageSize = 'Unknown';
-            try {
-              const response = await fetch(`https://hub.docker.com/v2/repositories/zzde/kite/tags/${imageTag}`);
-              if (response.ok) {
-                const data = await response.json();
-                const sizeBytes = data.full_size;
-                if (sizeBytes) {
-                  imageSize = (sizeBytes / 1024 / 1024).toFixed(1) + ' MB';
-                }
-              }
-            } catch (error) {
-              console.log('Could not fetch image size:', error);
-            }
-
-            const commentBody = `🐳 Docker image built successfully!\n\n**Image:** \`${imageName}\`\n\n**Size:** ${imageSize}`;
+            const imageName = '${{ steps.tags.outputs.tags }}';
+            const commentBody = `🐳 Docker image built successfully!\n\n**Image:** \`${imageName}\`\n\n`;
 
             // Find existing comment
             const { data: comments } = await github.rest.issues.listComments({
