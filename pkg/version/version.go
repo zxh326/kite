@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zxh326/kite/pkg/common"
 )
 
 var (
@@ -16,6 +17,8 @@ type VersionInfo struct {
 	Version   string `json:"version"`
 	BuildDate string `json:"buildDate"`
 	CommitID  string `json:"commitId"`
+	HasNew    bool   `json:"hasNewVersion"`
+	Release   string `json:"releaseUrl"`
 }
 
 func GetVersion(c *gin.Context) {
@@ -25,5 +28,12 @@ func GetVersion(c *gin.Context) {
 		CommitID:  CommitID,
 	}
 
+	if !common.DisableVersionCheck {
+		r := checkForUpdate(c.Request.Context(), Version)
+		versionInfo.HasNew = r.hasNew
+		if versionInfo.HasNew {
+			versionInfo.Release = r.releaseURL
+		}
+	}
 	c.JSON(http.StatusOK, versionInfo)
 }

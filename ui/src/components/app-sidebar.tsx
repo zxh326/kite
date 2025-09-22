@@ -8,6 +8,7 @@ import { ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 
+import { useVersionInfo } from '@/lib/api'
 import {
   Sidebar,
   SidebarContent,
@@ -31,6 +32,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation()
   const { isMobile, setOpenMobile } = useSidebar()
   const { config, isLoading, getIconComponent } = useSidebarConfig()
+  const { data: versionInfo } = useVersionInfo()
 
   const pinnedItems = useMemo(() => {
     if (!config) return []
@@ -106,7 +108,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5 hover:bg-accent/50 transition-colors"
             >
               <Link to="/" onClick={handleMenuItemClick}>
-                <div className="flex items-center justify-between w-full">
+                <div className="relative flex items-center justify-between w-full">
                   <div className="flex items-center gap-2">
                     <img src={Icon} alt="Kite Logo" className="h-8 w-8" />
                     <div className="flex flex-col">
@@ -116,6 +118,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       <VersionInfo />
                     </div>
                   </div>
+                  {versionInfo?.hasNewVersion ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        if (versionInfo?.releaseUrl) {
+                          window.open(versionInfo.releaseUrl, '_blank')
+                        }
+                      }}
+                      className="absolute right-0 top-0 mr-1 mt-1 rounded-sm bg-red-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-red-500 hover:bg-red-500/20"
+                      title={t(
+                        'A newer Kite version is available',
+                        'A newer Kite version is available'
+                      )}
+                    >
+                      New
+                    </button>
+                  ) : null}
                 </div>
               </Link>
             </SidebarMenuButton>
