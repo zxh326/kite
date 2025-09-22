@@ -1,7 +1,4 @@
-import { useState } from 'react'
 import { IconCheck, IconChevronDown, IconServer } from '@tabler/icons-react'
-import { useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
 
 import { useCluster } from '@/hooks/use-cluster'
 import { Badge } from '@/components/ui/badge'
@@ -14,37 +11,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 export function ClusterSelector() {
-  const { clusters, currentCluster, setCurrentCluster, isLoading } =
-    useCluster()
-  const queryClient = useQueryClient()
-  const [isSwitching, setIsSwitching] = useState(false)
-
-  const handleClusterChange = async (clusterName: string) => {
-    if (clusterName !== currentCluster && !isSwitching) {
-      try {
-        setIsSwitching(true)
-        setCurrentCluster(clusterName)
-        setTimeout(() => {
-          queryClient.invalidateQueries({
-            predicate: (query) => {
-              const key = query.queryKey[0] as string
-              return !['user', 'auth', 'clusters'].includes(key)
-            },
-          })
-          setIsSwitching(false)
-          toast.success(`Switched to cluster: ${clusterName}`, {
-            id: 'cluster-switch',
-          })
-        }, 300)
-      } catch (error) {
-        console.error('Failed to switch cluster:', error)
-        setIsSwitching(false)
-        toast.error('Failed to switch cluster', {
-          id: 'cluster-switch',
-        })
-      }
-    }
-  }
+  const {
+    clusters,
+    currentCluster,
+    setCurrentCluster,
+    isSwitching,
+    isLoading,
+  } = useCluster()
 
   if (isLoading || isSwitching) {
     return (
@@ -83,7 +56,7 @@ export function ClusterSelector() {
         {clusters.map((cluster) => (
           <DropdownMenuItem
             key={cluster.name}
-            onClick={() => handleClusterChange(cluster.name)}
+            onClick={() => setCurrentCluster(cluster.name)}
             className="flex items-center justify-between"
           >
             <div className="flex flex-col">

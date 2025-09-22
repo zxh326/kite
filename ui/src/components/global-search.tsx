@@ -16,6 +16,7 @@ import {
   IconRocket,
   IconRoute,
   IconRouter,
+  IconServer,
   IconServer2,
   IconSettings,
   IconStar,
@@ -27,6 +28,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
 import { globalSearch, SearchResult } from '@/lib/api'
+import { useCluster } from '@/hooks/use-cluster'
 import { useFavorites } from '@/hooks/use-favorites'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -88,6 +90,14 @@ interface SidebarSearchItem {
   isPinned: boolean
 }
 
+interface ActionSearchItem {
+  id: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  searchText: string
+  onSelect: () => void
+}
+
 interface GlobalSearchProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -102,6 +112,13 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
   const { user } = useAuth()
   const { config, getIconComponent } = useSidebarConfig()
   const { setTheme, actualTheme } = useTheme()
+  const {
+    clusters,
+    currentCluster,
+    setCurrentCluster,
+    isSwitching,
+    isLoading: isClusterLoading,
+  } = useCluster()
 
   // Simple theme toggle function
   const toggleTheme = useCallback(() => {
@@ -112,15 +129,6 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
     }
   }, [actualTheme, setTheme])
 
-  const themeToggleOption = useMemo(() => {
-    return {
-      id: 'toggle-theme',
-      label: t('globalSearch.toggleTheme'),
-      icon: actualTheme === 'dark' ? IconSun : IconMoon,
-      action: toggleTheme,
-    }
-  }, [actualTheme, t, toggleTheme])
-
   const sidebarItems = useMemo<SidebarSearchItem[]>(() => {
     const overviewTitle = t('nav.overview')
     const items: SidebarSearchItem[] = [
@@ -130,7 +138,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
         url: '/',
         Icon: IconLayoutDashboard,
         groupLabel: undefined,
-        searchText: `${overviewTitle} overview home dashboard /`.toLowerCase(),
+        searchText: `${overviewTitle} overview dashboard /`.toLowerCase(),
         isPinned: false,
       },
       ...(user?.isAdmin()
@@ -244,25 +252,56 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
       })
   }, [query, sidebarItems])
 
+  const actionItems: ActionSearchItem[] = useMemo(() => {
+    return [
+      {
+        id: 'toggle-theme',
+        label: t('globalSearch.toggleTheme'),
+        icon: actualTheme === 'dark' ? IconSun : IconMoon,
+        searchText: 'toggle theme switch mode light dark'.toLocaleLowerCase(),
+        onSelect: toggleTheme,
+      },
+      ...(clusters.length > 1
+        ? clusters
+            .filter((cluster) => cluster.name !== currentCluster)
+            .map((cluster) => ({
+              id: `switch-cluster-${cluster.name}`,
+              label: t('globalSearch.switchCluster', { name: cluster.name }),
+              icon: IconServer,
+              searchText: `cluster ${cluster.name}`.toLocaleLowerCase(),
+              onSelect: () => {
+                if (
+                  isSwitching ||
+                  isClusterLoading ||
+                  cluster.name === currentCluster
+                ) {
+                  return
+                }
+                setCurrentCluster(cluster.name)
+              },
+            }))
+        : []),
+    ]
+  }, [
+    actualTheme,
+    clusters,
+    currentCluster,
+    isClusterLoading,
+    isSwitching,
+    setCurrentCluster,
+    t,
+    toggleTheme,
+  ])
+
   // Filter theme option based on query
-  const showThemeToggle = useMemo(() => {
+  const actionResults = useMemo(() => {
     const trimmedQuery = query.trim().toLowerCase()
     if (!trimmedQuery) {
-      return false
+      return []
     }
 
-    const themeKeywords = [
-      t('globalSearch.toggleTheme').toLowerCase(),
-      'theme',
-      'toggle',
-      'mode',
-    ]
-
-    return themeKeywords.some(
-      (keyword) =>
-        keyword.includes(trimmedQuery) || trimmedQuery.includes(keyword)
-    )
-  }, [query, t])
+    return actionItems.filter((item) => item.searchText.includes(trimmedQuery))
+  }, [actionItems, query])
 
   // Use favorites hook
   const {
@@ -330,16 +369,6 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
       setQuery('')
     },
     [navigate, onOpenChange]
-  )
-
-  // Handle theme action
-  const handleThemeAction = useCallback(
-    (action: () => void) => {
-      action()
-      onOpenChange(false)
-      setQuery('')
-    },
-    [onOpenChange]
   )
 
   // Clear state when dialog closes
@@ -420,28 +449,36 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
               </CommandGroup>
             )}
 
-            {showThemeToggle && (
+            {actionResults.length > 0 && (
               <CommandGroup heading={t('globalSearch.actions')}>
-                <CommandItem
-                  key={themeToggleOption.id}
-                  value={`${themeToggleOption.label} theme toggle mode`}
-                  onSelect={() => handleThemeAction(themeToggleOption.action)}
-                  className="flex items-center gap-3 py-3"
-                >
-                  <themeToggleOption.icon className="h-4 w-4 text-sidebar-primary" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {themeToggleOption.label}
-                      </span>
-                      <Badge className="text-xs" variant="outline">
-                        {actualTheme === 'dark'
-                          ? 'Switch to Light'
-                          : 'Switch to Dark'}
-                      </Badge>
+                {actionResults.map((actionOption) => (
+                  <CommandItem
+                    key={actionOption.id}
+                    value={`${actionOption.label} theme toggle mode`}
+                    onSelect={() => {
+                      actionOption.onSelect()
+                      onOpenChange(false)
+                      setQuery('')
+                    }}
+                    className="flex items-center gap-3 py-3"
+                  >
+                    <actionOption.icon className="h-4 w-4 text-sidebar-primary" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">
+                          {actionOption.label}
+                        </span>
+                        {actionOption.id === 'toggle-theme' && (
+                          <Badge className="text-xs" variant="outline">
+                            {actualTheme === 'dark'
+                              ? 'Switch to Light'
+                              : 'Switch to Dark'}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </CommandItem>
+                  </CommandItem>
+                ))}
               </CommandGroup>
             )}
 

@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useEffect, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import { Cluster } from '@/types/api'
 
@@ -9,6 +10,7 @@ interface ClusterContextType {
   currentCluster: string | null
   setCurrentCluster: (clusterName: string) => void
   isLoading: boolean
+  isSwitching?: boolean
   error: Error | null
 }
 
@@ -22,6 +24,8 @@ export const ClusterProvider: React.FC<{ children: React.ReactNode }> = ({
   const [currentCluster, setCurrentClusterState] = useState<string | null>(
     localStorage.getItem('current-cluster')
   )
+  const queryClient = useQueryClient()
+  const [isSwitching, setIsSwitching] = useState(false)
 
   // Fetch clusters from API (this request shouldn't need cluster header)
   const {
@@ -83,8 +87,31 @@ export const ClusterProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [clusters, currentCluster])
 
   const setCurrentCluster = (clusterName: string) => {
-    setCurrentClusterState(clusterName)
-    localStorage.setItem('current-cluster', clusterName)
+    if (clusterName !== currentCluster && !isSwitching) {
+      try {
+        setIsSwitching(true)
+        setCurrentClusterState(clusterName)
+        localStorage.setItem('current-cluster', clusterName)
+        setTimeout(async () => {
+          await queryClient.invalidateQueries({
+            predicate: (query) => {
+              const key = query.queryKey[0] as string
+              return !['user', 'auth', 'clusters'].includes(key)
+            },
+          })
+          setIsSwitching(false)
+          toast.success(`Switched to cluster: ${clusterName}`, {
+            id: 'cluster-switch',
+          })
+        }, 300)
+      } catch (error) {
+        console.error('Failed to switch cluster:', error)
+        setIsSwitching(false)
+        toast.error('Failed to switch cluster', {
+          id: 'cluster-switch',
+        })
+      }
+    }
   }
 
   const value: ClusterContextType = {
@@ -92,6 +119,7 @@ export const ClusterProvider: React.FC<{ children: React.ReactNode }> = ({
     currentCluster,
     setCurrentCluster,
     isLoading,
+    isSwitching,
     error: error as Error | null,
   }
 

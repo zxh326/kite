@@ -36,7 +36,8 @@
     "navigation": "Navigation",
     "hidden": "Hidden",
     "actions": "Actions",
-    "toggleTheme": "Toggle Theme"
+    "toggleTheme": "Toggle Theme",
+    "switchCluster": "Switch to cluster {{name}}"
   },
   "sidebar": {
     "groups": {

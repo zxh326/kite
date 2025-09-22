@@ -42,7 +42,8 @@
     "navigation": "导航",
     "hidden": "已隐藏",
     "actions": "操作",
-    "toggleTheme": "切换主题"
+    "toggleTheme": "切换主题",
+    "switchCluster": "切换到集群 {{name}}"
   },
   "log": {
     "jumpToBottom": "跳到底部"
