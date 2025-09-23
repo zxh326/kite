@@ -197,6 +197,29 @@ func discoveryWorkloads(ctx context.Context, k8sClient *kube.K8sClient, namespac
 	return related, nil
 }
 
+func discoverPodsByService(ctx context.Context, k8sClient *kube.K8sClient, service *corev1.Service) ([]common.RelatedResource, error) {
+	var endpoints corev1.Endpoints
+	if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: service.Namespace, Name: service.Name}, &endpoints); err != nil {
+		// Endpoints might not be found, which is not a critical error.
+		// For example, for external name services.
+		return nil, nil
+	}
+
+	var relatedPods []common.RelatedResource
+	for _, subset := range endpoints.Subsets {
+		for _, addr := range subset.Addresses {
+			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" {
+				relatedPods = append(relatedPods, common.RelatedResource{
+					Type:      "pod",
+					Namespace: addr.TargetRef.Namespace,
+					Name:      addr.TargetRef.Name,
+				})
+			}
+		}
+	}
+	return relatedPods, nil
+}
+
 func GetRelatedResources(c *gin.Context) {
 	cs := c.MustGet("cluster").(*cluster.ClientSet)
 	namespace := c.Param("namespace")
@@ -233,6 +256,13 @@ func GetRelatedResources(c *gin.Context) {
 	case *appsv1.DaemonSet:
 		podSpec = &res.Spec.Template
 		selector = res.Spec.Selector
+	case *corev1.Service:
+		relatedPods, err := discoverPodsByService(ctx, cs.K8sClient, res)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to discover pods for service: " + err.Error()})
+			return
+		}
+		result = append(result, relatedPods...)
 	case *corev1.ConfigMap, *corev1.Secret, *corev1.PersistentVolumeClaim:
 		if workloads, err := discoveryWorkloads(ctx, cs.K8sClient, namespace, name, resourceType); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to discover workloads: " + err.Error()})
