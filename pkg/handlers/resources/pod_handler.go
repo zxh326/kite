@@ -1,15 +1,14 @@
 package resources
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/samber/lo"
 	"github.com/zxh326/kite/pkg/cluster"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/describe"
 	metricsv1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -114,13 +113,7 @@ func (h *PodHandler) List(c *gin.Context) {
 		listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: labelSelectorOption})
 	}
 	if err := cs.K8sClient.List(c, &metricsList, listOpts...); err != nil {
-		// 如果没有安装 metrics server，会返回这个错误
-		// 忽略它并返回没有 metrics 的 pods，防止前端报错
-		noKindMatchErr := &meta.NoKindMatchError{}
-		if !errors.As(err, &noKindMatchErr) {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get pod metrics: " + err.Error()})
-			return
-		}
+		klog.Warningf("Failed to list pod metrics: %v", err)
 	}
 
 	metricsMap := lo.KeyBy(metricsList.Items, func(item metricsv1.PodMetrics) string {
@@ -147,7 +140,6 @@ func (h *PodHandler) List(c *gin.Context) {
 				Namespace:         item.Namespace,
 				CreationTimestamp: item.CreationTimestamp,
 				DeletionTimestamp: item.DeletionTimestamp,
-				
 			}
 			item.Spec = corev1.PodSpec{
 				NodeName: objlist.Items[i].Spec.NodeName,
