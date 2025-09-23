@@ -8,6 +8,7 @@ import (
 	"github.com/zxh326/kite/pkg/cluster"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/describe"
 	metricsv1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -112,8 +113,7 @@ func (h *PodHandler) List(c *gin.Context) {
 		listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: labelSelectorOption})
 	}
 	if err := cs.K8sClient.List(c, &metricsList, listOpts...); err != nil {
-		c.JSON(500, gin.H{"error": "failed to get pod metrics: " + err.Error()})
-		return
+		klog.Warningf("Failed to list pod metrics: %v", err)
 	}
 
 	metricsMap := lo.KeyBy(metricsList.Items, func(item metricsv1.PodMetrics) string {
