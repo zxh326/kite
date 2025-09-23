@@ -139,6 +139,7 @@ func (h *PodHandler) List(c *gin.Context) {
 				Name:              item.Name,
 				Namespace:         item.Namespace,
 				CreationTimestamp: item.CreationTimestamp,
+				DeletionTimestamp: item.DeletionTimestamp,
 			}
 			item.Spec = corev1.PodSpec{
 				NodeName: objlist.Items[i].Spec.NodeName,
