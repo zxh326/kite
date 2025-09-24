@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconClipboardText } from '@tabler/icons-react'
 
 import { ResourceType } from '@/types/api'
 import { useDescribe } from '@/lib/api'
@@ -26,12 +27,13 @@ export function DescribeDialog({
     <Dialog open={isDescribeOpen} onOpenChange={setIsDescribeOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
+          <IconClipboardText className="w-4 h-4" />
           Describe
         </Button>
       </DialogTrigger>
       <DialogContent className="!max-w-dvw">
         <TextViewer
-          title={`kubectl describe pods -n ${namespace} ${name}`}
+          title={`kubectl describe ${resourceType} ${namespace ? `-n ${namespace}` : ''} ${name}`}
           value={describeText?.result || ''}
         />
       </DialogContent>
