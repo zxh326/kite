@@ -15,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
-	"k8s.io/kubectl/pkg/describe"
 	metricsv1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
@@ -332,22 +331,6 @@ func (h *NodeHandler) List(c *gin.Context) {
 		return result.Items[i].Name < result.Items[j].Name
 	})
 	c.JSON(http.StatusOK, result)
-}
-
-func (h *NodeHandler) Describe(c *gin.Context) {
-	cs := c.MustGet("cluster").(*cluster.ClientSet)
-	name := c.Param("name")
-	nd := describe.NodeDescriber{
-		Interface: cs.K8sClient.ClientSet,
-	}
-	out, err := nd.Describe("", name, describe.DescriberSettings{
-		ShowEvents: true,
-	})
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"result": out})
 }
 
 func (h *NodeHandler) registerCustomRoutes(group *gin.RouterGroup) {

@@ -21,7 +21,6 @@ import {
   uncordonNode,
   untaintNode,
   updateResource,
-  useDescribe,
   useResource,
   useResources,
 } from '@/lib/api'
@@ -34,7 +33,6 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -50,13 +48,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { DescribeDialog } from '@/components/describe-dialog'
 import { ErrorMessage } from '@/components/error-message'
 import { EventTable } from '@/components/event-table'
 import { LabelsAnno } from '@/components/lables-anno'
 import { NodeMonitoring } from '@/components/node-monitoring'
 import { PodTable } from '@/components/pod-table'
 import { Terminal } from '@/components/terminal'
-import { TextViewer } from '@/components/text-viewer'
 import { YamlEditor } from '@/components/yaml-editor'
 
 export function NodeDetail(props: { name: string }) {
@@ -109,12 +107,6 @@ export function NodeDetail(props: { name: string }) {
     refetch: refetchRelated,
   } = useResources('pods', undefined, {
     fieldSelector: `spec.nodeName=${name}`,
-  })
-
-  const [isDescribeOpen, setIsDescribeOpen] = useState(false)
-  const { data: describeText } = useDescribe('nodes', name, undefined, {
-    enabled: isDescribeOpen,
-    staleTime: 0,
   })
 
   const handleSaveYaml = async (content: Node) => {
@@ -251,19 +243,7 @@ export function NodeDetail(props: { name: string }) {
             <IconRefresh className="w-4 h-4" />
             Refresh
           </Button>
-          <Dialog open={isDescribeOpen} onOpenChange={setIsDescribeOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                Describe
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="!max-w-dvw">
-              <TextViewer
-                title={`kubectl describe nodes ${name}`}
-                value={describeText?.result || ''}
-              />
-            </DialogContent>
-          </Dialog>
+          <DescribeDialog resourceType="nodes" name={name} />
           {/* Drain Node Popover */}
           <Popover
             open={isDrainPopoverOpen}

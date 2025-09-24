@@ -19,7 +19,9 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
+	"k8s.io/kubectl/pkg/describe"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 )
@@ -469,6 +471,26 @@ func (h *GenericResourceHandler[T, V]) ListHistory(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+var describers = map[string]func(c *kubernetes.Clientset) describe.ResourceDescriber{
+	"pods":  func(c *kubernetes.Clientset) describe.ResourceDescriber { return &describe.PodDescriber{Interface: c} },
+	"nodes": func(c *kubernetes.Clientset) describe.ResourceDescriber { return &describe.NodeDescriber{Interface: c} },
+	// Add more describers as needed
+}
+
 func (h *GenericResourceHandler[T, V]) Describe(c *gin.Context) {
+	if describer, ok := describers[h.name]; ok {
+		cs := c.MustGet("cluster").(*cluster.ClientSet)
+		namespace := c.Param("namespace")
+		name := c.Param("name")
+		out, err := describer(cs.K8sClient.ClientSet).Describe(namespace, name, describe.DescriberSettings{
+			ShowEvents: true,
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"result": out})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"result": "not implemented"})
 }
