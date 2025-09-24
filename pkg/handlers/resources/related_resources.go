@@ -13,6 +13,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,6 +45,42 @@ func discoverServices(ctx context.Context, k8sClient *kube.K8sClient, namespace 
 	}
 
 	return relatedServices, nil
+}
+
+func discoverIngressServices(namespace string, ingress *v1.Ingress) []common.RelatedResource {
+	seen := make(map[string]struct{})
+	var relatedServices []common.RelatedResource
+	addService := func(svcName string) {
+		if _, exist := seen[svcName]; exist {
+			return
+		}
+		seen[svcName] = struct{}{}
+		relatedServices = append(relatedServices, common.RelatedResource{
+			Type:      "services",
+			Namespace: namespace,
+			Name:      svcName,
+		})
+	}
+
+	for _, rule := range ingress.Spec.Rules {
+		if rule.HTTP == nil {
+			continue
+		}
+
+		for _, path := range rule.HTTP.Paths {
+			if path.Backend.Service == nil {
+				continue
+			}
+			addService(path.Backend.Service.Name)
+		}
+	}
+	if ingress.Spec.DefaultBackend != nil && ingress.Spec.DefaultBackend.Service != nil {
+		if _, exist := seen[ingress.Spec.DefaultBackend.Service.Name]; !exist {
+			addService(ingress.Spec.DefaultBackend.Service.Name)
+		}
+	}
+
+	return relatedServices
 }
 
 func discoverConfigs(namespace string, podSpec *corev1.PodTemplateSpec) []common.RelatedResource {
@@ -250,6 +287,9 @@ func GetRelatedResources(c *gin.Context) {
 		result = getHTTPRouteRelatedResouces(res, namespace)
 	case *autoscalingv2.HorizontalPodAutoscaler:
 		result = getAutoScalingRelatedResources(res, namespace)
+	case *v1.Ingress:
+		services := discoverIngressServices(namespace, res)
+		result = append(result, services...)
 	}
 
 	if podSpec != nil && selector != nil {
