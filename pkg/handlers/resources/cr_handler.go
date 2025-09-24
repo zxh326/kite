@@ -10,10 +10,12 @@ import (
 	"github.com/zxh326/kite/pkg/kube"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/kubectl/pkg/describe"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -386,4 +388,50 @@ func (h *CRHandler) Delete(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Custom resource deleted successfully"})
+}
+
+func (h *CRHandler) Describe(c *gin.Context) {
+	crdName := c.Param("crd")
+	name := c.Param("name")
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	ctx := c.Request.Context()
+
+	crd, err := h.getCRDByName(ctx, cs.K8sClient, crdName)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	gvr := h.getGVRFromCRD(crd)
+
+	// Create RESTMapping for GenericDescriberFor
+	gvk := schema.GroupVersionKind{
+		Group:   gvr.Group,
+		Version: gvr.Version,
+		Kind:    crd.Spec.Names.Kind,
+	}
+
+	mapping := &meta.RESTMapping{
+		Resource:         gvr,
+		GroupVersionKind: gvk,
+		Scope:            meta.RESTScopeNamespace,
+	}
+	if crd.Spec.Scope == apiextensionsv1.ClusterScoped {
+		mapping.Scope = meta.RESTScopeRoot
+	}
+	describer, ok := describe.GenericDescriberFor(mapping, cs.K8sClient.Configuration)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create describer"})
+		return
+	}
+	namespace := c.Param("namespace")
+	out, err := describer.Describe(namespace, name, describe.DescriberSettings{
+		ShowEvents: true,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"result": out})
 }

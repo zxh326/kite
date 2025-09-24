@@ -1,15 +1,12 @@
 package resources
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"github.com/samber/lo"
 	"github.com/zxh326/kite/pkg/cluster"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
-	"k8s.io/kubectl/pkg/describe"
 	metricsv1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -154,21 +151,4 @@ func (h *PodHandler) List(c *gin.Context) {
 		result.Items[i] = item
 	}
 	c.JSON(200, result)
-}
-
-func (h *PodHandler) Describe(c *gin.Context) {
-	cs := c.MustGet("cluster").(*cluster.ClientSet)
-	namespace := c.Param("namespace")
-	name := c.Param("name")
-	pd := describe.PodDescriber{
-		Interface: cs.K8sClient.ClientSet,
-	}
-	out, err := pd.Describe(namespace, name, describe.DescriberSettings{
-		ShowEvents: true,
-	})
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"result": out})
 }

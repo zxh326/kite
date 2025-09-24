@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/kube"
 	"github.com/zxh326/kite/pkg/model"
 	"github.com/zxh326/kite/pkg/rbac"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -18,8 +19,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
+	"k8s.io/kubectl/pkg/describe"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 )
@@ -59,6 +62,15 @@ func (h *GenericResourceHandler[T, V]) ToYAML(obj T) string {
 		return ""
 	}
 	return string(yamlBytes)
+}
+
+func (h *GenericResourceHandler[T, V]) getGroupKind() schema.GroupKind {
+	objValue := reflect.New(h.objectType).Interface().(T)
+	gvks, _, err := kube.GetScheme().ObjectKinds(objValue)
+	if err != nil || len(gvks) == 0 {
+		return schema.GroupKind{}
+	}
+	return gvks[0].GroupKind()
 }
 
 func (h *GenericResourceHandler[T, V]) recordHistory(c *gin.Context, opType string, prev, curr T, success bool, errMsg string) {
@@ -470,5 +482,21 @@ func (h *GenericResourceHandler[T, V]) ListHistory(c *gin.Context) {
 }
 
 func (h *GenericResourceHandler[T, V]) Describe(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"result": "not implemented"})
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	gk := h.getGroupKind()
+	describer, ok := describe.DescriberFor(gk, cs.K8sClient.Configuration)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no describer found for this resource"})
+		return
+	}
+	namespace := c.Param("namespace")
+	name := c.Param("name")
+	out, err := describer.Describe(namespace, name, describe.DescriberSettings{
+		ShowEvents: true,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"result": out})
 }

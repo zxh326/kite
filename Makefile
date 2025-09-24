@@ -8,7 +8,7 @@ DOCKER_IMAGE=kite
 DOCKER_TAG=latest
 
 # Version information
-VERSION ?= $(shell git describe --tags --match 'v*' | grep -oE 'v[0-9]+\.[0-9][0-9]*(\.[0-9]+)?')
+VERSION=$(shell scripts/get-version.sh)
 BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 COMMIT_ID ?= $(shell git rev-parse HEAD 2>/dev/null || echo "unknown")
 
