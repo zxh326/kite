@@ -210,7 +210,7 @@ func discoverPodsByService(ctx context.Context, k8sClient *kube.K8sClient, servi
 		for _, addr := range subset.Addresses {
 			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" {
 				relatedPods = append(relatedPods, common.RelatedResource{
-					Type:      "pod",
+					Type:      "pods",
 					Namespace: addr.TargetRef.Namespace,
 					Name:      addr.TargetRef.Name,
 				})
