@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label'
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { ContainerTable } from '@/components/container-table'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
+import { DescribeDialog } from '@/components/describe-dialog'
 import { ErrorMessage } from '@/components/error-message'
 import { EventTable } from '@/components/event-table'
 import { LabelsAnno } from '@/components/lables-anno'
@@ -191,6 +192,11 @@ export function JobDetail(props: { namespace: string; name: string }) {
             <IconRefresh className="w-4 h-4" />
             Refresh
           </Button>
+          <DescribeDialog
+            resourceType={'jobs'}
+            namespace={namespace}
+            name={name}
+          />
           <Button
             variant="destructive"
             size="sm"
