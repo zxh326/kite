@@ -40,7 +40,7 @@ export function ContainerTable(props: {
                   {container.name}
                 </Badge>
               </div>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-muted-foreground font-mono">
                 {container.image}
               </span>
             </div>
@@ -203,13 +203,13 @@ export function ContainerTable(props: {
                       {container.env.slice(0, 5).map((envVar, envIndex) => (
                         <div key={envIndex} className="text-sm">
                           <div className=" text-xs">
-                            <span className="text-blue-600 dark:text-blue-400">
+                            <span className="text-blue-600 dark:text-blue-400 font-mono">
                               {envVar.name}
                             </span>
                             {envVar.value && (
                               <>
                                 <span className="text-muted-foreground">=</span>
-                                <span className="text-muted-foreground truncate">
+                                <span className="text-muted-foreground truncate font-mono">
                                   {envVar.value}
                                 </span>
                               </>
@@ -327,7 +327,7 @@ export function ContainerTable(props: {
                                 <Badge variant="outline" className="text-xs">
                                   {mount.name}
                                 </Badge>
-                                <span className="text-muted-foreground  text-xs">
+                                <span className="text-muted-foreground  text-xs font-mono">
                                   {mount.mountPath}
                                 </span>
                                 {mount.readOnly && (

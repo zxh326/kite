@@ -25,7 +25,11 @@ export function LabelsAnno(props: {
             <Label className="text-xs text-muted-foreground">Labels</Label>
             <div className="flex flex-wrap gap-1 mt-2">
               {Object.entries(labels || {}).map(([key, value]) => (
-                <Badge key={key} variant="outline" className="text-xs">
+                <Badge
+                  key={key}
+                  variant="outline"
+                  className="text-xs font-mono"
+                >
                   {key}: {value.slice(0, 50)}
                   {value.length > 50 ? '...' : ''}
                 </Badge>
@@ -38,7 +42,11 @@ export function LabelsAnno(props: {
             <Label className="text-xs text-muted-foreground">Annotations</Label>
             <div className="flex flex-wrap gap-1 mt-2 max-h-32 overflow-y-auto">
               {Object.entries(annotations || {}).map(([key, value]) => (
-                <Badge key={key} variant="outline" className="text-xs">
+                <Badge
+                  key={key}
+                  variant="outline"
+                  className="text-xs font-mono"
+                >
                   {key}: {value.slice(0, 50)}
                   {value.length > 50 ? '...' : ''}
                 </Badge>

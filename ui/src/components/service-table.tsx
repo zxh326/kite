@@ -29,7 +29,11 @@ export function ServiceTable(props: {
       {
         header: 'Cluster IP',
         accessor: (service: Service) => service.spec?.clusterIP || '-',
-        cell: (value: unknown) => value as string,
+        cell: (value: unknown) => (
+          <span className="font-mono text-sm text-muted-foreground">
+            {value as string}
+          </span>
+        ),
       },
       {
         header: 'Ports',
@@ -39,9 +43,13 @@ export function ServiceTable(props: {
             port?: number
             targetPort?: string | number
           }>
-          return (
+          const text =
             ports.map((port) => `${port.port}:${port.targetPort}`).join(', ') ||
             '-'
+          return (
+            <span className="font-mono text-sm text-muted-foreground">
+              {text}
+            </span>
           )
         },
       },

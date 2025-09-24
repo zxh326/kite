@@ -182,7 +182,7 @@ export function SimpleResourceDetail<T extends ResourceType>(props: {
                         <Label className="text-xs text-muted-foreground">
                           UID
                         </Label>
-                        <p className="text-sm ">
+                        <p className="text-sm font-mono">
                           {data.metadata?.uid || 'N/A'}
                         </p>
                       </div>

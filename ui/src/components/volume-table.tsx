@@ -78,7 +78,7 @@ export function VolumeTable({
     }
     if (volume.hostPath) {
       return (
-        <span className="text-sm text-muted-foreground">
+        <span className="text-sm text-muted-foreground font-mono">
           {volume.hostPath.path || 'N/A'}
         </span>
       )
@@ -160,9 +160,11 @@ export function VolumeTable({
 
               return (
                 <div key={index} className="flex items-center gap-2 text-xs">
-                  <span className="font-medium">{container}</span>
+                  <span className="font-medium font-mono">{container}</span>
                   <span>→</span>
-                  <span className="text-muted-foreground">{path}</span>
+                  <span className="text-muted-foreground font-mono">
+                    {path}
+                  </span>
                   {isReadOnly && (
                     <Badge variant="secondary" className="text-xs">
                       RO

@@ -40,12 +40,24 @@ export function ServiceListPage() {
       }),
       columnHelper.accessor('spec.clusterIP', {
         header: t('services.clusterIP'),
-        cell: ({ getValue }) => getValue() || '-',
+        cell: ({ getValue }) => {
+          const val = getValue() || '-'
+          return (
+            <span className="font-mono text-sm text-muted-foreground">
+              {val}
+            </span>
+          )
+        },
       }),
       columnHelper.accessor('status.loadBalancer.ingress', {
         header: t('services.externalIP'),
         cell: ({ row }) => {
-          return getServiceExternalIP(row.original)
+          const val = getServiceExternalIP(row.original)
+          return (
+            <span className="font-mono text-sm text-muted-foreground">
+              {val}
+            </span>
+          )
         },
       }),
       columnHelper.accessor('spec.ports', {
@@ -53,7 +65,7 @@ export function ServiceListPage() {
         cell: ({ getValue }) => {
           const ports = getValue() || []
           if (ports.length === 0) return '-'
-          return ports
+          const text = ports
             .map((port) => {
               const protocol = port.protocol || 'TCP'
               if (port.nodePort) {
@@ -62,6 +74,11 @@ export function ServiceListPage() {
               return `${port.port}/${protocol}`
             })
             .join(', ')
+          return (
+            <span className="font-mono text-sm text-muted-foreground">
+              {text}
+            </span>
+          )
         },
       }),
       columnHelper.accessor('metadata.creationTimestamp', {

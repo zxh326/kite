@@ -88,11 +88,14 @@ export function PodListPage() {
       columnHelper.accessor((row) => row.status?.podIP, {
         id: 'podIP',
         header: 'IP',
-        cell: ({ getValue }) => (
-          <span className="text-muted-foreground text-sm">
-            {getValue() || '-'}
-          </span>
-        ),
+        cell: ({ getValue }) => {
+          const ip = getValue() || '-'
+          return (
+            <span className="text-muted-foreground text-sm font-mono">
+              {ip}
+            </span>
+          )
+        },
       }),
       columnHelper.accessor((row) => row.spec?.nodeName, {
         id: 'nodeName',

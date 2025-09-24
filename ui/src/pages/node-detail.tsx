@@ -535,7 +535,7 @@ export function NodeDetail(props: { name: string }) {
                         <p className="text-xs text-muted-foreground">
                           Internal IP
                         </p>
-                        <p className="text-sm font-medium">
+                        <p className="text-sm font-medium font-mono">
                           {data.status?.addresses?.find(
                             (addr) => addr.type === 'InternalIP'
                           )?.address || 'N/A'}
@@ -546,7 +546,7 @@ export function NodeDetail(props: { name: string }) {
                         <p className="text-xs text-muted-foreground">
                           Pod CIDR
                         </p>
-                        <p className="text-sm font-medium">
+                        <p className="text-sm font-medium font-mono">
                           {data.spec?.podCIDR || 'N/A'}
                         </p>
                       </div>
@@ -584,7 +584,7 @@ export function NodeDetail(props: { name: string }) {
                         <Label className="text-xs text-muted-foreground">
                           Hostname
                         </Label>
-                        <p className="text-sm">
+                        <p className="text-sm font-mono">
                           {data.status?.addresses?.find(
                             (addr) => addr.type === 'Hostname'
                           )?.address || 'N/A'}
@@ -594,7 +594,7 @@ export function NodeDetail(props: { name: string }) {
                         <Label className="text-xs text-muted-foreground">
                           External IP
                         </Label>
-                        <p className="text-sm">
+                        <p className="text-sm font-mono">
                           {data.status?.addresses?.find(
                             (addr) => addr.type === 'ExternalIP'
                           )?.address || 'N/A'}

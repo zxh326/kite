@@ -6,6 +6,7 @@ import { Outlet, useSearchParams } from 'react-router-dom'
 
 import { AppSidebar } from './components/app-sidebar'
 import { ColorThemeProvider } from './components/color-theme-provider'
+import { FontProvider } from './components/font-provider'
 import { GlobalSearch } from './components/global-search'
 import {
   GlobalSearchProvider,
@@ -89,11 +90,13 @@ function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
       <ColorThemeProvider>
-        <ClusterProvider>
-          <GlobalSearchProvider>
-            <ClusterAwareApp />
-          </GlobalSearchProvider>
-        </ClusterProvider>
+        <FontProvider defaultFont="maple" storageKey="vite-ui-font">
+          <ClusterProvider>
+            <GlobalSearchProvider>
+              <ClusterAwareApp />
+            </GlobalSearchProvider>
+          </ClusterProvider>
+        </FontProvider>
       </ColorThemeProvider>
     </ThemeProvider>
   )

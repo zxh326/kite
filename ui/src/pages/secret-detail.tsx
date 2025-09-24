@@ -223,13 +223,15 @@ export function SecretDetail(props: { namespace: string; name: string }) {
                         <Label className="text-xs text-muted-foreground">
                           UID
                         </Label>
-                        <p className="text-sm">{secret.metadata!.uid}</p>
+                        <p className="text-sm font-mono">
+                          {secret.metadata!.uid}
+                        </p>
                       </div>
                       <div>
                         <Label className="text-xs text-muted-foreground">
                           Resource Version
                         </Label>
-                        <p className="text-sm">
+                        <p className="text-sm font-mono">
                           {secret.metadata!.resourceVersion}
                         </p>
                       </div>

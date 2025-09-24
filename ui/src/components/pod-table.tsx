@@ -95,7 +95,11 @@ export function PodTable(props: {
       {
         header: 'IP',
         accessor: (pod: Pod) => pod.status?.podIP || '-',
-        cell: (value: unknown) => value as string,
+        cell: (value: unknown) => (
+          <span className="text-sm text-muted-foreground font-mono">
+            {value as string}
+          </span>
+        ),
       },
       ...(props.hiddenNode
         ? []

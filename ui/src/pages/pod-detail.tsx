@@ -259,7 +259,7 @@ export function PodDetail(props: { namespace: string; name: string }) {
                         <Label className="text-xs text-muted-foreground">
                           Pod IP
                         </Label>
-                        <p className="text-sm">
+                        <p className="text-sm font-mono">
                           {pod.status?.podIP || 'Not assigned'}
                         </p>
                       </div>
@@ -267,7 +267,7 @@ export function PodDetail(props: { namespace: string; name: string }) {
                         <Label className="text-xs text-muted-foreground">
                           Host IP
                         </Label>
-                        <p className="text-sm">
+                        <p className="text-sm font-mono">
                           {pod.status?.hostIP || 'Not assigned'}
                         </p>
                       </div>
