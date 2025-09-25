@@ -19,7 +19,7 @@ import {
   deleteResource,
   updateResource,
   useResource,
-  useResources,
+  useResourcesWatch,
 } from '@/lib/api'
 import { toSimpleContainer } from '@/lib/k8s'
 import { formatDate, translateError } from '@/lib/utils'
@@ -80,13 +80,12 @@ export function StatefulSetDetail(props: { namespace: string; name: string }) {
         .map(([key, value]) => `${key}=${value}`)
         .join(',')
     : undefined
-  const { data: relatedPods, isLoading: isLoadingPods } = useResources(
+  const { data: relatedPods, isLoading: isLoadingPods } = useResourcesWatch(
     'pods',
     namespace,
     {
       labelSelector,
-      refreshInterval,
-      disable: !statefulset?.spec?.selector.matchLabels,
+      enabled: !!statefulset?.spec?.selector.matchLabels,
     }
   )
 

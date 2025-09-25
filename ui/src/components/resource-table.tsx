@@ -16,11 +16,12 @@ import {
 import { Box, Database, Plus, RefreshCw, Search, XCircle } from 'lucide-react'
 
 import { ResourceType } from '@/types/api'
-import { useResources } from '@/lib/api'
+import { useResources, useResourcesWatch } from '@/lib/api'
 import { debounce } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -28,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import {
   Table,
   TableBody,
@@ -37,6 +39,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
+import { ConnectionIndicator } from './connection-indicator'
 import { ErrorMessage } from './error-message'
 import { NamespaceSelector } from './selector/namespace-selector'
 
@@ -81,20 +84,40 @@ export function ResourceTable<T>({
       ? undefined // No namespace for cluster scope
       : storedNamespace || 'default' // Default to 'default' if not set
   })
-  const { isLoading, data, isError, error, refetch } = useResources(
+  const [useSSE, setUseSSE] = useState(false)
+
+  const {
+    isLoading: queryLoading,
+    data: queryData,
+    isError: queryIsError,
+    error: queryError,
+    refetch: queryRefetch,
+  } = useResources(
     resourceType ?? (resourceName.toLowerCase() as ResourceType),
     selectedNamespace,
     {
-      refreshInterval, // Refresh every 5 seconds
+      refreshInterval: useSSE ? 0 : refreshInterval, // disable polling when SSE
       reduce: true, // Fetch reduced data for performance
+      disable: useSSE, // do not query when using SSE
     }
   )
 
-  useEffect(() => {
-    if (error) {
-      setRefreshInterval(0)
-    }
-  }, [error])
+  // SSE state (when enabled)
+  // SSE watch hook
+  const {
+    data: watchData,
+    isLoading: watchLoading,
+    error: watchError,
+    isConnected,
+    refetch: reconnectSSE,
+  } = useResourcesWatch(
+    (resourceType ??
+      (resourceName.toLowerCase() as ResourceType)) as ResourceType,
+    selectedNamespace,
+    { reduce: true, enabled: useSSE }
+  )
+
+  // (moved below after error is defined)
 
   // Initialize our debounced search function just once
   const debouncedSetSearch = useMemo(
@@ -178,8 +201,24 @@ export function ResourceTable<T>({
     return columns
   }, [columns, clusterScope, selectedNamespace])
 
-  // Memoize data to prevent unnecessary re-renders
+  const data = useMemo(() => {
+    if (useSSE) return watchData
+    return queryData
+  }, [useSSE, watchData, queryData])
+  const isLoading = useSSE ? watchLoading : queryLoading
+  const isError = useSSE ? Boolean(watchError) : queryIsError
+  const error = useSSE
+    ? (watchError as Error | null)
+    : (queryError as unknown as Error | null)
+  const refetch = useSSE ? reconnectSSE : queryRefetch
+
   const memoizedData = useMemo(() => (data || []) as T[], [data])
+
+  useEffect(() => {
+    if (!useSSE && error) {
+      setRefreshInterval(0)
+    }
+  }, [useSSE, error])
 
   // Create table instance using TanStack Table
   const table = useReactTable<T>({
@@ -354,10 +393,41 @@ export function ResourceTable<T>({
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Watch/Live mode toggle switch */}
+            {resourceName === 'Pods' && (
+              <div className="flex items-center gap-2">
+                <Label className="text-sm">
+                  {useSSE ? (
+                    <ConnectionIndicator isConnected={isConnected}>
+                      Watch
+                    </ConnectionIndicator>
+                  ) : (
+                    'Watch'
+                  )}
+                </Label>
+                <Switch
+                  checked={useSSE}
+                  onCheckedChange={(checked) => {
+                    setUseSSE(checked)
+                    if (checked) {
+                      setRefreshInterval(0)
+                    } else if (refreshInterval === 0) {
+                      setRefreshInterval(5000) // Default to 5s when disabling watch mode
+                    }
+                  }}
+                />
+              </div>
+            )}
             {/* Refresh interval selector */}
             <Select
               value={refreshInterval.toString()}
-              onValueChange={(value) => setRefreshInterval(Number(value))}
+              onValueChange={(value) => {
+                setRefreshInterval(Number(value))
+                if (Number(value) > 0) {
+                  setUseSSE(false)
+                }
+              }}
+              disabled={useSSE}
             >
               <SelectTrigger className="max-w-[140px]">
                 <div className="flex items-center gap-2">
@@ -366,14 +436,13 @@ export function ResourceTable<T>({
                 </div>
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="0">Off</SelectItem>
                 <SelectItem value="1000">1s</SelectItem>
                 <SelectItem value="5000">5s</SelectItem>
                 <SelectItem value="10000">10s</SelectItem>
                 <SelectItem value="30000">30s</SelectItem>
-                <SelectItem value="0">Off</SelectItem>
               </SelectContent>
             </Select>
-
             {!clusterScope && (
               <NamespaceSelector
                 selectedNamespace={selectedNamespace}
@@ -461,16 +530,6 @@ export function ResourceTable<T>({
         </div>
       </div>
 
-      {/* Loading indicator for refetch */}
-      {isLoading && data && (data as T[]).length > 0 && (
-        <div className="flex items-center justify-center py-2 bg-muted/20 rounded-md">
-          <Database className="h-4 w-4 text-muted-foreground animate-pulse mr-2" />
-          <span className="text-sm text-muted-foreground">
-            Updating {resourceName.toLowerCase()}...
-          </span>
-        </div>
-      )}
-
       {/* Table card */}
       <div className="overflow-hidden rounded-lg border">
         <div
@@ -481,51 +540,44 @@ export function ResourceTable<T>({
           }`}
         >
           {renderEmptyState() || (
-            <>
-              <Table>
-                <TableHeader className="bg-muted sticky top-0 z-10">
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header, index) => (
-                        <TableHead
-                          key={header.id}
-                          className={index === 0 ? 'text-left' : 'text-center'}
-                        >
-                          {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                            <Button
-                              variant="ghost"
-                              onClick={header.column.getToggleSortingHandler()}
-                              className={
-                                header.column.getIsSorted()
-                                  ? 'text-primary'
-                                  : ''
-                              }
-                            >
-                              {
-                                header.column.columnDef
-                                  .header as React.ReactNode
-                              }
-                              {header.column.getIsSorted() && (
-                                <span className="ml-2">
-                                  {header.column.getIsSorted() === 'asc'
-                                    ? '↑'
-                                    : '↓'}
-                                </span>
-                              )}
-                            </Button>
-                          ) : (
-                            (header.column.columnDef.header as React.ReactNode)
-                          )}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody className="**:data-[slot=table-cell]:first:w-8">
-                  {renderRows()}
-                </TableBody>
-              </Table>
-            </>
+            <Table>
+              <TableHeader className="bg-muted sticky top-0 z-10">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header, index) => (
+                      <TableHead
+                        key={header.id}
+                        className={index === 0 ? 'text-left' : 'text-center'}
+                      >
+                        {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                          <Button
+                            variant="ghost"
+                            onClick={header.column.getToggleSortingHandler()}
+                            className={
+                              header.column.getIsSorted() ? 'text-primary' : ''
+                            }
+                          >
+                            {header.column.columnDef.header as React.ReactNode}
+                            {header.column.getIsSorted() && (
+                              <span className="ml-2">
+                                {header.column.getIsSorted() === 'asc'
+                                  ? '↑'
+                                  : '↓'}
+                              </span>
+                            )}
+                          </Button>
+                        ) : (
+                          (header.column.columnDef.header as React.ReactNode)
+                        )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody className="**:data-[slot=table-cell]:first:w-8">
+                {renderRows()}
+              </TableBody>
+            </Table>
           )}
         </div>
       </div>
