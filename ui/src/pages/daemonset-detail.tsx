@@ -18,7 +18,7 @@ import {
   deleteResource,
   updateResource,
   useResource,
-  useResources,
+  useResourcesWatch,
 } from '@/lib/api'
 import { toSimpleContainer } from '@/lib/k8s'
 import { formatDate, translateError } from '@/lib/utils'
@@ -105,13 +105,12 @@ export function DaemonSetDetail(props: { namespace: string; name: string }) {
         .join(',')
     : undefined
 
-  const { data: relatedPods, isLoading: isLoadingPods } = useResources(
+  const { data: relatedPods, isLoading: isLoadingPods } = useResourcesWatch(
     'pods',
     namespace,
     {
       labelSelector,
-      refreshInterval,
-      disable: !daemonset?.spec?.selector.matchLabels,
+      enabled: !!daemonset?.spec?.selector.matchLabels,
     }
   )
 

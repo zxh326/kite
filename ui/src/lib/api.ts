@@ -326,6 +326,147 @@ export const useResources = <T extends ResourceType>(
   })
 }
 
+// Hook: SSE watch for resource lists (initial snapshot + ADDED/MODIFIED/DELETED)
+export function useResourcesWatch<T extends ResourceType>(
+  resource: T,
+  namespace?: string,
+  options?: {
+    labelSelector?: string
+    fieldSelector?: string
+    reduce?: boolean
+    enabled?: boolean
+  }
+) {
+  const [data, setData] = useState<ResourcesItems<T> | undefined>(undefined)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+  const eventSourceRef = useRef<EventSource | null>(null)
+
+  const buildUrl = useCallback(() => {
+    const ns = namespace || '_all'
+    const params = new URLSearchParams()
+    if (options?.reduce !== false) params.append('reduce', 'true')
+    if (options?.labelSelector)
+      params.append('labelSelector', options.labelSelector)
+    if (options?.fieldSelector)
+      params.append('fieldSelector', options.fieldSelector)
+    const cluster = localStorage.getItem('current-cluster')
+    if (cluster) params.append('x-cluster-name', cluster)
+    return `${API_BASE_URL}/${resource}/${ns}/watch?${params.toString()}`
+  }, [
+    resource,
+    namespace,
+    options?.reduce,
+    options?.labelSelector,
+    options?.fieldSelector,
+  ])
+
+  const disconnect = useCallback(() => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close()
+      eventSourceRef.current = null
+    }
+  }, [])
+
+  const connect = useCallback(() => {
+    disconnect()
+    setData(undefined)
+    if (options?.enabled === false) return
+    const url = buildUrl()
+    setError(null)
+    setIsConnected(false)
+
+    try {
+      const es = new EventSource(url, { withCredentials: true })
+      eventSourceRef.current = es
+
+      es.onopen = () => {
+        setIsConnected(true)
+      }
+
+      const getKey = (obj: ResourceTypeMap[T]) => {
+        return (
+          (obj.metadata?.namespace || '') + '/' + (obj.metadata?.name || '')
+        )
+      }
+
+      const upsert = (obj: string) => {
+        const object = JSON.parse(obj) as ResourceTypeMap[T]
+        setData((prev) => {
+          const arr = prev ? [...prev] : []
+          const key = getKey(object)
+          const idx = arr.findIndex(
+            (it) => getKey(it as ResourceTypeMap[T]) === key
+          )
+          if (idx >= 0) arr[idx] = object
+          else arr.unshift(object)
+          return arr as ResourcesItems<T>
+        })
+      }
+
+      const remove = (obj: string) => {
+        const object = JSON.parse(obj) as ResourceTypeMap[T]
+        setData((prev) => {
+          const arr = prev ? [...prev] : []
+          const key = getKey(object)
+          const filtered = arr.filter(
+            (it) => getKey(it as ResourceTypeMap[T]) !== key
+          )
+          return filtered as ResourcesItems<T>
+        })
+      }
+
+      es.addEventListener('added', (e: MessageEvent<string>) => {
+        upsert(e.data)
+      })
+      es.addEventListener('modified', (e: MessageEvent<string>) => {
+        upsert(e.data)
+      })
+      es.addEventListener('deleted', (e: MessageEvent<string>) => {
+        remove(e.data)
+      })
+
+      es.addEventListener('error', (e: MessageEvent) => {
+        try {
+          const payload = JSON.parse(e.data)
+          setError(new Error(payload?.error || 'SSE error'))
+        } catch {
+          setError(new Error('SSE error'))
+        }
+        setIsLoading(false)
+        setIsConnected(false)
+      })
+      es.addEventListener('close', () => {
+        setIsConnected(false)
+      })
+
+      es.onerror = () => {
+        setIsConnected(false)
+      }
+    } catch (err) {
+      if (err instanceof Error) setError(err)
+      setIsLoading(false)
+      setIsConnected(false)
+    }
+  }, [buildUrl, disconnect, options?.enabled])
+
+  const refetch = useCallback(() => {
+    disconnect()
+    setTimeout(connect, 100)
+  }, [disconnect, connect])
+
+  useEffect(() => {
+    if (options?.enabled === false) return
+    connect()
+    return () => {
+      disconnect()
+    }
+  }, [connect, disconnect, options?.enabled])
+
+  return { data, isLoading, error, isConnected, refetch, stop: disconnect }
+}
+
 export const fetchResource = <T>(
   resource: string,
   name: string,
