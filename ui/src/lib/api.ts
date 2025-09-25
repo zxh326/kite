@@ -139,18 +139,6 @@ export const scaleDeployment = async (
   return response
 }
 
-export const restartDeployment = async (
-  namespace: string,
-  name: string
-): Promise<void> => {
-  const endpoint = `/deployments/${namespace}/${name}/restart`
-  await apiClient.put(`${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-}
-
 // Node operation APIs
 export const drainNode = async (
   nodeName: string,
@@ -236,11 +224,7 @@ export const updateResource = async <T extends ResourceType>(
   body: ResourceTypeMap[T]
 ): Promise<void> => {
   const endpoint = `/${resource}/${namespace || '_all'}/${name}`
-  await apiClient.put(`${endpoint}`, body, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
+  await apiClient.put(`${endpoint}`, body)
 }
 
 export const createResource = async <T extends ResourceType>(
@@ -249,11 +233,7 @@ export const createResource = async <T extends ResourceType>(
   body: ResourceTypeMap[T]
 ): Promise<ResourceTypeMap[T]> => {
   const endpoint = `/${resource}/${namespace || '_all'}`
-  return await apiClient.post<ResourceTypeMap[T]>(`${endpoint}`, body, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
+  return await apiClient.post<ResourceTypeMap[T]>(`${endpoint}`, body)
 }
 
 export const deleteResource = async <T extends ResourceType>(
