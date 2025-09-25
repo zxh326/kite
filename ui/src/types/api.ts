@@ -118,7 +118,6 @@ export const clusterScopeResources: ResourceType[] = [
   'namespaces',
   'persistentvolumes',
   'nodes',
-  'events',
   'storageclasses',
   'clusterroles',
   'clusterrolebindings',

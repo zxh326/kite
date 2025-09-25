@@ -144,7 +144,9 @@
     "message": "Message",
     "firstSeen": "First Seen",
     "lastSeen": "Last Seen",
-    "count": "Count"
+    "count": "Count",
+    "source": "Source",
+    "noEventsFound": "No events found"
   },
   "dialog": {
     "createResource": "Create Resource",

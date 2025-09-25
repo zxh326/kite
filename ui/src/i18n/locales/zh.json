@@ -158,7 +158,9 @@
     "message": "消息",
     "firstSeen": "首次出现",
     "lastSeen": "最后出现",
-    "count": "次数"
+    "count": "次数",
+    "source": "来源",
+    "noEventsFound": "未找到事件"
   },
   "dialog": {
     "createResource": "创建资源",

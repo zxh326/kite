@@ -92,7 +92,7 @@ export function EventTable(props: {
     return (
       <div className="flex items-center justify-center py-8">
         <IconLoader className="animate-spin mr-2" />
-        {t('events.loading')}
+        {t('common.loading')}
       </div>
     )
   }
