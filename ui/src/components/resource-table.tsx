@@ -507,7 +507,7 @@ export function ResourceTable<T>({
                 placeholder={`Search ${resourceName.toLowerCase()}...`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-4 w-full sm:w-[200px] md:w-[300px]"
+                className="pl-9 pr-4 w-full sm:w-[100px] md:w-[200px]"
               />
             </div>
             {searchQuery && (

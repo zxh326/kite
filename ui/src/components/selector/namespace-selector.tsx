@@ -28,7 +28,7 @@ export function NamespaceSelector({
 
   return (
     <Select value={selectedNamespace} onValueChange={handleNamespaceChange}>
-      <SelectTrigger className="min-w-48">
+      <SelectTrigger className="max-w-48">
         <SelectValue placeholder="Select a namespace" />
       </SelectTrigger>
       <SelectContent>
