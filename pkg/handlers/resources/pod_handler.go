@@ -95,7 +95,7 @@ func (h *PodHandler) ListMetrics(c *gin.Context) (map[string]metricsv1.PodMetric
 	cs := c.MustGet("cluster").(*cluster.ClientSet)
 	var metricsList metricsv1.PodMetricsList
 	var listOpts []client.ListOption
-	if namespace := c.Param("namespace"); namespace != "" && namespace != "all" {
+	if namespace := c.Param("namespace"); namespace != "" && namespace != "_all" {
 		listOpts = append(listOpts, client.InNamespace(namespace))
 	}
 	if labelSelector := c.Query("labelSelector"); labelSelector != "" {
