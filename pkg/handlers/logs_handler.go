@@ -63,13 +63,17 @@ func (h *LogsHandler) HandleLogsWebSocket(c *gin.Context) {
 		}
 		timestampsBool := timestamps == "true"
 		previousBool := previous == "true"
+		tailPtr := &tail
+		if *tailPtr == -1 {
+			tailPtr = nil
+		}
 
 		// Build log options
 		logOptions := &corev1.PodLogOptions{
 			Container:  container,
 			Follow:     true,
 			Timestamps: timestampsBool,
-			TailLines:  &tail,
+			TailLines:  tailPtr,
 			Previous:   previousBool,
 		}
 

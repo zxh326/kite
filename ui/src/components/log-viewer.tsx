@@ -142,7 +142,9 @@ export function LogViewer({
   // Handle tail lines change and persist to localStorage
   const handleTailLinesChange = useCallback((lines: number) => {
     setTailLines(lines)
-    localStorage.setItem('log-viewer-tail-lines', lines.toString())
+    if (lines !== -1) {
+      localStorage.setItem('log-viewer-tail-lines', lines.toString())
+    }
   }, [])
 
   // Quick theme cycling function
@@ -518,7 +520,9 @@ export function LogViewer({
                     <Label htmlFor="tail-lines">Tail Lines</Label>
                     <Select
                       value={tailLines.toString()}
-                      onValueChange={(value) => handleTailLinesChange(Number(value))}
+                      onValueChange={(value) =>
+                        handleTailLinesChange(Number(value))
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -529,6 +533,7 @@ export function LogViewer({
                         <SelectItem value="200">200</SelectItem>
                         <SelectItem value="500">500</SelectItem>
                         <SelectItem value="1000">1000</SelectItem>
+                        <SelectItem value="-1">All</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
