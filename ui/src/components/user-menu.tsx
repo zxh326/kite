@@ -14,19 +14,14 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  ColorTheme,
-  colorThemes,
-  useColorTheme,
-} from '@/components/color-theme-provider'
-import { useFont } from '@/components/font-provider'
+import { useAppearance } from '@/components/appearance-provider'
+import { ColorTheme, colorThemes } from '@/components/color-theme-provider'
 
 import { SidebarCustomizer } from './sidebar-customizer'
 
 export function UserMenu() {
   const { user, logout } = useAuth()
-  const { colorTheme, setColorTheme } = useColorTheme()
-  const { font, setFont } = useFont()
+  const { colorTheme, setColorTheme, font, setFont } = useAppearance()
   const [open, setOpen] = useState(false)
 
   if (!user) return null

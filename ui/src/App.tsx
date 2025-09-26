@@ -5,15 +5,12 @@ import { useTranslation } from 'react-i18next'
 import { Outlet, useSearchParams } from 'react-router-dom'
 
 import { AppSidebar } from './components/app-sidebar'
-import { ColorThemeProvider } from './components/color-theme-provider'
-import { FontProvider } from './components/font-provider'
 import { GlobalSearch } from './components/global-search'
 import {
   GlobalSearchProvider,
   useGlobalSearch,
 } from './components/global-search-provider'
 import { SiteHeader } from './components/site-header'
-import { ThemeProvider } from './components/theme-provider'
 import { SidebarInset, SidebarProvider } from './components/ui/sidebar'
 import { Toaster } from './components/ui/sonner'
 import { ClusterProvider } from './contexts/cluster-context'
@@ -88,17 +85,11 @@ function AppContent() {
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-      <ColorThemeProvider>
-        <FontProvider defaultFont="maple" storageKey="vite-ui-font">
-          <ClusterProvider>
-            <GlobalSearchProvider>
-              <ClusterAwareApp />
-            </GlobalSearchProvider>
-          </ClusterProvider>
-        </FontProvider>
-      </ColorThemeProvider>
-    </ThemeProvider>
+    <ClusterProvider>
+      <GlobalSearchProvider>
+        <ClusterAwareApp />
+      </GlobalSearchProvider>
+    </ClusterProvider>
   )
 }
 

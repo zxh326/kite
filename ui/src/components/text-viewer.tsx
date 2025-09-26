@@ -3,8 +3,7 @@ import Editor from '@monaco-editor/react'
 import { editor as monacoEditor } from 'monaco-editor'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-
-import { useTheme } from './theme-provider'
+import { useAppearance } from '@/components/appearance-provider'
 
 interface TextViewerProps {
   value: string
@@ -18,7 +17,7 @@ export function TextViewer({
   className,
 }: TextViewerProps) {
   const [editorValue, setEditorValue] = useState(value)
-  const { actualTheme } = useTheme()
+  const { actualTheme } = useAppearance()
 
   const editorRef = useRef<monacoEditor.IStandaloneCodeEditor | null>(null)
 

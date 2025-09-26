@@ -20,8 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-import { useColorTheme } from './color-theme-provider'
-import { useTheme } from './theme-provider'
+import { useAppearance } from './appearance-provider'
 
 interface YamlDiffViewerProps {
   /** Original YAML content */
@@ -58,8 +57,7 @@ export function YamlDiffViewer({
   height = 600,
 }: YamlDiffViewerProps) {
   const { t } = useTranslation()
-  const { actualTheme } = useTheme()
-  const { colorTheme } = useColorTheme()
+  const { actualTheme, colorTheme } = useAppearance()
 
   const getCardBackgroundColor = () => {
     const card = getComputedStyle(document.documentElement)

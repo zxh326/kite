@@ -46,7 +46,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useTheme } from '@/components/theme-provider'
+import { useAppearance } from '@/components/appearance-provider'
 
 // Define resource types and their display properties
 const RESOURCE_CONFIG: Record<
@@ -111,7 +111,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { config, getIconComponent } = useSidebarConfig()
-  const { setTheme, actualTheme } = useTheme()
+  const { setTheme, actualTheme } = useAppearance()
   const {
     clusters,
     currentCluster,

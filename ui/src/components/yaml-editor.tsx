@@ -9,8 +9,7 @@ import { ResourceType, ResourceTypeMap } from '@/types/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-import { useColorTheme } from './color-theme-provider'
-import { useTheme } from './theme-provider'
+import { useAppearance } from './appearance-provider'
 
 interface YamlEditorProps<T extends ResourceType> {
   /** The YAML content to edit */
@@ -50,8 +49,7 @@ export function YamlEditor<T extends ResourceType>({
   const [editorValue, setEditorValue] = useState(value)
   const [isValidYaml, setIsValidYaml] = useState(true)
   const [validationError, setValidationError] = useState<string>('')
-  const { actualTheme } = useTheme()
-  const { colorTheme } = useColorTheme()
+  const { actualTheme, colorTheme } = useAppearance()
   const editorRef = useRef<monacoEditor.IStandaloneCodeEditor | null>(null)
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 

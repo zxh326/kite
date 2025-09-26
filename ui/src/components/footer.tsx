@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 export function Footer() {
   const { t } = useTranslation()
   return (
-    <footer className="border-t border-gray-200 bg-white">
+    <footer className="border-t">
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
           <p className="text-sm text-gray-500">

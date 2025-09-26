@@ -1,8 +1,7 @@
 import { Editor } from '@monaco-editor/react'
 import { formatHex } from 'culori'
 
-import { useColorTheme } from './color-theme-provider'
-import { useTheme } from './theme-provider'
+import { useAppearance } from './appearance-provider'
 
 interface SimpleYamlEditorProps {
   value: string
@@ -17,8 +16,7 @@ export function SimpleYamlEditor({
   disabled = false,
   height = '400px',
 }: SimpleYamlEditorProps) {
-  const { actualTheme } = useTheme()
-  const { colorTheme } = useColorTheme()
+  const { actualTheme, colorTheme } = useAppearance()
 
   const getCardBackgroundColor = () => {
     const card = getComputedStyle(document.documentElement)

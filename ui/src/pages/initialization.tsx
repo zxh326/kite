@@ -52,7 +52,7 @@ function InitStep({
     <div className={`space-y-4 ${isPending ? 'opacity-50' : ''}`}>
       <div className="flex items-center space-x-3">
         <div
-          className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
+          className={`flex aspect-square h-10 w-10 items-center justify-center rounded-full border-2 flex-shrink-0 ${
             completed
               ? 'border-green-500 bg-green-500 text-white'
               : isActive
@@ -198,7 +198,7 @@ export function InitializationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <div className="absolute top-6 right-6 z-10">
         <LanguageToggle />
       </div>
@@ -207,17 +207,17 @@ export function InitializationPage() {
         <div className="w-full max-w-2xl">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center space-x-2 mb-4">
-              <img src={Logo} className="h-10 w-10 dark:invert" />{' '}
-              <h1 className="text-2xl font-bold text-gray-900">Kite</h1>
+              <img src={Logo} className="h-10 w-10" />{' '}
+              <h1 className="text-2xl font-bold">Kite</h1>
             </div>
           </div>
 
-          <Card className="bg-white shadow-lg border border-gray-200">
+          <Card className="shadow-lg border">
             <CardHeader className="text-center pb-6">
-              <CardTitle className="text-xl text-gray-900">
+              <CardTitle className="text-xl">
                 {t('initialization.title')}
               </CardTitle>
-              <CardDescription className="text-gray-600">
+              <CardDescription>
                 {t('initialization.description')}
               </CardDescription>
             </CardHeader>
