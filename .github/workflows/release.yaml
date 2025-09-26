@@ -101,6 +101,7 @@ jobs:
           name: ${{ steps.check_version.outputs.tag_name }}
           draft: false
           prerelease: false
+          generate_release_notes: true
           files: |
             bin/kite-*-${{ steps.check_version.outputs.tag_name }}.tar.gz
             kite-*.tgz
@@ -124,7 +125,7 @@ jobs:
         run: |
           TAG_NAME=${{ needs.push.outputs.tag_name }}
           VERSION=$(echo $TAG_NAME | sed 's/^v//')
-          
+
           # Download the helm chart from the release
           gh release download $TAG_NAME --pattern "kite-$VERSION.tgz"
         env:
@@ -134,10 +135,10 @@ jobs:
         run: |
           TAG_NAME=${{ needs.push.outputs.tag_name }}
           VERSION=$(echo $TAG_NAME | sed 's/^v//')
-          
+
           # Set the repository URL for the helm chart
           REPO_URL="https://github.com/${{ github.repository }}/releases/download/$TAG_NAME"
-          
+
           # Update index.yaml
           if [ -f index.yaml ]; then
             helm repo index . --url $REPO_URL --merge index.yaml
@@ -149,7 +150,7 @@ jobs:
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-          
+
           git add index.yaml
           if ! git diff --cached --quiet; then
             git commit -m "Update Helm index for ${{ needs.push.outputs.tag_name }}"

@@ -67,7 +67,10 @@ export function LogViewer({
   const [selectedContainer, setSelectedContainer] = useState<
     string | undefined
   >(containers.length > 0 ? containers[0].name : '')
-  const [tailLines, setTailLines] = useState(100)
+  const [tailLines, setTailLines] = useState(() => {
+    const saved = localStorage.getItem('log-viewer-tail-lines')
+    return saved ? parseInt(saved, 10) : 100
+  })
   const [timestamps, setTimestamps] = useState(false)
   const [previous, setPrevious] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -134,6 +137,14 @@ export function LogViewer({
   const handleFontSizeChange = useCallback((size: number) => {
     setFontSize(size)
     localStorage.setItem('log-viewer-font-size', size.toString())
+  }, [])
+
+  // Handle tail lines change and persist to localStorage
+  const handleTailLinesChange = useCallback((lines: number) => {
+    setTailLines(lines)
+    if (lines !== -1) {
+      localStorage.setItem('log-viewer-tail-lines', lines.toString())
+    }
   }, [])
 
   // Quick theme cycling function
@@ -509,7 +520,9 @@ export function LogViewer({
                     <Label htmlFor="tail-lines">Tail Lines</Label>
                     <Select
                       value={tailLines.toString()}
-                      onValueChange={(value) => setTailLines(Number(value))}
+                      onValueChange={(value) =>
+                        handleTailLinesChange(Number(value))
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -520,6 +533,7 @@ export function LogViewer({
                         <SelectItem value="200">200</SelectItem>
                         <SelectItem value="500">500</SelectItem>
                         <SelectItem value="1000">1000</SelectItem>
+                        <SelectItem value="-1">All</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
