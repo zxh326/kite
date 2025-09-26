@@ -145,13 +145,15 @@ export function LoginPage() {
               <img src={Logo} className="h-10 w-10 dark:invert" />{' '}
               <h1 className="text-2xl font-bold">Kite</h1>
             </div>
-            <p>{t('login.kubernetesDashboard')}</p>
+            <p className="text-gray-600">{t('login.kubernetesDashboard')}</p>
           </div>
 
-          <Card className="shadow-sm border ">
+          <Card className="shadow-sm border">
             <CardHeader className="text-center">
               <CardTitle className="text-xl">{t('login.signIn')}</CardTitle>
-              <CardDescription>{t('login.subtitle')}</CardDescription>
+              <CardDescription className="text-gray-600">
+                {t('login.subtitle')}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {error && (
@@ -186,7 +188,9 @@ export function LoginPage() {
                       >
                         {t('login.tryAgainDifferentAccount')}
                       </Button>
-                      <p className="text-xs">{t('login.tryAgainHint')}</p>
+                      <p className="text-xs text-gray-500">
+                        {t('login.tryAgainHint')}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -194,8 +198,10 @@ export function LoginPage() {
 
               {providers.length === 0 ? (
                 <div className="text-center py-8">
-                  <p>{t('login.noLoginMethods')}</p>
-                  <p className="text-sm mt-2">{t('login.configureAuth')}</p>
+                  <p className="text-gray-600">{t('login.noLoginMethods')}</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    {t('login.configureAuth')}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -235,7 +241,7 @@ export function LoginPage() {
                       >
                         {loginLoading === 'password' ? (
                           <div className="flex items-center space-x-2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2"></div>
                             <span>{t('login.signingIn')}</span>
                           </div>
                         ) : (
@@ -252,7 +258,7 @@ export function LoginPage() {
                           <span className="w-full border-t" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                          <span className="px-2 text-muted-foreground">
+                          <span className="px-2 text-muted-foreground bg-card rounded">
                             {t('login.orContinueWith')}
                           </span>
                         </div>
@@ -266,8 +272,8 @@ export function LoginPage() {
                         key={provider}
                         onClick={() => handleLogin(provider)}
                         disabled={loginLoading !== null}
-                        className="w-full h-11"
-                        variant="default"
+                        className="w-full h-10"
+                        variant="outline"
                       >
                         {loginLoading === provider ? (
                           <div className="flex items-center space-x-2">

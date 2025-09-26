@@ -138,9 +138,7 @@ class ApiClient {
   }
 }
 
-export const API_BASE_URL = import.meta.env.DEV
-  ? 'http://localhost:8080/api/v1'
-  : '/api/v1'
+export const API_BASE_URL = '/api/v1'
 
 // Create a singleton instance
 export const apiClient = new ApiClient(API_BASE_URL)
