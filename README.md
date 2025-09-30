@@ -145,7 +145,7 @@ For troubleshooting, please refer to the [documentation](https://kite.zzde.me).
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our contributing guidelines for details on how to get involved.
+We welcome contributions! Please see our [contributing guidelines](https://kite.zzde.me/faq.html#how-can-i-contribute-to-kite) for details on how to get involved.
 
 ## 📄 License
 
