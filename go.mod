@@ -4,6 +4,7 @@ go 1.24.3
 
 require (
 	github.com/blang/semver/v4 v4.0.0
+	github.com/bytedance/mockey v1.2.14
 	github.com/gin-contrib/gzip v1.2.3
 	github.com/gin-gonic/gin v1.10.1
 	github.com/glebarez/sqlite v1.11.0
@@ -12,6 +13,7 @@ require (
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.66.1
 	github.com/samber/lo v1.51.0
+	github.com/stretchr/testify v1.11.1
 	golang.org/x/crypto v0.42.0
 	golang.org/x/net v0.44.0
 	gorm.io/driver/mysql v1.6.0
@@ -62,6 +64,7 @@ require (
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/gopherjs/gopherjs v1.12.80 // indirect
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -73,6 +76,7 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
@@ -92,6 +96,8 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/smartystreets/assertions v1.2.0 // indirect
+	github.com/smartystreets/goconvey v1.7.2 // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
