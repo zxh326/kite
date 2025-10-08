@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 
+import { usePageTitle } from '@/hooks/use-page-title'
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { ClusterManagement } from '@/components/settings/cluster-management'
 import { OAuthProviderManagement } from '@/components/settings/oauth-provider-management'
@@ -8,6 +9,8 @@ import { UserManagement } from '@/components/settings/user-management'
 
 export function SettingsPage() {
   const { t } = useTranslation()
+
+  usePageTitle('Settings')
 
   return (
     <div className="space-y-2">

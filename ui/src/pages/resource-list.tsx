@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom'
 
 import { ResourceType } from '@/types/api'
+import { usePageTitle } from '@/hooks/use-page-title'
 
 import { ConfigMapListPage } from './configmap-list-page'
 import { CRDListPage } from './crd-list-page'
@@ -23,6 +24,12 @@ import { StatefulSetListPage } from './statefulset-list-page'
 
 export function ResourceList() {
   const { resource } = useParams()
+
+  usePageTitle(
+    resource
+      ? resource.charAt(0).toUpperCase() + resource.slice(1)
+      : 'Resources'
+  )
 
   switch (resource) {
     case 'pods':
