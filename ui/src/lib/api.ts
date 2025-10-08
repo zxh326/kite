@@ -1,6 +1,6 @@
 // API service for Kubernetes resources
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
 import {
@@ -1185,15 +1185,26 @@ export const useLogsWebSocket = (
     wsActions.disconnect()
   }, [wsActions])
 
-  return {
-    logs,
-    isLoading: wsState.isConnecting,
-    error: wsState.error,
-    isConnected: wsState.isConnected,
-    downloadSpeed: wsState.networkStats.downloadSpeed,
-    refetch,
-    stopStreaming,
-  }
+  return useMemo(
+    () => ({
+      logs,
+      isLoading: wsState.isConnecting,
+      error: wsState.error,
+      isConnected: wsState.isConnected,
+      downloadSpeed: wsState.networkStats.downloadSpeed,
+      refetch,
+      stopStreaming,
+    }),
+    [
+      logs,
+      wsState.isConnecting,
+      wsState.error,
+      wsState.isConnected,
+      wsState.networkStats.downloadSpeed,
+      refetch,
+      stopStreaming,
+    ]
+  )
 }
 
 export interface ClusterCreateRequest {

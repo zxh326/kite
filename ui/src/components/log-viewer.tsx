@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   IconClearAll,
   IconDownload,
@@ -10,13 +10,13 @@ import {
   IconSettings,
   IconX,
 } from '@tabler/icons-react'
-import { Pod } from 'kubernetes-types/core/v1'
+import { Container, Pod } from 'kubernetes-types/core/v1'
 import { useTranslation } from 'react-i18next'
 
-import { SimpleContainer } from '@/types/k8s'
 import { LOG_THEMES, LogTheme } from '@/types/themes'
 import { ansiStateToCss, parseAnsi, stripAnsi } from '@/lib/ansi-parser'
 import { useLogsWebSocket } from '@/lib/api'
+import { toSimpleContainer } from '@/lib/k8s'
 import { translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -47,12 +47,59 @@ import { NetworkSpeedIndicator } from './network-speed-indicator'
 import { ContainerSelector } from './selector/container-selector'
 import { PodSelector } from './selector/pod-selector'
 
+interface LogLineProps {
+  line: string
+  searchTerm: string
+  wordWrap: boolean
+}
+
+const LogLine = memo(({ line, searchTerm, wordWrap }: LogLineProps) => {
+  const segments = parseAnsi(line)
+
+  return (
+    <div className={wordWrap ? 'break-words' : 'break-all'}>
+      {segments.map((segment, segIndex) => {
+        const text = segment.text
+        if (!searchTerm) {
+          return (
+            <span key={segIndex} style={ansiStateToCss(segment.styles)}>
+              {text}
+            </span>
+          )
+        }
+
+        const parts = text.split(new RegExp(`(${searchTerm})`, 'gi'))
+        return (
+          <span key={segIndex} style={ansiStateToCss(segment.styles)}>
+            {parts.map((part, i) => {
+              if (part.toLowerCase() === searchTerm.toLowerCase()) {
+                return (
+                  <span
+                    key={i}
+                    className="bg-yellow-500/50 dark:bg-yellow-500/30 rounded px-0.5"
+                  >
+                    {part}
+                  </span>
+                )
+              }
+              return part
+            })}
+          </span>
+        )
+      })}
+    </div>
+  )
+})
+
+LogLine.displayName = 'LogLine'
+
 interface LogViewerProps {
   namespace: string
   podName?: string
   pods?: Pod[]
   labelSelector?: string
-  containers: SimpleContainer
+  containers?: Container[]
+  initContainers?: Container[]
   onClose?: () => void
 }
 
@@ -60,10 +107,15 @@ export function LogViewer({
   namespace,
   podName,
   pods,
-  containers,
+  containers: _containers,
+  initContainers,
   onClose,
   labelSelector,
 }: LogViewerProps) {
+  console.log('LogViewer render')
+  const containers = useMemo(() => {
+    return toSimpleContainer(initContainers, _containers)
+  }, [_containers, initContainers])
   const [selectedContainer, setSelectedContainer] = useState<
     string | undefined
   >(containers.length > 0 ? containers[0].name : '')
@@ -167,6 +219,26 @@ export function LogViewer({
     }
   }, [autoScroll])
 
+  // Memoize options to prevent unnecessary re-renders
+  const logsOptions = useMemo(
+    () => ({
+      container: selectedContainer,
+      tailLines,
+      timestamps,
+      previous,
+      enabled: !!selectPodName,
+      labelSelector,
+    }),
+    [
+      selectedContainer,
+      tailLines,
+      timestamps,
+      previous,
+      selectPodName,
+      labelSelector,
+    ]
+  )
+
   // Use the new WebSocket logs hook
   const {
     logs,
@@ -176,14 +248,7 @@ export function LogViewer({
     downloadSpeed,
     refetch,
     stopStreaming,
-  } = useLogsWebSocket(namespace, selectPodName || '', {
-    container: selectedContainer,
-    tailLines,
-    timestamps,
-    previous,
-    enabled: !!selectPodName,
-    labelSelector,
-  })
+  } = useLogsWebSocket(namespace, selectPodName || '', logsOptions)
 
   const handleClearLogs = useCallback(() => {
     if (logs) {
@@ -768,48 +833,14 @@ export function LogViewer({
             </div>
           )}
 
-          {filteredLogs?.map((line, index) => {
-            const segments = parseAnsi(line)
-            return (
-              <div
-                key={index}
-                className={wordWrap ? 'break-words' : 'break-all'}
-              >
-                {segments.map((segment, segIndex) => {
-                  const text = segment.text
-                  if (!searchTerm) {
-                    return (
-                      <span
-                        key={segIndex}
-                        style={ansiStateToCss(segment.styles)}
-                      >
-                        {text}
-                      </span>
-                    )
-                  }
-
-                  const parts = text.split(new RegExp(`(${searchTerm})`, 'gi'))
-                  return (
-                    <span key={segIndex} style={ansiStateToCss(segment.styles)}>
-                      {parts.map((part, i) => {
-                        if (part.toLowerCase() === searchTerm.toLowerCase()) {
-                          return (
-                            <span
-                              key={i}
-                              className="bg-yellow-500/50 dark:bg-yellow-500/30 rounded px-0.5"
-                            >
-                              {part}
-                            </span>
-                          )
-                        }
-                        return part
-                      })}
-                    </span>
-                  )
-                })}
-              </div>
-            )
-          })}
+          {filteredLogs?.map((line, index) => (
+            <LogLine
+              key={index}
+              line={line}
+              searchTerm={searchTerm}
+              wordWrap={wordWrap}
+            />
+          ))}
 
           {!autoScroll && (
             <div

@@ -666,10 +666,10 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
                       <LogViewer
                         namespace={namespace}
                         pods={relatedPods}
-                        containers={toSimpleContainer(
-                          deployment.spec?.template?.spec?.initContainers,
-                          deployment.spec?.template?.spec?.containers
-                        )}
+                        containers={deployment.spec?.template.spec?.containers}
+                        initContainers={
+                          deployment.spec?.template.spec?.initContainers
+                        }
                         labelSelector={labelSelector}
                       />
                     </div>
@@ -684,10 +684,12 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
                         <Terminal
                           namespace={namespace}
                           pods={relatedPods}
-                          containers={toSimpleContainer(
-                            deployment.spec?.template?.spec?.initContainers,
-                            deployment.spec?.template?.spec?.containers
-                          )}
+                          containers={
+                            deployment.spec?.template.spec?.containers
+                          }
+                          initContainers={
+                            deployment.spec?.template.spec?.initContainers
+                          }
                         />
                       )}
                     </div>
@@ -762,10 +764,8 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
               <PodMonitoring
                 namespace={namespace}
                 pods={relatedPods}
-                containers={toSimpleContainer(
-                  deployment.spec?.template?.spec?.initContainers,
-                  deployment.spec?.template?.spec?.containers
-                )}
+                containers={deployment.spec?.template.spec?.containers}
+                initContainers={deployment.spec?.template.spec?.initContainers}
                 labelSelector={labelSelector}
               />
             ),

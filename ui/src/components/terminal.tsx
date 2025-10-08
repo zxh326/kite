@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   IconClearAll,
   IconMaximize,
@@ -11,14 +11,14 @@ import { FitAddon } from '@xterm/addon-fit'
 import { SearchAddon } from '@xterm/addon-search'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import { Terminal as XTerm } from '@xterm/xterm'
-import { Pod } from 'kubernetes-types/core/v1'
+import { Container, Pod } from 'kubernetes-types/core/v1'
 
 import '@xterm/xterm/css/xterm.css'
 
 import { useTranslation } from 'react-i18next'
 
-import { SimpleContainer } from '@/types/k8s'
 import { TERMINAL_THEMES, TerminalTheme } from '@/types/themes'
+import { toSimpleContainer } from '@/lib/k8s'
 import { translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -47,7 +47,8 @@ interface TerminalProps {
   podName?: string
   nodeName?: string
   pods?: Pod[]
-  containers?: SimpleContainer
+  containers?: Container[]
+  initContainers?: Container[]
 }
 
 export function Terminal({
@@ -55,9 +56,22 @@ export function Terminal({
   podName,
   pods,
   nodeName,
-  containers = [],
+  containers: _containers = [],
+  initContainers = [],
   type = 'pod',
 }: TerminalProps) {
+  console.log('Terminal render', {
+    namespace,
+    podName,
+    nodeName,
+    type,
+    pods,
+    _containers,
+    initContainers,
+  })
+  const containers = useMemo(() => {
+    return toSimpleContainer(initContainers, _containers)
+  }, [_containers, initContainers])
   const [selectedPod, setSelectedPod] = useState<string>('')
   const [selectedContainer, setSelectedContainer] = useState<string>('')
   const [isConnected, setIsConnected] = useState(false)
@@ -90,8 +104,21 @@ export function Terminal({
   // Initialize pod/container state on props change
   useEffect(() => {
     setSelectedPod(podName || pods?.[0]?.metadata?.name || '')
-    setSelectedContainer(containers.length > 0 ? containers[0].name : '')
-  }, [podName, pods, containers])
+  }, [podName, pods])
+
+  useEffect(() => {
+    if (containers.length === 0) {
+      setSelectedContainer('')
+      return
+    }
+
+    setSelectedContainer((current) => {
+      if (!current || !containers.find((c) => c.name === current)) {
+        return containers[0].name
+      }
+      return current
+    })
+  }, [containers])
 
   // Handle theme change and persist to localStorage
   const handleThemeChange = useCallback((theme: TerminalTheme) => {

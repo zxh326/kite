@@ -20,7 +20,6 @@ import {
   useResource,
   useResourcesWatch,
 } from '@/lib/api'
-import { toSimpleContainer } from '@/lib/k8s'
 import { formatDate, translateError } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -515,10 +514,9 @@ export function DaemonSetDetail(props: { namespace: string; name: string }) {
                       <LogViewer
                         namespace={namespace}
                         pods={relatedPods}
-                        containers={toSimpleContainer(
-                          spec?.template.spec?.initContainers,
-                          spec?.template.spec?.containers
-                        )}
+                        containers={spec?.template.spec?.containers}
+                        initContainers={spec?.template.spec?.initContainers}
+                        labelSelector={labelSelector}
                       />
                     </div>
                   ),
@@ -532,10 +530,8 @@ export function DaemonSetDetail(props: { namespace: string; name: string }) {
                         <Terminal
                           namespace={namespace}
                           pods={relatedPods}
-                          containers={toSimpleContainer(
-                            spec?.template.spec?.initContainers,
-                            spec?.template.spec?.containers
-                          )}
+                          containers={spec?.template.spec?.containers}
+                          initContainers={spec?.template.spec?.initContainers}
                         />
                       )}
                     </div>
@@ -611,10 +607,8 @@ export function DaemonSetDetail(props: { namespace: string; name: string }) {
               <PodMonitoring
                 namespace={namespace}
                 pods={relatedPods}
-                containers={toSimpleContainer(
-                  spec?.template.spec?.initContainers,
-                  spec?.template.spec?.containers
-                )}
+                containers={spec?.template.spec?.containers}
+                initContainers={spec?.template.spec?.initContainers}
                 defaultQueryName={relatedPods?.[0]?.metadata?.generateName}
                 labelSelector={labelSelector}
               />

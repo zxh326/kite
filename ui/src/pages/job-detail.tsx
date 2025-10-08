@@ -13,7 +13,7 @@ import {
   useResource,
   useResources,
 } from '@/lib/api'
-import { getOwnerInfo, toSimpleContainer } from '@/lib/k8s'
+import { getOwnerInfo } from '@/lib/k8s'
 import { formatDate, translateError } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -417,10 +417,8 @@ export function JobDetail(props: { namespace: string; name: string }) {
                       <LogViewer
                         namespace={namespace}
                         pods={pods}
-                        containers={toSimpleContainer(
-                          job.spec?.template?.spec?.initContainers,
-                          job.spec?.template?.spec?.containers
-                        )}
+                        containers={job.spec?.template.spec?.containers}
+                        initContainers={job.spec?.template.spec?.initContainers}
                         labelSelector={`job-name=${name}`}
                       />
                     </div>
@@ -434,10 +432,8 @@ export function JobDetail(props: { namespace: string; name: string }) {
                       <Terminal
                         namespace={namespace}
                         pods={pods}
-                        containers={toSimpleContainer(
-                          job.spec?.template?.spec?.initContainers,
-                          job.spec?.template?.spec?.containers
-                        )}
+                        containers={job.spec?.template.spec?.containers}
+                        initContainers={job.spec?.template.spec?.initContainers}
                       />
                     </div>
                   ),
@@ -496,10 +492,8 @@ export function JobDetail(props: { namespace: string; name: string }) {
               <PodMonitoring
                 namespace={namespace}
                 pods={pods}
-                containers={toSimpleContainer(
-                  job.spec?.template?.spec?.initContainers,
-                  job.spec?.template?.spec?.containers
-                )}
+                containers={job.spec?.template.spec?.containers}
+                initContainers={job.spec?.template.spec?.initContainers}
                 labelSelector={`job-name=${name}`}
               />
             ),

@@ -7,12 +7,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { deleteResource, updateResource, useResource } from '@/lib/api'
-import {
-  getOwnerInfo,
-  getPodErrorMessage,
-  getPodStatus,
-  toSimpleContainer,
-} from '@/lib/k8s'
+import { getOwnerInfo, getPodErrorMessage, getPodStatus } from '@/lib/k8s'
 import { formatDate, translateError } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -404,10 +399,8 @@ export function PodDetail(props: { namespace: string; name: string }) {
               <LogViewer
                 namespace={namespace}
                 podName={name}
-                containers={toSimpleContainer(
-                  pod.spec?.initContainers,
-                  pod.spec?.containers
-                )}
+                containers={pod.spec?.containers}
+                initContainers={pod.spec?.initContainers}
               />
             ),
           },
@@ -419,10 +412,8 @@ export function PodDetail(props: { namespace: string; name: string }) {
                 <Terminal
                   namespace={namespace}
                   podName={name}
-                  containers={toSimpleContainer(
-                    pod.spec?.initContainers,
-                    pod.spec?.containers
-                  )}
+                  containers={pod.spec?.containers}
+                  initContainers={pod.spec?.initContainers}
                 />
               </div>
             ),
@@ -474,10 +465,8 @@ export function PodDetail(props: { namespace: string; name: string }) {
                 <PodMonitoring
                   namespace={namespace}
                   podName={name}
-                  containers={toSimpleContainer(
-                    pod.spec?.initContainers,
-                    pod.spec?.containers
-                  )}
+                  containers={pod.spec?.containers}
+                  initContainers={pod.spec?.initContainers}
                 />
               </div>
             ),

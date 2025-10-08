@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { Pod } from 'kubernetes-types/core/v1'
+import { Container, Pod } from 'kubernetes-types/core/v1'
 
-import { SimpleContainer } from '@/types/k8s'
 import { usePodMetrics } from '@/lib/api'
+import { toSimpleContainer } from '@/lib/k8s'
 import {
   Select,
   SelectContent,
@@ -23,7 +23,8 @@ interface PodMonitoringProps {
   podName?: string
   defaultQueryName?: string
   pods?: Pod[]
-  containers: SimpleContainer
+  containers?: Container[]
+  initContainers?: Container[]
   labelSelector?: string
 }
 
@@ -32,9 +33,13 @@ export function PodMonitoring({
   podName,
   defaultQueryName,
   pods,
-  containers,
+  containers: _containers = [],
+  initContainers = [],
   labelSelector,
 }: PodMonitoringProps) {
+  const containers = useMemo(() => {
+    return toSimpleContainer(initContainers, _containers)
+  }, [_containers, initContainers])
   const [selectedPod, setSelectedPod] = useState<string | undefined>(
     podName || undefined
   )

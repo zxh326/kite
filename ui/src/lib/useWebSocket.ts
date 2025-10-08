@@ -143,13 +143,22 @@ export function useWebSocket(
         const uploadSpeed = stats.bytesUploaded / timeDiff
         const downloadSpeed = stats.bytesDownloaded / timeDiff
 
-        setNetworkStats((prev) => ({
-          ...prev,
-          uploadSpeed,
-          downloadSpeed,
-          totalUploaded: stats.totalUploaded,
-          totalDownloaded: stats.totalDownloaded,
-        }))
+        setNetworkStats((prev) => {
+          if (
+            prev.uploadSpeed === uploadSpeed &&
+            prev.downloadSpeed === downloadSpeed &&
+            prev.totalUploaded === stats.totalUploaded &&
+            prev.totalDownloaded === stats.totalDownloaded
+          ) {
+            return prev
+          }
+
+          prev.uploadSpeed = uploadSpeed
+          prev.downloadSpeed = downloadSpeed
+          prev.totalUploaded = stats.totalUploaded
+          prev.totalDownloaded = stats.totalDownloaded
+          return prev
+        })
 
         // Reset counters after specified interval
         const currentOpts = optsRef.current
@@ -242,12 +251,14 @@ export function useWebSocket(
           speedUpdateTimerRef.current = null
         }
 
-        // Reset network speeds
-        setNetworkStats((prev) => ({
-          ...prev,
-          uploadSpeed: 0,
-          downloadSpeed: 0,
-        }))
+        setNetworkStats((prev) => {
+          if (prev.uploadSpeed === 0 && prev.downloadSpeed === 0) return prev
+          return {
+            ...prev,
+            uploadSpeed: 0,
+            downloadSpeed: 0,
+          }
+        })
 
         callbacksRef.current.onClose?.(event)
 
