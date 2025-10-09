@@ -17,6 +17,7 @@ import {
   IconCode,
   IconDatabase,
   IconFileDatabase,
+  IconHelmet,
   IconKey,
   IconLoadBalancer,
   IconLock,
@@ -48,6 +49,7 @@ const SIDEBAR_CONFIG_KEY = 'kite-sidebar-config'
 const iconMap = {
   IconBox,
   IconRocket,
+  IconHelmet,
   IconStack2,
   IconTopologyBus,
   IconPlayerPlay,
@@ -190,6 +192,9 @@ export const SidebarConfigProvider: React.FC<SidebarConfigProviderProps> = ({
           url: '/clusterrolebindings',
           icon: IconKey,
         },
+      ],
+      'sidebar.groups.helm': [
+        { titleKey: 'nav.helm', url: '/helmreleases', icon: IconHelmet },
       ],
       'sidebar.groups.other': [
         {
