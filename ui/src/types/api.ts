@@ -52,6 +52,28 @@ import {
 } from 'kubernetes-types/rbac/v1'
 import { StorageClass, StorageClassList } from 'kubernetes-types/storage/v1'
 
+export interface HelmRelease {
+  metadata: {
+    name: string
+    namespace: string
+    creationTimestamp: string
+    uid?: string
+    resourceVersion?: string
+    labels?: Record<string, string>
+    annotations?: Record<string, string>
+  }
+  spec: {
+    chart: Record<string, unknown>
+    values?: Record<string, unknown>
+  }
+  status: {
+    phase: string
+    revision: number
+    lastUpdated: string
+    description?: string
+  }
+}
+
 export interface CustomResource {
   apiVersion: string
   kind: string
@@ -112,6 +134,7 @@ export type ResourceType =
   | 'clusterroles'
   | 'clusterrolebindings'
   | 'horizontalpodautoscalers'
+  | 'helmreleases'
 
 export const clusterScopeResources: ResourceType[] = [
   'crds',
@@ -168,6 +191,10 @@ export interface ResourcesTypeMap {
   clusterroles: ClusterRoleList
   clusterrolebindings: ClusterRoleBindingList
   horizontalpodautoscalers: HorizontalPodAutoscalerList
+  helmreleases: {
+    items: HelmRelease[]
+    metadata?: listMetadataType
+  }
 }
 
 export interface PodMetrics {
@@ -233,6 +260,7 @@ export interface ResourceTypeMap {
   clusterroles: ClusterRole
   clusterrolebindings: ClusterRoleBinding
   horizontalpodautoscalers: HorizontalPodAutoscaler
+  helmreleases: HelmRelease
 }
 
 export interface RecentEvent {
