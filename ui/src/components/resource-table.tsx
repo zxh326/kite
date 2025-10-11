@@ -17,7 +17,6 @@ import { Box, Database, Plus, RefreshCw, Search, XCircle } from 'lucide-react'
 
 import { ResourceType } from '@/types/api'
 import { useResources, useResourcesWatch } from '@/lib/api'
-import { debounce } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -65,8 +64,11 @@ export function ResourceTable<T>({
 }: ResourceTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [searchQuery, setSearchQuery] = useState<string>('')
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('')
+  const [searchQuery, setSearchQuery] = useState<string>(() => {
+    const currentCluster = localStorage.getItem('current-cluster')
+    const storageKey = `${currentCluster}-${resourceName}-searchQuery`
+    return sessionStorage.getItem(storageKey) || ''
+  })
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 20,
@@ -119,24 +121,21 @@ export function ResourceTable<T>({
 
   // (moved below after error is defined)
 
-  // Initialize our debounced search function just once
-  const debouncedSetSearch = useMemo(
-    () =>
-      debounce((value: string) => {
-        setDebouncedSearchQuery(value)
-      }, 300),
-    []
-  )
-
-  // Update debounced search query when input changes
+  // Update sessionStorage when search query changes
   useEffect(() => {
-    debouncedSetSearch(searchQuery)
-  }, [searchQuery, debouncedSetSearch])
+    const currentCluster = localStorage.getItem('current-cluster')
+    const storageKey = `${currentCluster}-${resourceName}-searchQuery`
+    if (searchQuery) {
+      sessionStorage.setItem(storageKey, searchQuery)
+    } else {
+      sessionStorage.removeItem(storageKey)
+    }
+  }, [searchQuery, resourceName])
 
   // Reset pagination when filters change
   useEffect(() => {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }))
-  }, [columnFilters, debouncedSearchQuery])
+  }, [columnFilters, searchQuery])
 
   // Handle namespace change
   const handleNamespaceChange = useCallback(
@@ -150,8 +149,6 @@ export function ResourceTable<T>({
         // Reset pagination and search when changing namespace
         setPagination({ pageIndex: 0, pageSize: pagination.pageSize })
         setSearchQuery('')
-        // Reset debounced search immediately to prevent filter mismatch
-        setDebouncedSearchQuery('')
       }
     },
     [setSelectedNamespace, pagination.pageSize]
@@ -235,7 +232,7 @@ export function ResourceTable<T>({
     state: {
       sorting,
       columnFilters,
-      globalFilter: debouncedSearchQuery, // Use debounced query for filtering
+      globalFilter: searchQuery,
       pagination,
     },
     onPaginationChange: setPagination,
@@ -266,15 +263,15 @@ export function ResourceTable<T>({
   const filteredRowCount = useMemo(() => {
     if (!data || (data as T[]).length === 0) return 0
     // Force re-computation when filters change
-    void debouncedSearchQuery // Ensure dependency is used
+    void searchQuery // Ensure dependency is used
     void columnFilters // Ensure dependency is used
     return table.getFilteredRowModel().rows.length
-  }, [table, data, debouncedSearchQuery, columnFilters])
+  }, [table, data, searchQuery, columnFilters])
 
   // Check if there are active filters
   const hasActiveFilters = useMemo(() => {
-    return Boolean(debouncedSearchQuery) || columnFilters.length > 0
-  }, [debouncedSearchQuery, columnFilters])
+    return Boolean(searchQuery) || columnFilters.length > 0
+  }, [searchQuery, columnFilters])
 
   // Render empty state based on condition
   const renderEmptyState = () => {
@@ -318,13 +315,13 @@ export function ResourceTable<T>({
             No {resourceName.toLowerCase()} found
           </h3>
           <p className="text-muted-foreground">
-            {debouncedSearchQuery
-              ? `No results match your search query: "${debouncedSearchQuery}"`
+            {searchQuery
+              ? `No results match your search query: "${searchQuery}"`
               : clusterScope
                 ? `There are no ${resourceName.toLowerCase()} found`
                 : `There are no ${resourceName.toLowerCase()} in the ${selectedNamespace} namespace`}
           </p>
-          {debouncedSearchQuery && (
+          {searchQuery && (
             <Button
               variant="outline"
               className="mt-4"
@@ -589,10 +586,8 @@ export function ResourceTable<T>({
             {hasActiveFilters ? (
               <>
                 Showing {filteredRowCount} of {totalRowCount} row(s)
-                {debouncedSearchQuery && (
-                  <span className="ml-1">
-                    (filtered by "{debouncedSearchQuery}")
-                  </span>
+                {searchQuery && (
+                  <span className="ml-1">(filtered by "{searchQuery}")</span>
                 )}
               </>
             ) : (
