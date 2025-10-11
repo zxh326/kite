@@ -85,6 +85,12 @@ export function Terminal({
     const saved = localStorage.getItem('log-viewer-font-size')
     return saved ? parseInt(saved, 10) : 14
   })
+  const [cursorStyle, setCursorStyle] = useState<'block' | 'underline' | 'bar'>(
+    () => {
+      const saved = localStorage.getItem('terminal-cursor-style')
+      return (saved as 'block' | 'underline' | 'bar') || 'bar'
+    }
+  )
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   const terminalRef = useRef<HTMLDivElement>(null)
@@ -170,6 +176,17 @@ export function Terminal({
     }
   }, [])
 
+  const handleCursorStyleChange = useCallback(
+    (style: 'block' | 'underline' | 'bar') => {
+      setCursorStyle(style)
+      localStorage.setItem('terminal-cursor-style', style)
+      if (xtermRef.current) {
+        xtermRef.current.options.cursorStyle = style
+      }
+    },
+    []
+  )
+
   // Quick theme cycling function
   const cycleTheme = useCallback(() => {
     const themes = Object.keys(TERMINAL_THEMES) as TerminalTheme[]
@@ -249,7 +266,7 @@ export function Terminal({
       },
       cursorBlink: true,
       allowTransparency: true,
-      cursorStyle: 'bar',
+      cursorStyle,
       scrollback: 10000,
     })
     const fitAddon = new FitAddon()
@@ -623,6 +640,26 @@ export function Terminal({
                           <SelectItem value="20">20px</SelectItem>
                           <SelectItem value="22">22px</SelectItem>
                           <SelectItem value="24">24px</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Cursor Style Selector */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="cursor-style">Cursor Style</Label>
+                      <Select
+                        value={cursorStyle}
+                        onValueChange={handleCursorStyleChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="block">Block</SelectItem>
+                          <SelectItem value="underline">Underline</SelectItem>
+                          <SelectItem value="bar">Bar</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
