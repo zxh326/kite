@@ -20,6 +20,9 @@ func ClusterMiddleware(cm *cluster.ClusterManager) gin.HandlerFunc {
 			if v, ok := c.GetQuery(ClusterNameHeader); ok {
 				clusterName = v
 			}
+			if clusterName == "" {
+				clusterName, _ = c.Cookie(ClusterNameHeader)
+			}
 		}
 		cluster, err := cm.GetClientSet(clusterName)
 		if err != nil {

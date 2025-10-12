@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { IconLoader, IconRefresh, IconTrash } from '@tabler/icons-react'
+import {
+  IconExternalLink,
+  IconLoader,
+  IconRefresh,
+  IconTrash,
+} from '@tabler/icons-react'
 import * as yaml from 'js-yaml'
 import { Pod } from 'kubernetes-types/core/v1'
 import { useTranslation } from 'react-i18next'
@@ -35,6 +40,7 @@ export function PodDetail(props: { namespace: string; name: string }) {
   const [refreshKey, setRefreshKey] = useState(0)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+
   const navigate = useNavigate()
   const { t } = useTranslation()
 
@@ -289,6 +295,37 @@ export function PodDetail(props: { namespace: string; name: string }) {
                           </p>
                         </div>
                       )}
+                      <div>
+                        <Label className="text-xs text-muted-foreground">
+                          Ports
+                        </Label>
+                        <div className="flex flex-wrap items-center gap-1">
+                          {pod.spec?.containers
+                            .flatMap((c) => c.ports || [])
+                            .map((port, index, array) => (
+                              <span
+                                key={`${port.containerPort}-${port.protocol}`}
+                              >
+                                <a
+                                  href={`/api/v1/namespaces/${namespace}/pods/${name}:${port.containerPort}/proxy/`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-mono text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
+                                >
+                                  {port.name && `${port.name}:`}
+                                  {port.containerPort}
+                                  <IconExternalLink className="w-3 h-3" />
+                                </a>
+                                {index < array.length - 1 && ', '}
+                              </span>
+                            ))}
+                          {(!pod.spec?.containers ||
+                            pod.spec.containers.length === 0 ||
+                            pod.spec.containers.every(
+                              (c) => !c.ports || c.ports.length === 0
+                            )) && <span>No ports defined</span>}
+                        </div>
+                      </div>
                     </div>
                     <LabelsAnno
                       labels={pod.metadata?.labels || {}}
