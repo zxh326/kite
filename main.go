@@ -170,6 +170,12 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 
 		api.Use(middleware.RBACMiddleware())
 		resources.RegisterRoutes(api)
+
+		portForwardHandler := handlers.NewPortForwardHandler()
+		portForwardGroup := api.Group("/portforwards")
+		{
+			portForwardHandler.RegisterRoutes(portForwardGroup)
+		}
 	}
 }
 

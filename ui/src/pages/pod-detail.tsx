@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { IconLoader, IconRefresh, IconTrash } from '@tabler/icons-react'
+import {
+  IconLoader,
+  IconPlugConnected,
+  IconRefresh,
+  IconTrash,
+} from '@tabler/icons-react'
 import * as yaml from 'js-yaml'
 import { Pod } from 'kubernetes-types/core/v1'
 import { useTranslation } from 'react-i18next'
@@ -27,6 +32,7 @@ import { RelatedResourcesTable } from '@/components/related-resource-table'
 import { Terminal } from '@/components/terminal'
 import { VolumeTable } from '@/components/volume-table'
 import { YamlEditor } from '@/components/yaml-editor'
+import { PortForwardDialog } from '@/components/port-forward-dialog'
 
 export function PodDetail(props: { namespace: string; name: string }) {
   const { namespace, name } = props
@@ -35,6 +41,7 @@ export function PodDetail(props: { namespace: string; name: string }) {
   const [refreshKey, setRefreshKey] = useState(0)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isPortForwarding, setIsPortForwarding] = useState(false)
   const navigate = useNavigate()
   const { t } = useTranslation()
 
@@ -135,6 +142,14 @@ export function PodDetail(props: { namespace: string; name: string }) {
           <Button variant="outline" size="sm" onClick={handleManualRefresh}>
             <IconRefresh className="w-4 h-4" />
             Refresh
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsPortForwarding(true)}
+          >
+            <IconPlugConnected className="w-4 h-4" />
+            Port Forward
           </Button>
           <DescribeDialog
             resourceType="pods"
@@ -482,6 +497,12 @@ export function PodDetail(props: { namespace: string; name: string }) {
         resourceType="pod"
         namespace={namespace}
         isDeleting={isDeleting}
+      />
+
+      <PortForwardDialog
+        open={isPortForwarding}
+        onOpenChange={setIsPortForwarding}
+        pod={pod}
       />
     </div>
   )

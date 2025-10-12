@@ -9,6 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/samber/lo"
 	"github.com/zxh326/kite/pkg/cluster"
+	"github.com/zxh326/kite/pkg/kube"
+	"github.com/zxh326/kite/pkg/portforward"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -169,6 +171,35 @@ func (h *PodHandler) List(c *gin.Context) {
 func (h *PodHandler) registerCustomRoutes(group *gin.RouterGroup) {
 	// watch pods in namespace (or _all)
 	group.GET("/:namespace/watch", h.Watch)
+	group.POST("/:namespace/:name/portforward", h.PortForward)
+}
+
+func (h *PodHandler) PortForward(c *gin.Context) {
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	namespace := c.Param("namespace")
+	name := c.Param("name")
+
+	var req struct {
+		Ports []string `json:"ports"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	session := portforward.GlobalManager.Add(namespace, name, req.Ports)
+
+	err := kube.PortForward(cs.K8sClient.Configuration, namespace, name, req.Ports, session.StopChan())
+	if err != nil {
+		portforward.GlobalManager.Remove(session.ID)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Port forwarding started successfully",
+		"id":      session.ID,
+	})
 }
 
 // writeSSE writes a single SSE event with the given name and payload
