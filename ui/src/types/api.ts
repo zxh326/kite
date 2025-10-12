@@ -63,14 +63,27 @@ export interface HelmRelease {
     annotations?: Record<string, string>
   }
   spec: {
-    chart: Record<string, unknown>
+    chart: {
+      metadata?: {
+        name?: string
+        version?: string
+        description?: string
+        appVersion?: string
+        home?: string
+        sources?: string[]
+        icon?: string
+      }
+    }
     values?: Record<string, unknown>
+    manifest?: string
   }
   status: {
-    phase: string
-    revision: number
-    lastUpdated: string
+    first_deployed?: string
+    last_deployed?: string
+    deleted?: string
     description?: string
+    status?: string
+    notes?: string
   }
 }
 

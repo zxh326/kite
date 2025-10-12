@@ -193,13 +193,6 @@ func (m *Manager) GetReleaseHistory(namespace, name string) (*helmv3.HelmRelease
 	}
 
 	result := &helmv3.HelmReleaseList{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "helm.sh/v3",
-			Kind:       "ReleaseList",
-		},
-		ListMeta: metav1.ListMeta{
-			ResourceVersion: fmt.Sprintf("%d", time.Now().Unix()),
-		},
 		Items: make([]helmv3.HelmRelease, len(releases)),
 	}
 	for i, rel := range releases {
