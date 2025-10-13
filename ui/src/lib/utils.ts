@@ -1,9 +1,11 @@
 import { clsx, type ClassValue } from 'clsx'
 import { format, formatDistance } from 'date-fns'
 import { TFunction } from 'i18next'
+import { NodeCondition } from 'kubernetes-types/core/v1'
 import { twMerge } from 'tailwind-merge'
 
 import { PodMetrics } from '@/types/api'
+import { NodeConditionType } from '@/types/k8s'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -215,4 +217,35 @@ export function translateError(error: Error | unknown, t: TFunction): string {
   }
 
   return error.message
+}
+
+/**
+ * Enrich Node Conditions with computed health status
+ *
+ * Adds an `health` field with normalized semantics:
+ * - `True` = healthy state
+ * - `False` = unhealthy state
+ */
+export function enrichNodeConditionsWithHealth(data: NodeCondition[]) {
+  return data.map((item) => {
+    const shouldReverseStatus = (
+      [
+        'DiskPressure',
+        'MemoryPressure',
+        'PIDPressure',
+        'NetworkUnavailable',
+      ] as NodeConditionType[]
+    ).includes(item.type as NodeConditionType)
+
+    return {
+      ...item,
+      health: shouldReverseStatus
+        ? item.status === 'True'
+          ? 'False'
+          : item.status === 'False'
+            ? 'True'
+            : item.status
+        : item.status,
+    }
+  })
 }

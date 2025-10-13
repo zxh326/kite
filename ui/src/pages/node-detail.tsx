@@ -25,6 +25,7 @@ import {
   useResources,
 } from '@/lib/api'
 import {
+  enrichNodeConditionsWithHealth,
   formatCPU,
   formatDate,
   formatMemory,
@@ -810,7 +811,9 @@ export function NodeDetail(props: { name: string }) {
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {data.status.conditions.map((condition, index) => (
+                          {enrichNodeConditionsWithHealth(
+                            data.status.conditions
+                          ).map((condition, index) => (
                             <div
                               key={index}
                               className="flex items-center gap-3 p-3 border rounded-lg"
@@ -818,16 +821,16 @@ export function NodeDetail(props: { name: string }) {
                               <div className="flex items-center gap-2">
                                 <div
                                   className={`w-2 h-2 rounded-full ${
-                                    condition.status === 'True'
+                                    condition.health === 'True'
                                       ? 'bg-green-500'
-                                      : condition.status === 'False'
+                                      : condition.health === 'False'
                                         ? 'bg-red-500'
                                         : 'bg-yellow-500'
                                   }`}
                                 />
                                 <Badge
                                   variant={
-                                    condition.status === 'True'
+                                    condition.health === 'True'
                                       ? 'default'
                                       : 'secondary'
                                   }
