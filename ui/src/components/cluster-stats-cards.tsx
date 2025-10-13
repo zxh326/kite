@@ -7,6 +7,7 @@ import {
   IconServer,
 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 
 import { OverviewData } from '@/types/api'
 import {
@@ -50,6 +51,7 @@ export function ClusterStatsCards({
       icon: IconServer,
       color: 'text-blue-600 dark:text-blue-400',
       bgColor: 'bg-blue-50 dark:bg-blue-950/50',
+      routePath: '/nodes',
     },
     {
       label: t('nav.pods'),
@@ -58,6 +60,7 @@ export function ClusterStatsCards({
       icon: IconBox,
       color: 'text-green-600 dark:text-green-400',
       bgColor: 'bg-green-50 dark:bg-green-950/50',
+      routePath: '/pods',
     },
     {
       label: t('nav.namespaces'),
@@ -65,6 +68,7 @@ export function ClusterStatsCards({
       icon: IconFolders,
       color: 'text-purple-600 dark:text-purple-400',
       bgColor: 'bg-purple-50 dark:bg-purple-950/50',
+      routePath: '/namespaces',
     },
     {
       label: t('nav.services'),
@@ -72,6 +76,7 @@ export function ClusterStatsCards({
       icon: IconNetwork,
       color: 'text-orange-600 dark:text-orange-400',
       bgColor: 'bg-orange-50 dark:bg-orange-950/50',
+      routePath: '/services',
     },
   ]
 
@@ -90,7 +95,16 @@ export function ClusterStatsCards({
                   <div>
                     <CardDescription>{stat.label}</CardDescription>
                     <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-                      {stat.value}
+                      {stat.routePath ? (
+                        <Link
+                          to={stat.routePath}
+                          className="hover:text-primary/80 hover:underline transition-colors cursor-pointer"
+                        >
+                          {stat.value}
+                        </Link>
+                      ) : (
+                        stat.value
+                      )}
                     </CardTitle>
                     <div className="text-sm text-muted-foreground">
                       {stat.subValue === undefined ||
