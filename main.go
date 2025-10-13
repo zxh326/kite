@@ -168,6 +168,9 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 
 		api.GET("/image/tags", handlers.GetImageTags)
 
+		proxyHandler := handlers.NewProxyHandler()
+		proxyHandler.RegisterRoutes(api)
+
 		api.Use(middleware.RBACMiddleware())
 		resources.RegisterRoutes(api)
 	}

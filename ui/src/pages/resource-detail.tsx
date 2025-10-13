@@ -11,6 +11,7 @@ import { JobDetail } from './job-detail'
 import { NodeDetail } from './node-detail'
 import { PodDetail } from './pod-detail'
 import { SecretDetail } from './secret-detail'
+import { ServiceDetail } from './service-detail'
 import { SimpleResourceDetail } from './simple-resource-detail'
 import { StatefulSetDetail } from './statefulset-detail'
 
@@ -69,6 +70,8 @@ export function ResourceDetail() {
       return <SecretDetail namespace={namespace!} name={name} />
     case 'nodes':
       return <NodeDetail name={name} />
+    case 'services':
+      return <ServiceDetail namespace={namespace!} name={name} />
     default:
       return (
         <SimpleResourceDetail
