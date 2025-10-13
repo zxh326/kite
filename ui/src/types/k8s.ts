@@ -19,3 +19,13 @@ export type SimpleContainer = Array<{
   image: string
   init?: boolean
 }>
+
+/**
+ * @link https://kubernetes.io/docs/reference/node/node-status/#condition
+ */
+export type NodeConditionType =
+  | 'Ready'
+  | 'DiskPressure'
+  | 'MemoryPressure'
+  | 'PIDPressure'
+  | 'NetworkUnavailable'
