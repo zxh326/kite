@@ -46,7 +46,8 @@
       "config": "config",
       "other": "other",
       "security": "Security",
-      "workloads": "Workloads"
+      "workloads": "Workloads",
+      "helm": "Helm"
     },
     "short": {
       "pvcs": "PVCs",
@@ -90,7 +91,8 @@
     "rolebindings": "Role Bindings",
     "clusterroles": "Cluster Roles",
     "clusterrolebindings": "Cluster Role Bindings",
-    "horizontalpodautoscalers": "HPA"
+    "horizontalpodautoscalers": "HPA",
+    "helmreleases": "Helm Releases"
   },
   "overview": {
     "title": "Overview",

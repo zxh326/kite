@@ -28,7 +28,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
-import { DescribeDialog } from '@/components/describe-dialog'
 import { ErrorMessage } from '@/components/error-message'
 import { HelmReleaseHistoryTable } from '@/components/helm-release-history-table'
 import { LabelsAnno } from '@/components/lables-anno'
@@ -216,11 +215,6 @@ export function HelmReleaseDetail(props: { namespace: string; name: string }) {
             <IconRefresh className="w-4 h-4" />
             Refresh
           </Button>
-          <DescribeDialog
-            resourceType="helmreleases"
-            namespace={namespace}
-            name={name}
-          />
           <Button
             variant="destructive"
             size="sm"

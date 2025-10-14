@@ -194,7 +194,11 @@ export const SidebarConfigProvider: React.FC<SidebarConfigProviderProps> = ({
         },
       ],
       'sidebar.groups.helm': [
-        { titleKey: 'nav.helm', url: '/helmreleases', icon: IconHelmet },
+        {
+          titleKey: 'nav.helmreleases',
+          url: '/helmreleases',
+          icon: IconHelmet,
+        },
       ],
       'sidebar.groups.other': [
         {
