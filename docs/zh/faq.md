@@ -24,7 +24,9 @@ Kite 将使用 umami 收集极少的匿名使用数据。
 
 ## 如何更改字体
 
-你需要自己构建项目
+Kite 默认提供三种字体：系统默认、`Maple Mono` 和 `JetBrains Mono`。
+
+如果您想使用其他字体，则需要自己构建项目。
 
 用 make 构建 kite，并在 `./ui/src/index.css` 中更改字体
 
@@ -44,7 +46,7 @@ body {
 }
 ```
 
-## 我如何为Kite做出贡献？
+## 我如何为 Kite 做出贡献？
 
 我们欢迎贡献！您可以：
 
@@ -62,4 +64,4 @@ body {
 
 ---
 
-**没有找到您要找的内容？** 欢迎在GitHub上[提交问题](https://github.com/zxh326/kite/issues/new)或开始一个[讨论](https://github.com/zxh326/kite/discussions)。
+**没有找到您要找的内容？** 欢迎在 GitHub 上[提交问题](https://github.com/zxh326/kite/issues/new)或开始一个[讨论](https://github.com/zxh326/kite/discussions)。

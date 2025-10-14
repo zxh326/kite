@@ -24,7 +24,9 @@ You need to refer to the [RBAC Configuration Guide](./config/rbac-config) to con
 
 ## How to Change Font
 
-You need to build the project yourself.
+By default, Kite provides three fonts: system default, `Maple Mono`, and `JetBrains Mono`.
+
+If you want to use a different font, you need to build the project yourself.
 
 Build kite with make and change the font in `./ui/src/index.css`:
 

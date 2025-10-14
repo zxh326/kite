@@ -50,6 +50,8 @@ _Comprehensive cluster overview with real-time metrics and resource statistics_
 - ⚙️ **Resource Operations** - Create, update, delete, scale, and restart resources directly from the UI
 - 🔄 **Custom Resources** - Full support for CRDs (Custom Resource Definitions)
 - 🏷️ **Quick Image Tag Selector** - Easily select and change container image tags based on Docker and container registry APIs
+- 🎨 **Customizable Sidebar** - Customize sidebar visibility and order, and add CRDs for quick access
+- 🔌 **Kube Proxy** - Access pods or services directly through Kite, no more `kubectl port-forward`
 
 ### 📈 **Monitoring & Observability**
 

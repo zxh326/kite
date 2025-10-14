@@ -59,7 +59,7 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     logo: "/logo.svg",
     search: {
-      provider: 'local'
+      provider: "local",
     },
     langMenuLabel: "Language",
     editLink: {
@@ -103,6 +103,8 @@ export default defineConfig({
             { text: "Monitor", link: "/guide/monitoring" },
             { text: "Web Terminal", link: "/guide/web-terminal" },
             { text: "Resource History", link: "/guide/resource-history" },
+            { text: "Custom Sidebar", link: "/guide/custom-sidebar" },
+            { text: "Kube Proxy", link: "/guide/kube-proxy" },
           ],
         },
         {
@@ -138,12 +140,14 @@ export default defineConfig({
             { text: "监控", link: "/zh/guide/monitoring" },
             { text: "Web 终端", link: "/zh/guide/web-terminal" },
             { text: "资源历史", link: "/zh/guide/resource-history" },
+            { text: "自定义侧边栏", link: "/zh/guide/custom-sidebar" },
+            { text: "Kube Proxy", link: "/zh/guide/kube-proxy" },
           ],
         },
         {
           text: "常见问题",
           link: "/zh/faq",
-        }
+        },
       ],
     },
 
