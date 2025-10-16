@@ -72,6 +72,8 @@ type MetricsCell struct {
 	MemoryUsage   int64 `json:"memoryUsage,omitempty"`
 	MemoryLimit   int64 `json:"memoryLimit,omitempty"`
 	MemoryRequest int64 `json:"memoryRequest,omitempty"`
+	Pods          int64 `json:"pods,omitempty"`
+	PodsLimit     int64 `json:"podsLimit,omitempty"`
 }
 
 type NodeWithMetrics struct {
