@@ -164,6 +164,19 @@ export function NodeListPage() {
           )
         },
       }),
+      columnHelper.accessor((row) => row.metrics, {
+        id: 'pods',
+        header: 'Pods',
+        cell: ({ row }) => (
+          <Link
+            to={`/nodes/${row.original.metadata!.name}?tab=pods`}
+            className="text-muted-foreground hover:text-primary/80 hover:underline transition-colors cursor-pointer"
+          >
+            {row.original.metrics?.pods || 0} /{' '}
+            {row.original.metrics?.podsLimit || 0}
+          </Link>
+        ),
+      }),
       columnHelper.accessor((row) => row.metrics?.cpuUsage || 0, {
         id: 'cpu',
         header: 'CPU',

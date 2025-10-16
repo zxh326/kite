@@ -281,6 +281,7 @@ func (h *NodeHandler) List(c *gin.Context) {
 		}
 
 		metrics := nodeResourceRequests[nodeName]
+		metrics.Pods++
 
 		// Calculate CPU and memory requests for this pod
 		for _, container := range pod.Spec.Containers {
@@ -321,6 +322,8 @@ func (h *NodeHandler) List(c *gin.Context) {
 		if requests, exists := nodeResourceRequests[node.Name]; exists {
 			metricsCell.CPURequest = requests.CPURequest
 			metricsCell.MemoryRequest = requests.MemoryRequest
+			metricsCell.Pods = requests.Pods
+			metricsCell.PodsLimit = node.Status.Allocatable.Pods().Value()
 		}
 		result.Items[i] = &common.NodeWithMetrics{
 			Node:    &node,

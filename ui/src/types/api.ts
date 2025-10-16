@@ -196,6 +196,8 @@ export type MetricsData = {
   memoryLimit?: number
   cpuRequest?: number
   memoryRequest?: number
+  pods?: number
+  podsLimit?: number
 }
 
 export type PodWithMetrics = Pod & {
