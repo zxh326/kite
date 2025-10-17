@@ -111,6 +111,10 @@ dev: ## Run in development mode
 	echo "🛑 Stopping backend server..."; \
 	kill $$BACKEND_PID 2>/dev/null
 
+dev-frontend: ## Run frontend in development mode
+	@echo "🔄 Starting frontend development server..."
+	cd $(UI_DIR) && pnpm run dev
+
 lint: golangci-lint ## Run linters
 	@echo "🔍 Running linters..."
 	@echo "Backend linting..."

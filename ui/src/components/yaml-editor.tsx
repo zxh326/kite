@@ -25,7 +25,7 @@ interface YamlEditorProps<T extends ResourceType> {
   /** Callback when YAML content changes */
   onChange?: (value: string) => void
   /** Callback when save is clicked */
-  onSave?: (value: ResourceTypeMap[T]) => void
+  onSave?: (value: ResourceTypeMap[T]) => Promise<void>
   /** Callback when cancel is clicked */
   onCancel?: () => void
   /** Whether save operation is in progress */
@@ -115,9 +115,9 @@ export function YamlEditor<T extends ResourceType>({
     }, 100)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (isValidYaml) {
-      onSave?.(yaml.load(editorValue) as ResourceTypeMap[T])
+      await onSave?.(yaml.load(editorValue) as ResourceTypeMap[T])
       if (!readOnly) {
         setIsEditing(false)
       }

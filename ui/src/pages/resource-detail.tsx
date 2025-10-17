@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { CronJobDetail } from './cronjob-detail'
 import { DaemonSetDetail } from './daemonset-detail'
 import { DeploymentDetail } from './deployment-detail'
+import { HelmReleaseDetail } from './helm-release-detail'
 import { JobDetail } from './job-detail'
 import { NodeDetail } from './node-detail'
 import { PodDetail } from './pod-detail'
@@ -72,6 +73,8 @@ export function ResourceDetail() {
       return <NodeDetail name={name} />
     case 'services':
       return <ServiceDetail namespace={namespace!} name={name} />
+    case 'helmreleases':
+      return <HelmReleaseDetail namespace={namespace!} name={name} />
     default:
       return (
         <SimpleResourceDetail
