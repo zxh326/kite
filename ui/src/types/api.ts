@@ -397,6 +397,16 @@ export interface FetchUserListResponse {
   size: number
 }
 
+export interface APIKey {
+  id: number
+  username: string
+  apiKey: string
+  lastLoginAt?: string
+  createdAt: string
+  updatedAt: string
+  roles?: Role[]
+}
+
 // Resource History types
 export interface ResourceHistory {
   id: number
@@ -411,9 +421,8 @@ export interface ResourceHistory {
   errorMessage: string
   operatorId: number
   operator: {
-    id: number
     username: string
-    email: string
+    provider: string
   }
   createdAt: string
   updatedAt: string

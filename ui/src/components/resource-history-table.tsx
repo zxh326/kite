@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { IconEye, IconLoader } from '@tabler/icons-react'
+import { IconAlertCircle, IconEye, IconLoader } from '@tabler/icons-react'
 import * as yaml from 'js-yaml'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -12,6 +12,7 @@ import { Column, SimpleTable } from './simple-table'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { YamlDiffViewer } from './yaml-diff-viewer'
 
 interface ResourceHistoryTableProps<T extends ResourceType> {
@@ -33,6 +34,7 @@ export function ResourceHistoryTable<T extends ResourceType>({
   const [selectedHistory, setSelectedHistory] =
     useState<ResourceHistory | null>(null)
   const [isDiffOpen, setIsDiffOpen] = useState(false)
+  const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false)
   const [isRollingBack, setIsRollingBack] = useState(false)
 
   const {
@@ -66,6 +68,11 @@ export function ResourceHistoryTable<T extends ResourceType>({
   const handleViewDiff = (item: ResourceHistory) => {
     setSelectedHistory(item)
     setIsDiffOpen(true)
+  }
+
+  const handleViewError = (item: ResourceHistory) => {
+    setSelectedHistory(item)
+    setIsErrorDialogOpen(true)
   }
 
   // Handle rollback operations
@@ -139,10 +146,16 @@ export function ResourceHistoryTable<T extends ResourceType>({
       },
       {
         header: t('resourceHistory.operator'),
-        accessor: (item: ResourceHistory) =>
-          item.operator?.username || 'Unknown',
+        accessor: (item: ResourceHistory) => item.operator,
         cell: (value: unknown) => (
-          <div className="font-medium">{value as string}</div>
+          <div className="font-medium">
+            {(value as { username: string }).username}
+            {(value as { provider: string }).provider === 'api_key' && (
+              <span className="ml-2 text-xs text-muted-foreground italic">
+                apikey
+              </span>
+            )}
+          </div>
         ),
       },
       {
@@ -185,6 +198,22 @@ export function ResourceHistoryTable<T extends ResourceType>({
         accessor: (item: ResourceHistory) => item,
         cell: (value: unknown) => {
           const item = value as ResourceHistory
+          const isSuccess = item.success
+
+          if (!isSuccess) {
+            return (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleViewError(item)}
+                disabled={!item.errorMessage}
+              >
+                <IconAlertCircle className="w-4 h-4 mr-1" />
+                {t('resourceHistory.viewError', 'view error')}
+              </Button>
+            )
+          }
+
           return (
             <Button
               variant="outline"
@@ -256,6 +285,27 @@ export function ResourceHistoryTable<T extends ResourceType>({
           isRollingBack={isRollingBack}
           title={`${t('resourceHistory.yamlDiff')}`}
         />
+      )}
+
+      {selectedHistory && (
+        <Dialog open={isErrorDialogOpen} onOpenChange={setIsErrorDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                {t('resourceHistory.errorDetails', 'error details')}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="mt-4">
+              <pre className="bg-destructive/10 text-destructive p-4 rounded-md overflow-auto max-h-96 text-sm">
+                {selectedHistory.errorMessage ||
+                  t(
+                    'resourceHistory.noErrorMessage',
+                    'no error message available'
+                  )}
+              </pre>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </>
   )

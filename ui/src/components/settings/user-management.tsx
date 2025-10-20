@@ -455,7 +455,9 @@ export function UserManagement() {
         onOpenChange={(o) => {
           if (!o) setAssigning(null)
         }}
-        user={assigning ? { username: assigning.username } : undefined}
+        subject={
+          assigning ? { type: 'user', name: assigning.username } : undefined
+        }
       />
 
       {/* Add Password User Dialog */}

@@ -24,6 +24,7 @@ type resourceHandler interface {
 	Create(c *gin.Context)
 	Update(c *gin.Context)
 	Delete(c *gin.Context)
+	Patch(c *gin.Context)
 
 	IsClusterScoped() bool
 	Searchable() bool
@@ -129,6 +130,7 @@ func registerClusterScopeRoutes(group *gin.RouterGroup, handler resourceHandler)
 	group.POST("/_all", handler.Create)
 	group.PUT("/_all/:name", handler.Update)
 	group.DELETE("/_all/:name", handler.Delete)
+	group.PATCH("/_all/:name", handler.Patch)
 	group.GET("/_all/:name/history", handler.ListHistory)
 	group.GET("/_all/:name/describe", handler.Describe)
 }
@@ -140,6 +142,7 @@ func registerNamespaceScopeRoutes(group *gin.RouterGroup, handler resourceHandle
 	group.POST("/:namespace", handler.Create)
 	group.PUT("/:namespace/:name", handler.Update)
 	group.DELETE("/:namespace/:name", handler.Delete)
+	group.PATCH("/:namespace/:name", handler.Patch)
 	group.GET("/:namespace/:name/history", handler.ListHistory)
 	group.GET("/:namespace/:name/describe", handler.Describe)
 }

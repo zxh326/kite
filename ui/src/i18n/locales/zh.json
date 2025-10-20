@@ -10,6 +10,7 @@
     "delete": "删除",
     "edit": "编辑",
     "create": "创建",
+    "creating": "创建中...",
     "search": "搜索",
     "filter": "筛选",
     "name": "名称",
@@ -28,7 +29,8 @@
     "version": "版本",
     "desired": "期望",
     "current": "当前",
-    "done": "完成"
+    "done": "完成",
+    "required": "此字段为必填项"
   },
   "globalSearch": {
     "title": "全局搜索",
@@ -270,7 +272,8 @@
       "clusters": "集群",
       "oauth": "OAuth",
       "rbac": "权限控制",
-      "users": "用户"
+      "users": "用户",
+      "apikeys": "API 密钥"
     }
   },
   "settingsHint": {
@@ -486,6 +489,54 @@
       "rollingBack": "回滚中...",
       "success": "资源回滚成功",
       "error": "资源回滚失败"
+    }
+  },
+  "apikeyManagement": {
+    "title": "API 密钥管理",
+    "description": "管理用于程序化访问的 API 密钥",
+    "actions": {
+      "add": "添加 API 密钥",
+      "copy": "复制",
+      "delete": "删除"
+    },
+    "table": {
+      "name": "名称",
+      "key": "API 密钥",
+      "createdAt": "创建时间",
+      "lastUsed": "最后使用",
+      "roles": "角色",
+      "actions": "操作"
+    },
+    "empty": {
+      "title": "暂无 API 密钥",
+      "description": "创建您的第一个 API 密钥以开始使用"
+    },
+    "messages": {
+      "created": "API 密钥创建成功",
+      "deleted": "API 密钥删除成功",
+      "createError": "创建 API 密钥失败",
+      "deleteError": "删除 API 密钥失败",
+      "copied": "API 密钥已复制到剪贴板",
+      "copyError": "复制 API 密钥失败"
+    },
+    "errors": {
+      "loadFailed": "加载 API 密钥失败"
+    },
+    "deleteConfirmation": "确定要删除此 API 密钥吗？此操作无法撤销。",
+    "neverUsed": "从未使用",
+    "dialog": {
+      "createTitle": "创建 API 密钥",
+      "editTitle": "编辑 API 密钥",
+      "title": "创建 API 密钥",
+      "description": "创建一个新的 API 密钥以进行程序化访问。",
+      "name": "名称",
+      "nameLabel": "名称",
+      "namePlaceholder": "例如：生产环境 API 密钥",
+      "nameRequired": "名称为必填项",
+      "creating": "创建中...",
+      "createButton": "创建",
+      "keyLabel": "API 密钥",
+      "assignRoles": "分配角色"
     }
   }
 }

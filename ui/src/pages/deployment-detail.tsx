@@ -15,6 +15,7 @@ import { toast } from 'sonner'
 
 import {
   deleteResource,
+  patchResource,
   updateResource,
   useResource,
   useResourcesWatch,
@@ -145,10 +146,12 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
     if (!deployment) return
 
     try {
-      const updatedDeployment = { ...deployment } as Deployment
-
-      updatedDeployment.spec!.replicas = scaleReplicas
-      await updateResource('deployments', name, namespace, updatedDeployment)
+      const updatedDeployment = {
+        spec: {
+          replicas: scaleReplicas,
+        },
+      }
+      await patchResource('deployments', name, namespace, updatedDeployment)
       toast.success(`Deployment scaled to ${scaleReplicas} replicas`)
       setIsScalePopoverOpen(false)
       setRefreshInterval(1000)

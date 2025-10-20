@@ -216,6 +216,45 @@ func (h *AuthHandler) GetUser(c *gin.Context) {
 	})
 }
 
+func (h *AuthHandler) RequireAPIKeyAuth(c *gin.Context, token string) {
+	keyPart := strings.SplitN(token, "-", 2)
+	if len(keyPart) < 2 {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Invalid API key",
+		})
+		c.Abort()
+		return
+	}
+	id := keyPart[0]
+	key := keyPart[1]
+	dbID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Invalid API key",
+		})
+		c.Abort()
+		return
+	}
+	apikey, err := model.GetUserByID(dbID)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Invalid API key",
+		})
+		c.Abort()
+		return
+	}
+	if key != string(apikey.APIKey) {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Invalid API key",
+		})
+		c.Abort()
+		return
+	}
+	_ = model.LoginUser(apikey)
+	apikey.Roles = rbac.GetUserRoles(*apikey)
+	c.Set("user", *apikey)
+}
+
 func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if common.AnonymousUserEnabled {
@@ -223,7 +262,14 @@ func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 			c.Next()
 			return
 		}
-
+		authHeader := c.GetHeader("Authorization")
+		// bot token
+		if authHeader != "" {
+			if after, ok := strings.CutPrefix(authHeader, "kite"); ok {
+				h.RequireAPIKeyAuth(c, after)
+				return
+			}
+		}
 		// Try to read auth token cookie (if missing, tokenString will be empty)
 		tokenString, _ := c.Cookie("auth_token")
 		if tokenString == "" {
@@ -259,7 +305,7 @@ func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 				return
 			}
 		}
-		user, err := model.GetUserByID(claims.UserID)
+		user, err := model.GetUserByID(uint64(claims.UserID))
 		if err != nil || !user.Enabled {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "user not found",

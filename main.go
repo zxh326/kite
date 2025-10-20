@@ -138,6 +138,13 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 			userAPI.POST(":id/reset_password", handlers.ResetPassword)
 			userAPI.POST(":id/enable", handlers.SetUserEnabled)
 		}
+
+		apiKeyAPI := adminAPI.Group("/apikeys")
+		{
+			apiKeyAPI.GET("/", handlers.ListAPIKeys)
+			apiKeyAPI.POST("/", handlers.CreateAPIKey)
+			apiKeyAPI.DELETE("/:id", handlers.DeleteAPIKey)
+		}
 	}
 
 	// API routes group (protected)

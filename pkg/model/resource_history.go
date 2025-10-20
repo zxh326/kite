@@ -15,11 +15,11 @@ type ResourceHistory struct {
 	ResourceYAML string `json:"resourceYaml" gorm:"type:text"`
 	PreviousYAML string `json:"previousYaml" gorm:"type:text"`
 
-	Success      bool   `json:"success" gorm:"type:boolean;default:true"`
+	Success      bool   `json:"success" gorm:"type:boolean"`
 	ErrorMessage string `json:"errorMessage" gorm:"type:text"`
 
-	OperatorID uint `json:"operatorId" gorm:"not null;index"`
-	Operator   User `json:"operator" gorm:"foreignKey:OperatorID"`
+	OperatorID uint  `json:"operatorId" gorm:"not null;index"`
+	Operator   *User `json:"operator" gorm:"foreignKey:OperatorID;constraint:OnDelete:CASCADE"`
 }
 
 func (ResourceHistory) TableName() string {

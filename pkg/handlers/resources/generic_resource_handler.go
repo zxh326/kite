@@ -302,7 +302,11 @@ func (h *GenericResourceHandler[T, V]) Update(c *gin.Context) {
 	}
 
 	oldObj := reflect.New(h.objectType).Interface().(T)
-	if err := cs.K8sClient.Get(c.Request.Context(), types.NamespacedName{Name: name, Namespace: c.Param("namespace")}, oldObj); err != nil {
+	namespacedName := types.NamespacedName{Name: name, Namespace: c.Param("namespace")}
+	if h.isClusterScoped {
+		namespacedName = types.NamespacedName{Name: name}
+	}
+	if err := cs.K8sClient.Get(c.Request.Context(), namespacedName, oldObj); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -330,6 +334,60 @@ func (h *GenericResourceHandler[T, V]) Update(c *gin.Context) {
 
 	success = true
 	c.JSON(http.StatusOK, resource)
+}
+
+func (h *GenericResourceHandler[T, V]) Patch(c *gin.Context) {
+	name := c.Param("name")
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+
+	patchBytes, err := c.GetRawData()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read patch data"})
+		return
+	}
+
+	patchType := types.StrategicMergePatchType
+	if c.Query("patchType") == "merge" {
+		patchType = types.MergePatchType
+	} else if c.Query("patchType") == "json" {
+		patchType = types.JSONPatchType
+	}
+
+	oldObj := reflect.New(h.objectType).Interface().(T)
+	namespacedName := types.NamespacedName{Name: name}
+	if !h.isClusterScoped {
+		namespace := c.Param("namespace")
+		if namespace != "" && namespace != "_all" {
+			namespacedName.Namespace = namespace
+		}
+	}
+	ctx := c.Request.Context()
+	if err := cs.K8sClient.Get(ctx, namespacedName, oldObj); err != nil {
+		if errors.IsNotFound(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	prevObj := oldObj.DeepCopyObject().(T)
+
+	success := false
+	var errMsg string
+	defer func() {
+		h.recordHistory(c, "patch", prevObj, oldObj, success, errMsg)
+	}()
+
+	patch := client.RawPatch(patchType, patchBytes)
+	if err := cs.K8sClient.Patch(ctx, oldObj, patch); err != nil {
+		errMsg = err.Error()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	success = true
+	c.JSON(http.StatusOK, oldObj)
 }
 
 func (h *GenericResourceHandler[T, V]) Delete(c *gin.Context) {

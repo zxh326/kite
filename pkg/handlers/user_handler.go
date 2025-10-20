@@ -103,7 +103,7 @@ func ListUsers(c *gin.Context) {
 }
 
 func UpdateUser(c *gin.Context) {
-	var id uint
+	var id uint64
 	if _, err := fmt.Sscanf(c.Param("id"), "%d", &id); err != nil || id == 0 {
 		c.JSON(400, gin.H{"error": "invalid id"})
 		return
