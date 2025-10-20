@@ -52,7 +52,7 @@ func loadRolesFromDB() error {
 			rm := common.RoleMapping{
 				Name: cr.Name,
 			}
-			if a.SubjectType == model.SubjectTypeUser || a.SubjectType == "user" {
+			if a.SubjectType == model.SubjectTypeUser {
 				rm.Users = append(rm.Users, a.Subject)
 			} else {
 				rm.OIDCGroups = append(rm.OIDCGroups, a.Subject)

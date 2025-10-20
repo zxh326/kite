@@ -18,42 +18,49 @@ import {
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
-  user?: { username: string }
+  subject?: {
+    type: 'user'
+    name: string
+  }
 }
 
-export function UserRoleAssignment({ open, onOpenChange, user }: Props) {
+export function UserRoleAssignment({ open, onOpenChange, subject }: Props) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
 
   const { data: roles = [] } = useRoleList()
   const [selected, setSelected] = useState<Record<number, boolean>>({})
 
+  const subjectType = subject?.type || 'user'
+  const subjectName = subject?.name
+
   useEffect(() => {
-    if (!user || !roles) return
+    if (!subjectName || !roles) return
     const mapping: Record<number, boolean> = {}
     roles.forEach((r) => {
       const has = r.assignments?.some(
-        (a) => a.subjectType === 'user' && a.subject === user.username
+        (a) => a.subjectType === subjectType && a.subject === subjectName
       )
       mapping[r.id] = !!has
     })
     setSelected(mapping)
-  }, [user, roles])
+  }, [subjectName, subjectType, roles])
 
   const toggle = async (roleId: number) => {
-    if (!user) return
+    if (!subjectName) return
     try {
       if (selected[roleId]) {
-        await unassignRole(roleId, 'user', user.username)
+        await unassignRole(roleId, subjectType, subjectName)
         toast.success(t('rbac.messages.unassigned', 'Unassigned'))
       } else {
         await assignRole(roleId, {
-          subjectType: 'user',
-          subject: user.username,
+          subjectType: subjectType,
+          subject: subjectName,
         })
         toast.success(t('rbac.messages.assigned', 'Assigned'))
       }
       queryClient.invalidateQueries({ queryKey: ['user-list'] })
+      queryClient.invalidateQueries({ queryKey: ['apikey-list'] })
       queryClient.invalidateQueries({ queryKey: ['role-list'] })
       setSelected((s) => ({ ...s, [roleId]: !s[roleId] }))
     } catch (err: unknown) {
@@ -68,9 +75,7 @@ export function UserRoleAssignment({ open, onOpenChange, user }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {t('userManagement.dialog.assignRoles', 'Assign Roles')}
-          </DialogTitle>
+          <DialogTitle>{t('common.assignRoles', 'Assign Roles')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-2 py-2">
           {roles.map((r: Role) => (

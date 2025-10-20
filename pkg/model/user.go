@@ -22,7 +22,8 @@ type User struct {
 	Enabled     bool        `json:"enabled" gorm:"type:boolean;default:true"`
 	Sub         string      `json:"sub,omitempty" gorm:"type:varchar(255);index"`
 
-	Roles []common.Role `json:"roles,omitempty" gorm:"-"`
+	APIKey SecretString  `json:"apiKey,omitempty" gorm:"type:text"`
+	Roles  []common.Role `json:"roles,omitempty" gorm:"-"`
 }
 
 func (u *User) Key() string {
@@ -33,6 +34,10 @@ func (u *User) Key() string {
 		return u.Name
 	}
 	return fmt.Sprintf("%d", u.ID)
+}
+
+func (u *User) GetAPIKey() string {
+	return fmt.Sprintf("kite%d-%s", u.ID, string(u.APIKey))
 }
 
 func AddUser(user *User) error {
@@ -49,7 +54,7 @@ func CountUsers() (count int64, err error) {
 	return count, DB.Model(&User{}).Count(&count).Error
 }
 
-func GetUserByID(id uint) (*User, error) {
+func GetUserByID(id uint64) (*User, error) {
 	var user User
 	if err := DB.Where("id = ?", id).First(&user).Error; err != nil {
 		return nil, err
@@ -92,7 +97,7 @@ func ListUsers(limit int, offset int) (users []User, total int64, err error) {
 	if err != nil {
 		return
 	}
-	err = DB.Order("id desc").Limit(limit).Offset(offset).Find(&users).Error
+	err = DB.Order("id desc").Where("provider != ?", common.APIKeyProvider).Limit(limit).Offset(offset).Find(&users).Error
 	return
 }
 
@@ -145,6 +150,21 @@ func AddSuperUser(user *User) error {
 		return err
 	}
 	return nil
+}
+
+func NewAPIKeyUser(name string) (*User, error) {
+	apiKey := utils.RandomString(32)
+	u := &User{
+		Username: name,
+		APIKey:   SecretString(apiKey),
+		Provider: common.APIKeyProvider,
+	}
+	return u, DB.Save(u).Error
+}
+
+func ListAPIKeyUsers() (users []User, err error) {
+	err = DB.Order("id desc").Where("provider = ?", common.APIKeyProvider).Find(&users).Error
+	return users, err
 }
 
 var (

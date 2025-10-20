@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
 import {
+  APIKey,
   Cluster,
   FetchUserListResponse,
   ImageTagInfo,
@@ -225,6 +226,21 @@ export const updateResource = async <T extends ResourceType>(
 ): Promise<void> => {
   const endpoint = `/${resource}/${namespace || '_all'}/${name}`
   await apiClient.put(`${endpoint}`, body)
+}
+
+type DeepPartial<T> = T extends object
+  ? {
+      [P in keyof T]?: DeepPartial<T[P]>
+    }
+  : T
+export const patchResource = async <T extends ResourceType>(
+  resource: T,
+  name: string,
+  namespace: string | undefined,
+  body: DeepPartial<ResourceTypeMap[T]>
+): Promise<void> => {
+  const endpoint = `/${resource}/${namespace || '_all'}/${name}`
+  await apiClient.patch(`${endpoint}`, body)
 }
 
 export const createResource = async <T extends ResourceType>(
@@ -1360,7 +1376,7 @@ export const deleteRole = async (id: number) => {
 
 export const assignRole = async (
   id: number,
-  data: { subjectType: 'user' | 'group'; subject: string }
+  data: { subjectType: 'user' | 'group' | 'apikey'; subject: string }
 ) => {
   return await apiClient.post(`/admin/roles/${id}/assign`, data)
 }
@@ -1455,4 +1471,35 @@ export const useResourceHistory = (
     enabled: options?.enabled ?? true,
     staleTime: options?.staleTime || 30000, // 30 seconds cache
   })
+}
+
+// API Key Management
+export interface APIKeyCreateRequest {
+  name: string
+}
+
+export const fetchAPIKeyList = async (): Promise<APIKey[]> => {
+  return fetchAPI<{ apiKeys: APIKey[] }>('/admin/apikeys/').then(
+    (response) => response.apiKeys
+  )
+}
+
+export const useAPIKeyList = (options?: { staleTime?: number }) => {
+  return useQuery({
+    queryKey: ['apikey-list'],
+    queryFn: fetchAPIKeyList,
+    staleTime: options?.staleTime || 30000,
+  })
+}
+
+export const createAPIKey = async (
+  data: APIKeyCreateRequest
+): Promise<{ apiKey: APIKey }> => {
+  return await apiClient.post<{ apiKey: APIKey }>('/admin/apikeys/', data)
+}
+
+export const deleteAPIKey = async (
+  id: number
+): Promise<{ message: string }> => {
+  return await apiClient.delete<{ message: string }>(`/admin/apikeys/${id}`)
 }

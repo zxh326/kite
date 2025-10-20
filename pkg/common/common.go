@@ -35,6 +35,8 @@ var (
 
 	DisableGZIP         = true
 	DisableVersionCheck = false
+
+	APIKeyProvider = "api_key"
 )
 
 func LoadEnvs() {
