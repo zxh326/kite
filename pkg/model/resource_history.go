@@ -18,8 +18,8 @@ type ResourceHistory struct {
 	Success      bool   `json:"success" gorm:"type:boolean"`
 	ErrorMessage string `json:"errorMessage" gorm:"type:text"`
 
-	OperatorID uint `json:"operatorId" gorm:"not null;index"`
-	Operator   User `json:"operator" gorm:"foreignKey:OperatorID"`
+	OperatorID uint  `json:"operatorId" gorm:"not null;index"`
+	Operator   *User `json:"operator" gorm:"foreignKey:OperatorID;constraint:OnDelete:CASCADE"`
 }
 
 func (ResourceHistory) TableName() string {

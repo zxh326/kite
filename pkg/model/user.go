@@ -108,6 +108,7 @@ func LoginUser(u *User) error {
 
 // DeleteUserByID removes a user by ID
 func DeleteUserByID(id uint) error {
+	_ = DB.Where("operator_id = ?", id).Delete(&ResourceHistory{}).Error
 	return DB.Delete(&User{}, id).Error
 }
 
