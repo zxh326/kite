@@ -3,6 +3,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ include "kite.fullname" . }}-storage
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kite.labels" . | nindent 4 }}
 spec:
