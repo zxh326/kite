@@ -4,77 +4,69 @@ This document describes all available configuration options for the Kite Helm Ch
 
 ## Basic Configuration
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `replicaCount` | Number of replicas | `1` |
-| `image.repository` | Container image repository | `ghcr.io/zxh326/kite` |
-| `image.pullPolicy` | Image pull policy | `IfNotPresent` |
-| `image.tag` | Image tag. If set, will override the chart's `appVersion`. | `""` |
-| `imagePullSecrets` | Image pull secrets for private repositories | `[]` |
-| `nameOverride` | Override chart name | `""` |
-| `fullnameOverride` | Override full name | `""` |
-| `debug` | Enable debug mode | `false` |
+| Parameter          | Description                                                | Default               |
+| ------------------ | ---------------------------------------------------------- | --------------------- |
+| `replicaCount`     | Number of replicas                                         | `1`                   |
+| `image.repository` | Container image repository                                 | `ghcr.io/zxh326/kite` |
+| `image.pullPolicy` | Image pull policy                                          | `IfNotPresent`        |
+| `image.tag`        | Image tag. If set, will override the chart's `appVersion`. | `""`                  |
+| `imagePullSecrets` | Image pull secrets for private repositories                | `[]`                  |
+| `nameOverride`     | Override chart name                                        | `""`                  |
+| `fullnameOverride` | Override full name                                         | `""`                  |
+| `debug`            | Enable debug mode                                          | `false`               |
 
 ## Authentication & Security
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `anonymousUserEnabled` | Enable anonymous user access with full admin privileges. Use with caution in production. | `false` |
-| `jwtSecret` | Secret key used for signing JWT tokens. Change this in production. | `"kite-default-jwt-secret-key-change-in-production"` |
-| `encryptKey` | Secret key used for encrypting sensitive data. Change this in production. | `"kite-default-encryption-key-change-in-production"` |
-| `host` | Hostname for the application | `""` |
+| Parameter              | Description                                                                              | Default                                              |
+| ---------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `anonymousUserEnabled` | Enable anonymous user access with full admin privileges. Use with caution in production. | `false`                                              |
+| `jwtSecret`            | Secret key used for signing JWT tokens. Change this in production.                       | `"kite-default-jwt-secret-key-change-in-production"` |
+| `encryptKey`           | Secret key used for encrypting sensitive data. Change this in production.                | `"kite-default-encryption-key-change-in-production"` |
+| `host`                 | Hostname for the application                                                             | `""`                                                 |
 
 ## Database Configuration
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `db.type` | Database type: `sqlite`, `postgres`, `mysql` | `sqlite` |
-| `db.dsn` | Full DSN string for MySQL/Postgres. Required when type is mysql/postgres | `""` |
+| Parameter | Description                                                              | Default  |
+| --------- | ------------------------------------------------------------------------ | -------- |
+| `db.type` | Database type: `sqlite`, `postgres`, `mysql`                             | `sqlite` |
+| `db.dsn`  | Full DSN string for MySQL/Postgres. Required when type is mysql/postgres | `""`     |
 
 ### SQLite Configuration
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `db.sqlite.persistence.pvc.enabled` | Whether to create a PVC to store the sqlite database file | `false` |
-| `db.sqlite.persistence.pvc.existingClaim` | Use existing PVC | `""` |
-| `db.sqlite.persistence.pvc.storageClass` | StorageClass for PVC (optional) | `""` |
-| `db.sqlite.persistence.pvc.accessModes` | Access modes for PVC | `["ReadWriteOnce"]` |
-| `db.sqlite.persistence.pvc.size` | Requested storage size for PVC | `1Gi` |
-| `db.sqlite.persistence.hostPath.enabled` | Whether to use hostPath storage | `false` |
-| `db.sqlite.persistence.hostPath.path` | hostPath path | `/path/to/host/dir` |
-| `db.sqlite.persistence.hostPath.type` | hostPath type | `DirectoryOrCreate` |
-| `db.sqlite.persistence.mountPath` | Mount path inside container | `/data` |
-| `db.sqlite.persistence.filename` | SQLite filename inside mountPath | `kite.db` |
+| Parameter                                 | Description                                               | Default             |
+| ----------------------------------------- | --------------------------------------------------------- | ------------------- |
+| `db.sqlite.persistence.pvc.enabled`       | Whether to create a PVC to store the sqlite database file | `false`             |
+| `db.sqlite.persistence.pvc.existingClaim` | Use existing PVC                                          | `""`                |
+| `db.sqlite.persistence.pvc.storageClass`  | StorageClass for PVC (optional)                           | `""`                |
+| `db.sqlite.persistence.pvc.accessModes`   | Access modes for PVC                                      | `["ReadWriteOnce"]` |
+| `db.sqlite.persistence.pvc.size`          | Requested storage size for PVC                            | `1Gi`               |
+| `db.sqlite.persistence.hostPath.enabled`  | Whether to use hostPath storage                           | `false`             |
+| `db.sqlite.persistence.hostPath.path`     | hostPath path                                             | `/path/to/host/dir` |
+| `db.sqlite.persistence.hostPath.type`     | hostPath type                                             | `DirectoryOrCreate` |
+| `db.sqlite.persistence.mountPath`         | Mount path inside container                               | `/data`             |
+| `db.sqlite.persistence.filename`          | SQLite filename inside mountPath                          | `kite.db`           |
 
 ## Environment Variables
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `extraEnvs` | List of additional environment variables | `[]` |
-
-## Webhook Configuration
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `webhook.enabled` | Enable webhook | `false` |
-| `webhook.username` | Webhook username | `"kite"` |
-| `webhook.password` | Webhook password | `"password"` |
+| Parameter   | Description                              | Default |
+| ----------- | ---------------------------------------- | ------- |
+| `extraEnvs` | List of additional environment variables | `[]`    |
 
 ## Service Account Configuration
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `serviceAccount.create` | Whether to create a service account | `true` |
-| `serviceAccount.automount` | Automatically mount service account API credentials | `true` |
-| `serviceAccount.annotations` | Annotations for service account | `{}` |
-| `serviceAccount.name` | Name of service account to use | `""` |
+| Parameter                    | Description                                         | Default |
+| ---------------------------- | --------------------------------------------------- | ------- |
+| `serviceAccount.create`      | Whether to create a service account                 | `true`  |
+| `serviceAccount.automount`   | Automatically mount service account API credentials | `true`  |
+| `serviceAccount.annotations` | Annotations for service account                     | `{}`    |
+| `serviceAccount.name`        | Name of service account to use                      | `""`    |
 
 ## RBAC Configuration
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `rbac.create` | Whether to create RBAC resources | `true` |
-| `rbac.rules` | List of RBAC rules | See example below |
+| Parameter     | Description                      | Default           |
+| ------------- | -------------------------------- | ----------------- |
+| `rbac.create` | Whether to create RBAC resources | `true`            |
+| `rbac.rules`  | List of RBAC rules               | See example below |
 
 ### RBAC Rules Example
 
@@ -90,29 +82,29 @@ rbac:
 
 ## Pod Configuration
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `podAnnotations` | Kubernetes annotations for Pod | `{}` |
-| `podLabels` | Kubernetes labels for Pod | `{}` |
-| `podSecurityContext` | Pod security context | `{}` |
-| `securityContext` | Container security context | `{}` |
+| Parameter            | Description                    | Default |
+| -------------------- | ------------------------------ | ------- |
+| `podAnnotations`     | Kubernetes annotations for Pod | `{}`    |
+| `podLabels`          | Kubernetes labels for Pod      | `{}`    |
+| `podSecurityContext` | Pod security context           | `{}`    |
+| `securityContext`    | Container security context     | `{}`    |
 
 ## Service Configuration
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
+| Parameter      | Description  | Default     |
+| -------------- | ------------ | ----------- |
 | `service.type` | Service type | `ClusterIP` |
-| `service.port` | Service port | `8080` |
+| `service.port` | Service port | `8080`      |
 
 ## Ingress Configuration
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `ingress.enabled` | Whether to enable Ingress | `false` |
-| `ingress.className` | Ingress class name | `"nginx"` |
-| `ingress.annotations` | Ingress annotations | `{}` |
-| `ingress.hosts` | Ingress host configuration | See example below |
-| `ingress.tls` | TLS configuration | `[]` |
+| Parameter             | Description                | Default           |
+| --------------------- | -------------------------- | ----------------- |
+| `ingress.enabled`     | Whether to enable Ingress  | `false`           |
+| `ingress.className`   | Ingress class name         | `"nginx"`         |
+| `ingress.annotations` | Ingress annotations        | `{}`              |
+| `ingress.hosts`       | Ingress host configuration | See example below |
+| `ingress.tls`         | TLS configuration          | `[]`              |
 
 ### Ingress Host Configuration Example
 
@@ -127,9 +119,9 @@ ingress:
 
 ## Resource Limits
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `resources` | Container resource limits and requests | `{}` |
+| Parameter   | Description                            | Default |
+| ----------- | -------------------------------------- | ------- |
+| `resources` | Container resource limits and requests | `{}`    |
 
 ### Resource Limits Example
 
@@ -145,9 +137,9 @@ resources:
 
 ## Health Checks
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `livenessProbe` | Liveness probe configuration | See example below |
+| Parameter        | Description                   | Default           |
+| ---------------- | ----------------------------- | ----------------- |
+| `livenessProbe`  | Liveness probe configuration  | See example below |
 | `readinessProbe` | Readiness probe configuration | See example below |
 
 ### Health Check Example
@@ -169,15 +161,15 @@ readinessProbe:
 
 ## Storage Configuration
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `volumes` | Additional volume configurations | `[]` |
-| `volumeMounts` | Additional volume mount configurations | `[]` |
+| Parameter      | Description                            | Default |
+| -------------- | -------------------------------------- | ------- |
+| `volumes`      | Additional volume configurations       | `[]`    |
+| `volumeMounts` | Additional volume mount configurations | `[]`    |
 
 ## Scheduling Configuration
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `nodeSelector` | Node selector | `{}` |
-| `tolerations` | Tolerations configuration | `[]` |
-| `affinity` | Affinity configuration | `{}` |
+| Parameter      | Description               | Default |
+| -------------- | ------------------------- | ------- |
+| `nodeSelector` | Node selector             | `{}`    |
+| `tolerations`  | Tolerations configuration | `[]`    |
+| `affinity`     | Affinity configuration    | `{}`    |

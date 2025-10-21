@@ -21,9 +21,6 @@ var (
 	Host            = ""
 
 	NodeTerminalImage = "busybox:latest"
-	WebhookUsername   = os.Getenv("WEBHOOK_USERNAME")
-	WebhookPassword   = os.Getenv("WEBHOOK_PASSWORD")
-	WebhookEnabled    = WebhookUsername != "" && WebhookPassword != ""
 	DBType            = "sqlite"
 	DBDSN             = "dev.db"
 

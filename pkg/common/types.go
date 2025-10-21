@@ -20,24 +20,6 @@ type RelatedResource struct {
 	Namespace  string `json:"namespace,omitempty"`
 }
 
-type Action string
-
-const (
-	ActionRestart     Action = "restart"
-	ActionUpdateImage Action = "updateImage"
-)
-
-type WebhookRequest struct {
-	Action    Action `json:"action" binding:"required,oneof=restart updateImage"`
-	Resource  string `json:"resource" binding:"required,oneof=deployments statefulsets daemonsets"`
-	Name      string `json:"name" binding:"required"` // Name of the resource to act upon
-	Namespace string `json:"namespace"`
-
-	// Optional data for the action
-	// ActionUpdateImage => containerName:ImageName
-	Data string `json:"data,omitempty" binding:"required_if=Action updateImage"` // Must be printable ASCII characters
-}
-
 type Resource struct {
 	Allocatable int64 `json:"allocatable"`
 	Requested   int64 `json:"requested"`

@@ -183,20 +183,6 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 	}
 }
 
-func setupWebhookRouter(r *gin.Engine, cm *cluster.ClusterManager) {
-	if !common.WebhookEnabled {
-		klog.Info("Webhook is not enabled, skipping webhook routes setup")
-		return
-	}
-	webhookGroup := r.Group("/api/v1/webhooks", gin.BasicAuth(gin.Accounts{
-		common.WebhookUsername: common.WebhookPassword,
-	}), middleware.ClusterMiddleware(cm))
-	{
-		webhookHandler := handlers.NewWebhookHandler(cm)
-		webhookGroup.POST("/events", webhookHandler.HandleWebhook)
-	}
-}
-
 func main() {
 	klog.InitFlags(nil)
 	flag.Parse()
@@ -225,7 +211,6 @@ func main() {
 
 	// Setup router
 	setupAPIRouter(r, cm)
-	setupWebhookRouter(r, cm)
 	setupStatic(r)
 
 	srv := &http.Server{
