@@ -119,21 +119,32 @@ func (h *NodeTerminalHandler) createNodeAgent(ctx context.Context, cs *cluster.C
 					Operator: corev1.TolerationOpExists,
 				},
 			},
+			Volumes: []corev1.Volume{
+				{
+					Name: "host",
+					VolumeSource: corev1.VolumeSource{
+						HostPath: &corev1.HostPathVolumeSource{
+							Path: "/",
+						},
+					},
+				},
+			},
 			Containers: []corev1.Container{
 				{
-					Name:  common.NodeTerminalPodName,
-					Image: common.NodeTerminalImage,
-					Command: []string{
-						"nsenter",
-						"--target", "1",
-						"--mount", "--uts", "--ipc", "--net", "--pid",
-						"--", "bash", "-c", "cd ~ && exec bash -l",
-					},
+					Name:      common.NodeTerminalPodName,
+					Image:     common.NodeTerminalImage,
 					Stdin:     true,
 					StdinOnce: true,
 					TTY:       true,
+					Command:   []string{"/bin/sh", "-c", "chroot /host || (exec /bin/zsh || exec /bin/bash || exec /bin/sh)"},
 					SecurityContext: &corev1.SecurityContext{
 						Privileged: &[]bool{true}[0],
+					},
+					VolumeMounts: []corev1.VolumeMount{
+						{
+							Name:      "host",
+							MountPath: "/host",
+						},
 					},
 				},
 			},
