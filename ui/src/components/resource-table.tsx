@@ -69,9 +69,14 @@ export function ResourceTable<T>({
     const storageKey = `${currentCluster}-${resourceName}-searchQuery`
     return sessionStorage.getItem(storageKey) || ''
   })
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 20,
+  const [pagination, setPagination] = useState<PaginationState>(() => {
+    const currentCluster = localStorage.getItem('current-cluster')
+    const storageKey = `${currentCluster}-${resourceName}-pageSize`
+    const savedPageSize = sessionStorage.getItem(storageKey)
+    return {
+      pageIndex: 0,
+      pageSize: savedPageSize ? Number(savedPageSize) : 20,
+    }
   })
   const [refreshInterval, setRefreshInterval] = useState(5000)
 
@@ -131,6 +136,13 @@ export function ResourceTable<T>({
       sessionStorage.removeItem(storageKey)
     }
   }, [searchQuery, resourceName])
+
+  // Update sessionStorage when page size changes
+  useEffect(() => {
+    const currentCluster = localStorage.getItem('current-cluster')
+    const storageKey = `${currentCluster}-${resourceName}-pageSize`
+    sessionStorage.setItem(storageKey, pagination.pageSize.toString())
+  }, [pagination.pageSize, resourceName])
 
   // Reset pagination when filters change
   useEffect(() => {
@@ -594,7 +606,34 @@ export function ResourceTable<T>({
               `${totalRowCount} row(s) total.`
             )}
           </div>
-          <div className="flex w-full items-center gap-8 lg:w-fit">
+          <div className="flex w-full items-center gap-4 lg:w-fit">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Rows per page:
+              </span>
+              <Select
+                value={pagination.pageSize.toString()}
+                onValueChange={(value) => {
+                  setPagination((prev) => ({
+                    ...prev,
+                    pageSize: Number(value),
+                    pageIndex: 0,
+                  }))
+                }}
+              >
+                <SelectTrigger size="sm" className="w-20" id="rows-per-page">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 20, 50, 100].map((pageSize) => (
+                    <SelectItem key={pageSize} value={`${pageSize}`}>
+                      {pageSize}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value={`${data.length}`}>All</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex w-fit items-center justify-center text-sm font-medium">
               Page {pagination.pageIndex + 1} of {table.getPageCount() || 1}
             </div>
