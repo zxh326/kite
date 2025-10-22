@@ -17,6 +17,7 @@ import {
   IconCode,
   IconDatabase,
   IconFileDatabase,
+  IconHelmet,
   IconKey,
   IconLoadBalancer,
   IconLock,
@@ -48,6 +49,7 @@ import { useAuth } from './auth-context'
 const iconMap = {
   IconBox,
   IconRocket,
+  IconHelmet,
   IconStack2,
   IconTopologyBus,
   IconPlayerPlay,
@@ -190,6 +192,13 @@ export const SidebarConfigProvider: React.FC<SidebarConfigProviderProps> = ({
           titleKey: 'nav.clusterrolebindings',
           url: '/clusterrolebindings',
           icon: IconKey,
+        },
+      ],
+      'sidebar.groups.helm': [
+        {
+          titleKey: 'nav.helmreleases',
+          url: '/helmreleases',
+          icon: IconHelmet,
         },
       ],
       'sidebar.groups.other': [
