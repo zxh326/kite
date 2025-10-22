@@ -24,6 +24,8 @@ type User struct {
 
 	APIKey SecretString  `json:"apiKey,omitempty" gorm:"type:text"`
 	Roles  []common.Role `json:"roles,omitempty" gorm:"-"`
+
+	SidebarPreference string `json:"sidebar_preference,omitempty" gorm:"type:text"`
 }
 
 func (u *User) Key() string {
