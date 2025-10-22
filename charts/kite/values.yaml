@@ -21,6 +21,12 @@ fullnameOverride: ""
 
 debug: false
 
+# External Host for the application
+# Used in generate OAuth redirect URLs
+# Leave empty to obtain from request headers
+# Example: https://kite.zzde.me
+host: ""
+
 # Set to true to enable the anonymous user with full-admin access
 # be careful with this setting in production
 anonymousUserEnabled: false
@@ -33,11 +39,32 @@ jwtSecret: "kite-default-jwt-secret-key-change-in-production"
 # change this in production
 encryptKey: "kite-default-encryption-key-change-in-production"
 
-# External Host for the application
-# Used in generate OAuth redirect URLs
-# Leave empty to obtain from request headers
-# Example: https://kite.zzde.me
-host: ""
+# Superuser configuration
+# Used to create an initial superuser account on first startup
+# if superUser.create is false, will be setup in landing page
+# first install will create the superuser automatically
+# subsequent installs/update will not modify the user
+superUser:
+  create: false
+  username: "admin"
+  password: ""
+
+# Secret handling
+# By default the chart will create a Kubernetes Secret containing sensitive values.
+secret:
+  # Create the Secret from chart values (true) or reference an existing Secret (false)
+  create: true
+  # If set, the deployment will use this existing secret name instead of the generated one (ignored when `create: true`).
+  # must contain all required keys.
+  #  JWT_SECRET
+  #  KITE_ENCRYPT_KEY
+  #  DB_DSN (optional for sqlite)
+  # 
+  #  see superUser section for more details
+  #  KITE_USERNAME (optional for superuser)
+  #  KITE_PASSWORD (optional for superuser)
+  # if set, the db.dsn and db.type values from the chart will be ignored.
+  existingSecret: ""
 
 # Database configuration
 # type: sqlite | postgres | mysql
@@ -49,6 +76,7 @@ db:
   type: sqlite
   # full DSN string for MySQL/Postgres.
   # when type is mysql/postgres, is required
+  # leave empty for use existingSecret to provide it when type is not sqlite
   # Example: "mysql://user:password@tcp(host:port)/dbname"
   dsn: ""
   
