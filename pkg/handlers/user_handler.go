@@ -190,3 +190,20 @@ func SetUserEnabled(c *gin.Context) {
 	}
 	c.JSON(200, gin.H{"success": true})
 }
+
+func UpdateSidebarPreference(c *gin.Context) {
+	user := c.MustGet("user").(model.User)
+	var req struct {
+		SidebarPreference string `json:"sidebar_preference" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	user.SidebarPreference = req.SidebarPreference
+	if err := model.UpdateUser(&user); err != nil {
+		c.JSON(500, gin.H{"error": "failed to update sidebar preference"})
+		return
+	}
+	c.JSON(200, gin.H{"success": true})
+}

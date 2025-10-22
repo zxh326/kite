@@ -14,6 +14,7 @@ interface User {
   avatar_url: string
   provider: string
   roles?: { name: string }[]
+  sidebar_preference?: string
 
   isAdmin(): boolean
 }

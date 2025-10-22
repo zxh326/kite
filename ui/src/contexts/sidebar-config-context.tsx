@@ -43,7 +43,7 @@ import {
   SidebarItem,
 } from '@/types/sidebar'
 
-const SIDEBAR_CONFIG_KEY = 'kite-sidebar-config'
+import { useAuth } from './auth-context'
 
 const iconMap = {
   IconBox,
@@ -121,6 +121,7 @@ export const SidebarConfigProvider: React.FC<SidebarConfigProviderProps> = ({
 }) => {
   const [config, setConfig] = useState<SidebarConfig | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const { user } = useAuth()
 
   const getDefaultMenus = useCallback(
     (): DefaultMenus => ({
@@ -244,41 +245,50 @@ export const SidebarConfigProvider: React.FC<SidebarConfigProviderProps> = ({
     }
   }, [getDefaultMenus])
 
-  const loadConfig = useCallback(() => {
-    try {
-      const stored = localStorage.getItem(SIDEBAR_CONFIG_KEY)
-      if (stored) {
-        const parsed = JSON.parse(stored) as SidebarConfig
-        if (parsed.groups && Array.isArray(parsed.groups)) {
-          setConfig(parsed)
-          return
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to load sidebar config from localStorage:', error)
+  const loadConfig = useCallback(async () => {
+    if (user && user.sidebar_preference && user.sidebar_preference != '') {
+      setConfig(JSON.parse(user.sidebar_preference))
+      return
     }
-
     const defaultConfig = generateDefaultConfig()
     setConfig(defaultConfig)
-    try {
-      localStorage.setItem(SIDEBAR_CONFIG_KEY, JSON.stringify(defaultConfig))
-    } catch (error) {
-      console.error('Failed to save default config:', error)
-    }
-  }, [generateDefaultConfig])
+  }, [generateDefaultConfig, user])
 
-  const saveConfig = useCallback((newConfig: SidebarConfig) => {
-    try {
-      const configToSave = {
-        ...newConfig,
-        lastUpdated: Date.now(),
+  const saveConfig = useCallback(
+    async (newConfig: SidebarConfig) => {
+      if (!user) {
+        setConfig(newConfig)
+        return
       }
-      localStorage.setItem(SIDEBAR_CONFIG_KEY, JSON.stringify(configToSave))
-      setConfig(configToSave)
-    } catch (error) {
-      console.error('Failed to save sidebar config to localStorage:', error)
-    }
-  }, [])
+
+      try {
+        const configToSave = {
+          ...newConfig,
+          lastUpdated: Date.now(),
+        }
+
+        const response = await fetch('/api/users/sidebar_preference', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            sidebar_preference: JSON.stringify(configToSave),
+          }),
+        })
+
+        if (response.ok) {
+          setConfig(configToSave)
+        } else {
+          console.error('Failed to save sidebar config to server')
+        }
+      } catch (error) {
+        console.error('Failed to save sidebar config to server:', error)
+      }
+    },
+    [user]
+  )
 
   const updateConfig = useCallback(
     (updates: Partial<SidebarConfig>) => {
@@ -499,9 +509,12 @@ export const SidebarConfigProvider: React.FC<SidebarConfigProviderProps> = ({
   }, [])
 
   useEffect(() => {
-    setIsLoading(true)
-    loadConfig()
-    setIsLoading(false)
+    const loadData = async () => {
+      setIsLoading(true)
+      await loadConfig()
+      setIsLoading(false)
+    }
+    loadData()
   }, [loadConfig])
 
   const value: SidebarConfigContextType = {

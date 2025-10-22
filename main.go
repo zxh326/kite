@@ -92,6 +92,11 @@ func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
 		authGroup.GET("/user", authHandler.RequireAuth(), authHandler.GetUser)
 	}
 
+	userGroup := r.Group("/api/users")
+	{
+		userGroup.POST("/sidebar_preference", authHandler.RequireAuth(), handlers.UpdateSidebarPreference)
+	}
+
 	// admin apis
 	adminAPI := r.Group("/api/v1/admin")
 	// Initialize the setup API without authentication.
