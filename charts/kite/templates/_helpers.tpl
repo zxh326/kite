@@ -60,3 +60,12 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+
+{{- define "kite.secret" -}}
+{{- if .Values.secret.existingSecret }}
+{{- .Values.secret.existingSecret }}
+{{- else }}
+{{- printf "%s-secret" (include "kite.fullname" .) }}
+{{- end }}
+{{- end }}

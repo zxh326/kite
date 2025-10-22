@@ -49,8 +49,18 @@ spec:
               protocol: TCP
           envFrom:
             - secretRef:
-                name: {{ include "kite.fullname" . }}-secret
+                name: {{ include "kite.secret" . }}
           env:
+            {{- if .Values.host }}
+            - name: HOST
+              value: {{ .Values.host }}
+            {{- end }}
+            {{- if eq .Values.db.type "sqlite" }}
+            - name: DB_TYPE
+              value: sqlite
+            - name: DB_DSN
+              value: {{ (printf "%s/%s" .Values.db.sqlite.persistence.mountPath .Values.db.sqlite.persistence.filename) }}
+            {{- end }}
           {{- with .Values.extraEnvs }}
           {{- toYaml . | nindent 12 }}
           {{- end }}
