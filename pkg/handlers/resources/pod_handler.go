@@ -152,11 +152,11 @@ func (h *PodHandler) List(c *gin.Context) {
 			}
 			item.Spec = corev1.PodSpec{
 				NodeName: objlist.Items[i].Spec.NodeName,
+				InitContainers: lo.Map(objlist.Items[i].Spec.InitContainers, func(c corev1.Container, _ int) corev1.Container {
+					return corev1.Container{Name: c.Name, Image: c.Image, RestartPolicy: c.RestartPolicy}
+				}),
 				Containers: lo.Map(objlist.Items[i].Spec.Containers, func(c corev1.Container, _ int) corev1.Container {
-					return corev1.Container{
-						Name:  c.Name,
-						Image: c.Image,
-					}
+					return corev1.Container{Name: c.Name, Image: c.Image, RestartPolicy: c.RestartPolicy}
 				}),
 			}
 		}
@@ -283,8 +283,11 @@ func (h *PodHandler) Watch(c *gin.Context) {
 				}
 				obj.Spec = corev1.PodSpec{
 					NodeName: pod.Spec.NodeName,
+					InitContainers: lo.Map(pod.Spec.InitContainers, func(c corev1.Container, _ int) corev1.Container {
+						return corev1.Container{Name: c.Name, Image: c.Image, RestartPolicy: c.RestartPolicy}
+					}),
 					Containers: lo.Map(pod.Spec.Containers, func(c corev1.Container, _ int) corev1.Container {
-						return corev1.Container{Name: c.Name, Image: c.Image}
+						return corev1.Container{Name: c.Name, Image: c.Image, RestartPolicy: c.RestartPolicy}
 					}),
 				}
 			}
