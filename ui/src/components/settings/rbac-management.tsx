@@ -112,6 +112,44 @@ export function RBACManagement() {
           </div>
         ),
       },
+      {
+        id: 'assignments',
+        header: 'Assignments',
+        cell: ({ row: { original: r } }) => {
+          const users =
+            r.assignments?.filter((a) => a.subjectType === 'user') || []
+          const groups =
+            r.assignments?.filter((a) => a.subjectType === 'group') || []
+          const maxShow = 2
+          return (
+            <div className="flex flex-wrap gap-1 text-xs max-w-[200px]">
+              {users.slice(0, maxShow).map((a) => (
+                <Badge key={a.id} variant="secondary" className="text-xs">
+                  user: {a.subject}
+                </Badge>
+              ))}
+              {users.length > maxShow && (
+                <Badge variant="outline" className="text-xs">
+                  +{users.length - maxShow}
+                </Badge>
+              )}
+              {groups.slice(0, maxShow).map((a) => (
+                <Badge key={a.id} variant="secondary" className="text-xs">
+                  group: {a.subject}
+                </Badge>
+              ))}
+              {groups.length > maxShow && (
+                <Badge variant="outline" className="text-xs">
+                  +{groups.length - maxShow}
+                </Badge>
+              )}
+              {users.length === 0 && groups.length === 0 && (
+                <span className="text-xs text-muted-foreground">-</span>
+              )}
+            </div>
+          )
+        },
+      },
     ],
     [t]
   )
@@ -220,10 +258,18 @@ export function RBACManagement() {
   ) => {
     try {
       await assignRole(roleId, { subjectType, subject })
-      queryClient.invalidateQueries({ queryKey: ['role-list'] })
+      await queryClient.invalidateQueries({ queryKey: ['role-list'] })
+
+      // Update assigningRole with fresh data to show the new assignment immediately
+      if (assigningRole?.id === roleId) {
+        const updatedRoles = queryClient.getQueryData<Role[]>(['role-list'])
+        const updatedRole = updatedRoles?.find((r) => r.id === roleId)
+        if (updatedRole) {
+          setAssigningRole(updatedRole)
+        }
+      }
+
       toast.success(t('rbac.messages.assigned', 'Assigned'))
-      setShowAssignDialog(false)
-      setAssigningRole(null)
     } catch (err: unknown) {
       toast.error(
         (err as Error).message ||
@@ -239,7 +285,16 @@ export function RBACManagement() {
   ) => {
     try {
       await unassignRole(roleId, subjectType, subject)
-      queryClient.invalidateQueries({ queryKey: ['role-list'] })
+      await queryClient.invalidateQueries({ queryKey: ['role-list'] })
+
+      if (assigningRole?.id === roleId) {
+        const updatedRoles = queryClient.getQueryData<Role[]>(['role-list'])
+        const updatedRole = updatedRoles?.find((r) => r.id === roleId)
+        if (updatedRole) {
+          setAssigningRole(updatedRole)
+        }
+      }
+
       toast.success(t('rbac.messages.unassigned', 'Unassigned'))
     } catch (err: unknown) {
       toast.error(

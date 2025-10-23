@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useAuth } from '@/contexts/auth-context'
+import { IconX } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 
 import { Role } from '@/types/api'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -44,82 +47,172 @@ export function RBACAssignmentDialog({
   onUnassign,
 }: Props) {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const [subjectType, setSubjectType] = useState<'user' | 'group'>('user')
   const [subject, setSubject] = useState('')
 
+  useEffect(() => {
+    if (open) {
+      setSubjectType('user')
+      setSubject('')
+    }
+  }, [open])
+
   const handleAssign = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!role) return
-    onAssign(role.id, subjectType, subject)
+    if (!role || !subject.trim()) return
+    onAssign(role.id, subjectType, subject.trim())
+    setSubject('')
   }
 
-  const handleUnassign = () => {
+  const handleRemoveAssignment = (
+    assignmentSubjectType: 'user' | 'group',
+    assignmentSubject: string
+  ) => {
     if (!role) return
-    onUnassign(role.id, subjectType, subject)
+
+    // Check if removing current user's assignment
+    if (
+      assignmentSubjectType === 'user' &&
+      user &&
+      assignmentSubject === user.username
+    ) {
+      const confirmed = window.confirm(
+        t(
+          'rbac.assign.confirmRemoveSelf',
+          'You are removing your own role assignment. This may affect your permissions. Are you sure?'
+        )
+      )
+      if (!confirmed) return
+    }
+
+    onUnassign(role.id, assignmentSubjectType, assignmentSubject)
   }
+
+  const currentUsers =
+    role?.assignments?.filter((a) => a.subjectType === 'user') || []
+  const currentGroups =
+    role?.assignments?.filter((a) => a.subjectType === 'group') || []
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>{t('rbac.assign.title', 'Assign Role')}</DialogTitle>
+          <DialogTitle>
+            {t('rbac.assign.title', 'Assign Role')} - {role?.name}
+          </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleAssign} className="space-y-4">
-          <div className="space-y-2">
-            <Label>{t('rbac.assign.subjectType', 'Subject Type')}</Label>
-            <Select
-              value={subjectType}
-              onValueChange={(v) => setSubjectType(v as 'user' | 'group')}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="user">
-                  {t('rbac.assign.user', 'User')}
-                </SelectItem>
-                <SelectItem value="group">
-                  {t('rbac.assign.group', 'OIDC Group')}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-6">
+          {(currentUsers.length > 0 || currentGroups.length > 0) && (
+            <div className="space-y-3">
+              <Label>{t('rbac.assign.current', 'Current Assignments')}</Label>
+              <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                {currentUsers.length > 0 && (
+                  <div>
+                    <div className="text-xs font-semibold text-muted-foreground mb-1">
+                      {t('rbac.assign.users', 'Users')}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {currentUsers.map((a) => (
+                        <Badge
+                          key={a.id}
+                          variant="secondary"
+                          className="gap-1 pl-2 pr-1"
+                        >
+                          {a.subject}
+                          <button
+                            onClick={() =>
+                              handleRemoveAssignment('user', a.subject)
+                            }
+                            className="ml-1 hover:bg-destructive/20 rounded-sm p-0.5"
+                            type="button"
+                          >
+                            <IconX className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {currentGroups.length > 0 && (
+                  <div>
+                    <div className="text-xs font-semibold text-muted-foreground mb-1">
+                      {t('rbac.assign.groups', 'OIDC Groups')}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {currentGroups.map((a) => (
+                        <Badge
+                          key={a.id}
+                          variant="secondary"
+                          className="gap-1 pl-2 pr-1"
+                        >
+                          {a.subject}
+                          <button
+                            onClick={() =>
+                              handleRemoveAssignment('group', a.subject)
+                            }
+                            className="ml-1 hover:bg-destructive/20 rounded-sm p-0.5"
+                            type="button"
+                          >
+                            <IconX className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
-          <div className="space-y-2">
-            <Label>{t('rbac.assign.subject', 'Subject')}</Label>
-            <Input
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder={t(
-                'rbac.assign.subjectPlaceholder',
-                'username or group name'
-              )}
-            />
-          </div>
+          <form onSubmit={handleAssign} className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t('rbac.assign.subjectType', 'Subject Type')}</Label>
+              <Select
+                value={subjectType}
+                onValueChange={(v) => setSubjectType(v as 'user' | 'group')}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">
+                    {t('rbac.assign.user', 'User')}
+                  </SelectItem>
+                  <SelectItem value="group">
+                    {t('rbac.assign.group', 'OIDC Group')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              {t('common.cancel', 'Cancel')}
-            </Button>
-            <div className="flex items-center gap-2">
+            <div className="space-y-2">
+              <Label>{t('rbac.assign.subject', 'Subject')}</Label>
+              <Input
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder={t(
+                  'rbac.assign.subjectPlaceholder',
+                  'username or group name'
+                )}
+              />
+            </div>
+
+            <DialogFooter>
               <Button
                 type="button"
-                variant="destructive"
-                onClick={handleUnassign}
+                variant="outline"
+                onClick={() => onOpenChange(false)}
               >
-                {t('rbac.actions.unassign', 'Unassign')}
+                {t('common.cancel', 'Cancel')}
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={!subject.trim()}>
                 {t('rbac.actions.assign', 'Assign')}
               </Button>
-            </div>
-          </DialogFooter>
-        </form>
+            </DialogFooter>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   )
