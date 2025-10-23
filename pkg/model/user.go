@@ -77,8 +77,10 @@ func FindWithSubOrUpsertUser(user *User) error {
 		return err
 	}
 	user.Enabled = existingUser.Enabled
+
 	user.ID = existingUser.ID
 	user.CreatedAt = existingUser.CreatedAt
+	user.SidebarPreference = existingUser.SidebarPreference
 	return DB.Save(user).Error
 }
 

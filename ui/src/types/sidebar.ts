@@ -19,6 +19,7 @@ export interface SidebarGroup {
 }
 
 export interface SidebarConfig {
+  version?: number
   groups: SidebarGroup[]
   hiddenItems: string[]
   pinnedItems: string[]

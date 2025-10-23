@@ -82,6 +82,7 @@ const getIconName = (iconComponent: React.ComponentType): string => {
 interface SidebarConfigContextType {
   config: SidebarConfig | null
   isLoading: boolean
+  hasUpdate: boolean
   updateConfig: (updates: Partial<SidebarConfig>) => void
   toggleItemVisibility: (itemId: string) => void
   toggleGroupVisibility: (groupId: string) => void
@@ -116,143 +117,148 @@ interface SidebarConfigProviderProps {
   children: React.ReactNode
 }
 
+const defaultMenus: DefaultMenus = {
+  'sidebar.groups.workloads': [
+    { titleKey: 'nav.pods', url: '/pods', icon: IconBox },
+    { titleKey: 'nav.deployments', url: '/deployments', icon: IconRocket },
+    {
+      titleKey: 'nav.statefulsets',
+      url: '/statefulsets',
+      icon: IconStack2,
+    },
+    {
+      titleKey: 'nav.daemonsets',
+      url: '/daemonsets',
+      icon: IconTopologyBus,
+    },
+    { titleKey: 'nav.jobs', url: '/jobs', icon: IconPlayerPlay },
+    { titleKey: 'nav.cronjobs', url: '/cronjobs', icon: IconClockHour4 },
+  ],
+  'sidebar.groups.traffic': [
+    { titleKey: 'nav.ingresses', url: '/ingresses', icon: IconRouter },
+    { titleKey: 'nav.services', url: '/services', icon: IconNetwork },
+    { titleKey: 'nav.gateways', url: '/gateways', icon: IconLoadBalancer },
+    { titleKey: 'nav.httproutes', url: '/httproutes', icon: IconRoute },
+  ],
+  'sidebar.groups.storage': [
+    {
+      titleKey: 'sidebar.short.pvcs',
+      url: '/persistentvolumeclaims',
+      icon: IconFileDatabase,
+    },
+    {
+      titleKey: 'sidebar.short.pvs',
+      url: '/persistentvolumes',
+      icon: IconDatabase,
+    },
+    {
+      titleKey: 'nav.storageclasses',
+      url: '/storageclasses',
+      icon: IconFileDatabase,
+    },
+  ],
+  'sidebar.groups.config': [
+    { titleKey: 'nav.configMaps', url: '/configmaps', icon: IconMap },
+    { titleKey: 'nav.secrets', url: '/secrets', icon: IconLock },
+    {
+      titleKey: 'nav.horizontalpodautoscalers',
+      url: '/horizontalpodautoscalers',
+      icon: IconArrowsHorizontal,
+    },
+  ],
+  'sidebar.groups.security': [
+    {
+      titleKey: 'nav.serviceaccounts',
+      url: '/serviceaccounts',
+      icon: IconUser,
+    },
+    { titleKey: 'nav.roles', url: '/roles', icon: IconShield },
+    { titleKey: 'nav.rolebindings', url: '/rolebindings', icon: IconUsers },
+    {
+      titleKey: 'nav.clusterroles',
+      url: '/clusterroles',
+      icon: IconShieldCheck,
+    },
+    {
+      titleKey: 'nav.clusterrolebindings',
+      url: '/clusterrolebindings',
+      icon: IconKey,
+    },
+  ],
+  'sidebar.groups.other': [
+    {
+      titleKey: 'nav.namespaces',
+      url: '/namespaces',
+      icon: IconBoxMultiple,
+    },
+    { titleKey: 'nav.nodes', url: '/nodes', icon: IconServer2 },
+    { titleKey: 'nav.events', url: '/events', icon: IconBell },
+    { titleKey: 'nav.crds', url: '/crds', icon: IconCode },
+  ],
+}
+
+const CURRENT_CONFIG_VERSION = 1
+
+const defaultConfigs = (): SidebarConfig => {
+  const groups: SidebarGroup[] = []
+  let groupOrder = 0
+
+  Object.entries(defaultMenus).forEach(([groupKey, items]) => {
+    const groupId = groupKey
+      .toLowerCase()
+      .replace(/\./g, '-')
+      .replace(/\s+/g, '-')
+    const sidebarItems: SidebarItem[] = items.map((item, index) => ({
+      id: `${groupId}-${item.url.replace(/[^a-zA-Z0-9]/g, '-')}`,
+      titleKey: item.titleKey,
+      url: item.url,
+      icon: getIconName(item.icon),
+      visible: true,
+      pinned: false,
+      order: index,
+    }))
+
+    groups.push({
+      id: groupId,
+      nameKey: groupKey,
+      items: sidebarItems,
+      visible: true,
+      collapsed: false,
+      order: groupOrder++,
+    })
+  })
+
+  return {
+    version: CURRENT_CONFIG_VERSION,
+    groups,
+    hiddenItems: [],
+    pinnedItems: [],
+    groupOrder: groups.map((g) => g.id),
+    lastUpdated: Date.now(),
+  }
+}
+
 export const SidebarConfigProvider: React.FC<SidebarConfigProviderProps> = ({
   children,
 }) => {
   const [config, setConfig] = useState<SidebarConfig | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [hasUpdate, setHasUpdate] = useState(false)
   const { user } = useAuth()
-
-  const getDefaultMenus = useCallback(
-    (): DefaultMenus => ({
-      'sidebar.groups.workloads': [
-        { titleKey: 'nav.pods', url: '/pods', icon: IconBox },
-        { titleKey: 'nav.deployments', url: '/deployments', icon: IconRocket },
-        {
-          titleKey: 'nav.statefulsets',
-          url: '/statefulsets',
-          icon: IconStack2,
-        },
-        {
-          titleKey: 'nav.daemonsets',
-          url: '/daemonsets',
-          icon: IconTopologyBus,
-        },
-        { titleKey: 'nav.jobs', url: '/jobs', icon: IconPlayerPlay },
-        { titleKey: 'nav.cronjobs', url: '/cronjobs', icon: IconClockHour4 },
-      ],
-      'sidebar.groups.traffic': [
-        { titleKey: 'nav.ingresses', url: '/ingresses', icon: IconRouter },
-        { titleKey: 'nav.services', url: '/services', icon: IconNetwork },
-        { titleKey: 'nav.gateways', url: '/gateways', icon: IconLoadBalancer },
-        { titleKey: 'nav.httproutes', url: '/httproutes', icon: IconRoute },
-      ],
-      'sidebar.groups.storage': [
-        {
-          titleKey: 'sidebar.short.pvcs',
-          url: '/persistentvolumeclaims',
-          icon: IconFileDatabase,
-        },
-        {
-          titleKey: 'sidebar.short.pvs',
-          url: '/persistentvolumes',
-          icon: IconDatabase,
-        },
-        {
-          titleKey: 'nav.storageclasses',
-          url: '/storageclasses',
-          icon: IconFileDatabase,
-        },
-      ],
-      'sidebar.groups.config': [
-        { titleKey: 'nav.configMaps', url: '/configmaps', icon: IconMap },
-        { titleKey: 'nav.secrets', url: '/secrets', icon: IconLock },
-        {
-          titleKey: 'nav.horizontalpodautoscalers',
-          url: '/horizontalpodautoscalers',
-          icon: IconArrowsHorizontal,
-        },
-      ],
-      'sidebar.groups.security': [
-        {
-          titleKey: 'nav.serviceaccounts',
-          url: '/serviceaccounts',
-          icon: IconUser,
-        },
-        { titleKey: 'nav.roles', url: '/roles', icon: IconShield },
-        { titleKey: 'nav.rolebindings', url: '/rolebindings', icon: IconUsers },
-        {
-          titleKey: 'nav.clusterroles',
-          url: '/clusterroles',
-          icon: IconShieldCheck,
-        },
-        {
-          titleKey: 'nav.clusterrolebindings',
-          url: '/clusterrolebindings',
-          icon: IconKey,
-        },
-      ],
-      'sidebar.groups.other': [
-        {
-          titleKey: 'nav.namespaces',
-          url: '/namespaces',
-          icon: IconBoxMultiple,
-        },
-        { titleKey: 'nav.nodes', url: '/nodes', icon: IconServer2 },
-        { titleKey: 'nav.events', url: '/events', icon: IconBell },
-        { titleKey: 'nav.crds', url: '/crds', icon: IconCode },
-      ],
-    }),
-    []
-  )
-
-  const generateDefaultConfig = useCallback((): SidebarConfig => {
-    const defaultMenus = getDefaultMenus()
-    const groups: SidebarGroup[] = []
-    let groupOrder = 0
-
-    Object.entries(defaultMenus).forEach(([groupKey, items]) => {
-      const groupId = groupKey
-        .toLowerCase()
-        .replace(/\./g, '-')
-        .replace(/\s+/g, '-')
-      const sidebarItems: SidebarItem[] = items.map((item, index) => ({
-        id: `${groupId}-${item.url.replace(/[^a-zA-Z0-9]/g, '-')}`,
-        titleKey: item.titleKey,
-        url: item.url,
-        icon: getIconName(item.icon),
-        visible: true,
-        pinned: false,
-        order: index,
-      }))
-
-      groups.push({
-        id: groupId,
-        nameKey: groupKey,
-        items: sidebarItems,
-        visible: true,
-        collapsed: false,
-        order: groupOrder++,
-      })
-    })
-
-    return {
-      groups,
-      hiddenItems: [],
-      pinnedItems: [],
-      groupOrder: groups.map((g) => g.id),
-      lastUpdated: Date.now(),
-    }
-  }, [getDefaultMenus])
 
   const loadConfig = useCallback(async () => {
     if (user && user.sidebar_preference && user.sidebar_preference != '') {
-      setConfig(JSON.parse(user.sidebar_preference))
+      const userConfig = JSON.parse(user.sidebar_preference)
+      setConfig(userConfig)
+
+      const currentVersion = userConfig.version || 0
+      if (currentVersion < CURRENT_CONFIG_VERSION) {
+        setHasUpdate(true)
+      }
       return
     }
-    const defaultConfig = generateDefaultConfig()
-    setConfig(defaultConfig)
-  }, [generateDefaultConfig, user])
+    setConfig(defaultConfigs())
+  }, [user])
 
   const saveConfig = useCallback(
     async (newConfig: SidebarConfig) => {
@@ -265,6 +271,7 @@ export const SidebarConfigProvider: React.FC<SidebarConfigProviderProps> = ({
         const configToSave = {
           ...newConfig,
           lastUpdated: Date.now(),
+          version: CURRENT_CONFIG_VERSION,
         }
 
         const response = await fetch('/api/users/sidebar_preference', {
@@ -500,9 +507,10 @@ export const SidebarConfigProvider: React.FC<SidebarConfigProviderProps> = ({
   )
 
   const resetConfig = useCallback(() => {
-    const defaultConfig = generateDefaultConfig()
-    saveConfig(defaultConfig)
-  }, [generateDefaultConfig, saveConfig])
+    const newConfig = defaultConfigs()
+    saveConfig(newConfig)
+    setHasUpdate(false)
+  }, [saveConfig])
 
   const getIconComponent = useCallback((iconName: string) => {
     return iconMap[iconName as keyof typeof iconMap] || IconBox
@@ -520,6 +528,7 @@ export const SidebarConfigProvider: React.FC<SidebarConfigProviderProps> = ({
   const value: SidebarConfigContextType = {
     config,
     isLoading,
+    hasUpdate,
     updateConfig,
     toggleItemVisibility,
     toggleGroupVisibility,

@@ -48,6 +48,7 @@ export function SidebarCustomizer({
   const {
     config,
     isLoading,
+    hasUpdate,
     toggleItemVisibility,
     toggleItemPin,
     toggleGroupCollapse,
@@ -109,6 +110,9 @@ export function SidebarCustomizer({
         >
           <PanelLeftOpen className="h-4 w-4" />
           <span>{t('sidebar.customize', 'Customize Sidebar')}</span>
+          {hasUpdate && (
+            <span className="ml-auto h-2 w-2 rounded-full bg-red-500" />
+          )}
         </DropdownMenuItem>
       </DialogTrigger>
 
