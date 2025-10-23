@@ -22,6 +22,14 @@ Kite 将使用 umami 收集极少的匿名使用数据。
 
 你需要参考 [RBAC 配置指南](./config/rbac-config) 来配置用户的权限。
 
+## 托管 Kubernetes 集群连接问题
+
+如果您使用托管 Kubernetes 集群（AKS、EKS、GKE 等）并在将集群添加到 Kite 时遇到身份验证错误，这通常是因为默认的 kubeconfig 使用了需要 CLI 工具（如 `kubelogin`、`aws` 或 `gcloud`）的 `exec` 插件。
+
+Kite 作为服务端应用运行，无法执行这些客户端身份验证工具。相反，您应该使用基于 Service Account token 的身份验证。
+
+请参考[托管 Kubernetes 集群配置指南](./config/managed-k8s-auth)，了解如何创建和使用 Service Account token 进行身份验证的详细说明。
+
 ## 如何更改字体
 
 Kite 默认提供三种字体：系统默认、`Maple Mono` 和 `JetBrains Mono`。

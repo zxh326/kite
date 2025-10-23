@@ -22,6 +22,14 @@ This means that user `admin` does not have permission to access `configmaps` res
 
 You need to refer to the [RBAC Configuration Guide](./config/rbac-config) to configure user permissions.
 
+## Managed Kubernetes Cluster Connection Issues
+
+If you're using a managed Kubernetes cluster (AKS, EKS, GKE, etc.) and encounter authentication errors when adding the cluster to Kite, this is usually because the default kubeconfig uses `exec` plugins that require CLI tools (like `kubelogin`, `aws`, or `gcloud`).
+
+Kite runs as a server-side application and cannot execute these client-side authentication tools. Instead, you should use Service Account token-based authentication.
+
+Please refer to the [Managed Kubernetes Cluster Configuration Guide](./config/managed-k8s-auth) for detailed instructions on creating and using Service Account tokens for authentication.
+
 ## How to Change Font
 
 By default, Kite provides three fonts: system default, `Maple Mono`, and `JetBrains Mono`.
