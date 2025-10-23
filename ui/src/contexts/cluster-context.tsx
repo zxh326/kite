@@ -68,13 +68,13 @@ export const ClusterProvider: React.FC<{ children: React.ReactNode }> = ({
       const defaultCluster = clusters.find((c) => c.isDefault)
       if (defaultCluster) {
         setCurrentClusterState(defaultCluster.name)
-        cookieStore.set('x-cluster-name', defaultCluster.name)
+        document.cookie = `x-cluster-name=${defaultCluster.name}; path=/`
         localStorage.setItem('current-cluster', defaultCluster.name)
       } else {
         // If no default cluster, use the first one
         setCurrentClusterState(clusters[0].name)
         localStorage.setItem('current-cluster', clusters[0].name)
-        cookieStore.set('x-cluster-name', clusters[0].name)
+        document.cookie = `x-cluster-name=${clusters[0].name}; path=/`
       }
     }
     if (
@@ -85,7 +85,8 @@ export const ClusterProvider: React.FC<{ children: React.ReactNode }> = ({
       // If current cluster is not in the list, reset it
       setCurrentClusterState(null)
       localStorage.removeItem('current-cluster')
-      cookieStore.delete('x-cluster-name')
+      document.cookie =
+        'x-cluster-name=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
     }
   }, [clusters, currentCluster])
 
@@ -95,7 +96,7 @@ export const ClusterProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsSwitching(true)
         setCurrentClusterState(clusterName)
         localStorage.setItem('current-cluster', clusterName)
-        cookieStore.set('x-cluster-name', clusterName)
+        document.cookie = `x-cluster-name=${clusterName}; path=/`
         setTimeout(async () => {
           await queryClient.invalidateQueries({
             predicate: (query) => {
