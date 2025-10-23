@@ -28,22 +28,25 @@ debug: false
 host: ""
 
 # Set to true to enable the anonymous user with full-admin access
-# be careful with this setting in production
+# Be careful with this setting in production
 anonymousUserEnabled: false
 
 # This is the key used for signing JWT tokens
-# change this in production
+# Change this in production
+# Ignored if using existingSecret
 jwtSecret: "kite-default-jwt-secret-key-change-in-production"
 
 # This is the key used for encrypting sensitive data
-# change this in production
+# Change this in production
+# Ignored if using existingSecret
 encryptKey: "kite-default-encryption-key-change-in-production"
 
 # Superuser configuration
 # Used to create an initial superuser account on first startup
-# if superUser.create is false, will be setup in landing page
-# first install will create the superuser automatically
-# subsequent installs/update will not modify the user
+# If superUser.create is false, will be setup in landing page
+# First install will create the superuser automatically
+# Subsequent installs/update will not modify the user
+# Ignored if using existingSecret
 superUser:
   create: false
   username: "admin"
@@ -58,7 +61,8 @@ secret:
   # must contain all required keys.
   #  JWT_SECRET
   #  KITE_ENCRYPT_KEY
-  #  DB_DSN (optional for sqlite)
+  #  DB_TYPE supported values: sqlite, postgres, mysql (defaults to sqlite if not set)
+  #  DB_DSN (not required for sqlite)
   # 
   #  see superUser section for more details
   #  KITE_USERNAME (optional for superuser)
