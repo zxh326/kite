@@ -108,6 +108,23 @@ db:
       # sqlite filename inside the mountPath
       filename: kite.db
 
+--- a/charts/kite/values.yaml
++++ b/charts/kite/values.yaml
+@@ -50,6 +50,9 @@ db:
+   # when type is mysql/postgres, is required
+   # Example: "mysql://user:password@tcp(host:port)/dbname"
++  # If you use hostPath persistence append
++  #  "?_journal_mode=DELETE&_busy_timeout=5000"
++  # to avoid “out of memory (14)” on nodev filesystems.
+   dsn: ""
+
+   # sqlite-specific options
+@@ -76,6 +79,8 @@ db:
+       mountPath: /data
+       # sqlite filename inside the mountPath
+       filename: kite.db
++    # Default DSN that disables WAL (safe for hostPath volumes)
++    dsn: "/data/kite.db?_journal_mode=DELETE&_busy_timeout=5000"
 
 extraEnvs:
   # - name: "EXAMPLE_ENV"
