@@ -10,11 +10,9 @@ import * as yaml from 'js-yaml'
 import { Deployment } from 'kubernetes-types/apps/v1'
 import { Container } from 'kubernetes-types/core/v1'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import {
-  deleteResource,
   patchResource,
   updateResource,
   useResource,
@@ -34,7 +32,6 @@ import {
 } from '@/components/ui/popover'
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { ContainerTable } from '@/components/container-table'
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 import { DeploymentStatusIcon } from '@/components/deployment-status-icon'
 import { DescribeDialog } from '@/components/describe-dialog'
 import { ErrorMessage } from '@/components/error-message'
@@ -44,6 +41,7 @@ import { LogViewer } from '@/components/log-viewer'
 import { PodMonitoring } from '@/components/pod-monitoring'
 import { PodTable } from '@/components/pod-table'
 import { RelatedResourcesTable } from '@/components/related-resource-table'
+import { ResourceDeleteConfirmationDialog } from '@/components/resource-delete-confirmation-dialog'
 import { ResourceHistoryTable } from '@/components/resource-history-table'
 import { Terminal } from '@/components/terminal'
 import { VolumeTable } from '@/components/volume-table'
@@ -58,9 +56,7 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
   const [isRestartPopoverOpen, setIsRestartPopoverOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
   const [refreshInterval, setRefreshInterval] = useState<number>(0)
-  const navigate = useNavigate()
   const { t } = useTranslation()
 
   // Fetch deployment data
@@ -177,22 +173,6 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
 
   const handleYamlChange = (content: string) => {
     setYamlContent(content)
-  }
-
-  const handleDelete = async () => {
-    setIsDeleting(true)
-    try {
-      await deleteResource('deployments', name, namespace)
-      toast.success('Deployment deleted successfully')
-
-      // Navigate back to the deployments list page
-      navigate(`/deployments`)
-    } catch (error) {
-      toast.error(translateError(error, t))
-    } finally {
-      setIsDeleting(false)
-      setIsDeleteDialogOpen(false)
-    }
   }
 
   const handleContainerUpdate = async (
@@ -398,7 +378,6 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
             variant="destructive"
             size="sm"
             onClick={() => setIsDeleteDialogOpen(true)}
-            disabled={isDeleting}
           >
             <IconTrash className="w-4 h-4" />
             Delete
@@ -776,14 +755,12 @@ export function DeploymentDetail(props: { namespace: string; name: string }) {
         ]}
       />
 
-      <DeleteConfirmationDialog
+      <ResourceDeleteConfirmationDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={handleDelete}
         resourceName={name}
-        resourceType="deployment"
+        resourceType="deployments"
         namespace={namespace}
-        isDeleting={isDeleting}
       />
     </div>
   )

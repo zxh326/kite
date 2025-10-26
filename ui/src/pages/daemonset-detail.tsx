@@ -11,15 +11,9 @@ import * as yaml from 'js-yaml'
 import { DaemonSet } from 'kubernetes-types/apps/v1'
 import { Container } from 'kubernetes-types/core/v1'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
-import {
-  deleteResource,
-  updateResource,
-  useResource,
-  useResourcesWatch,
-} from '@/lib/api'
+import { updateResource, useResource, useResourcesWatch } from '@/lib/api'
 import { formatDate, translateError } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -32,7 +26,6 @@ import {
 } from '@/components/ui/popover'
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { ContainerTable } from '@/components/container-table'
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 import { DescribeDialog } from '@/components/describe-dialog'
 import { ErrorMessage } from '@/components/error-message'
 import { EventTable } from '@/components/event-table'
@@ -41,6 +34,7 @@ import { LogViewer } from '@/components/log-viewer'
 import { PodMonitoring } from '@/components/pod-monitoring'
 import { PodTable } from '@/components/pod-table'
 import { RelatedResourcesTable } from '@/components/related-resource-table'
+import { ResourceDeleteConfirmationDialog } from '@/components/resource-delete-confirmation-dialog'
 import { ResourceHistoryTable } from '@/components/resource-history-table'
 import { Terminal } from '@/components/terminal'
 import { VolumeTable } from '@/components/volume-table'
@@ -53,10 +47,8 @@ export function DaemonSetDetail(props: { namespace: string; name: string }) {
   const [isRestartPopoverOpen, setIsRestartPopoverOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
   const [refreshInterval, setRefreshInterval] = useState<number>(0)
   const { t } = useTranslation()
-  const navigate = useNavigate()
 
   // Fetch daemonset data
   const {
@@ -159,19 +151,6 @@ export function DaemonSetDetail(props: { namespace: string; name: string }) {
     } catch (error) {
       console.error('Failed to restart daemonset:', error)
       toast.error(translateError(error, t))
-    }
-  }
-
-  const handleDelete = async () => {
-    setIsDeleting(true)
-    try {
-      await deleteResource('daemonsets', name, namespace)
-      toast.success('DaemonSet deleted successfully')
-      navigate(`/daemonsets`)
-    } catch (error) {
-      toast.error(translateError(error, t))
-      setIsDeleting(false)
-      setIsDeleteDialogOpen(false)
     }
   }
 
@@ -617,13 +596,12 @@ export function DaemonSetDetail(props: { namespace: string; name: string }) {
         ]}
       />
 
-      <DeleteConfirmationDialog
+      <ResourceDeleteConfirmationDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={handleDelete}
-        isDeleting={isDeleting}
         resourceName={metadata?.name || ''}
-        resourceType="DaemonSet"
+        resourceType="daemonsets"
+        namespace={namespace}
       />
     </div>
   )

@@ -1,12 +1,14 @@
 package resources
 
 import (
+	"context"
 	"math"
 	"net/http"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/cluster"
@@ -404,25 +406,18 @@ func (h *GenericResourceHandler[T, V]) Delete(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	var success bool
-	var errMsg string
-	var empty T
-	defer func() {
-		h.recordHistory(c, "delete", resource, empty, success, errMsg)
-	}()
-
 	if err := cs.K8sClient.Get(ctx, namespacedName, resource); err != nil {
 		if errors.IsNotFound(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
 		}
-		errMsg = err.Error()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Check if we should cascade delete
 	cascadeDelete := c.Query("cascade") != "false"
+	forceDelete := c.Query("force") == "true"
+	wait := c.Query("wait") != "false"
 
 	// Set propagation policy based on the cascadeDelete flag
 	deleteOptions := &client.DeleteOptions{}
@@ -434,13 +429,34 @@ func (h *GenericResourceHandler[T, V]) Delete(c *gin.Context) {
 		deleteOptions.PropagationPolicy = &propagationPolicy
 	}
 
+	if forceDelete {
+		gracePeriodSeconds := int64(0)
+		deleteOptions.GracePeriodSeconds = &gracePeriodSeconds
+	}
 	if err := cs.K8sClient.Delete(ctx, resource, deleteOptions); err != nil {
-		errMsg = err.Error()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	success = true
+	if wait {
+		timeout := 1 * time.Minute
+		if forceDelete {
+			timeout = 3 * time.Second
+		}
+		err := kube.WaitForResourceDeletion(ctx, cs.K8sClient, resource, timeout)
+		if err != nil {
+			if forceDelete {
+				klog.Infof("Force deleting resource %s/%s timed out, will attempt to remove finalizers", resource.GetNamespace(), resource.GetName())
+				patch := client.MergeFrom(resource.DeepCopyObject().(T))
+				resource.SetFinalizers([]string{})
+				if err := cs.K8sClient.Patch(context.Background(), resource, patch); err != nil {
+					klog.Errorf("Failed to remove finalizers: %v", err)
+				}
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+	}
 	c.JSON(http.StatusOK, gin.H{"message": "deleted successfully"})
 }
 

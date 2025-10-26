@@ -10,12 +10,11 @@ import {
 import * as yaml from 'js-yaml'
 import { CronJob, Job } from 'kubernetes-types/batch/v1'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import {
   createResource,
-  deleteResource,
   updateResource,
   useResource,
   useResources,
@@ -27,12 +26,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { ContainerTable } from '@/components/container-table'
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 import { DescribeDialog } from '@/components/describe-dialog'
 import { ErrorMessage } from '@/components/error-message'
 import { EventTable } from '@/components/event-table'
 import { LabelsAnno } from '@/components/lables-anno'
 import { RelatedResourcesTable } from '@/components/related-resource-table'
+import { ResourceDeleteConfirmationDialog } from '@/components/resource-delete-confirmation-dialog'
 import { ResourceHistoryTable } from '@/components/resource-history-table'
 import { Column, SimpleTable } from '@/components/simple-table'
 import { VolumeTable } from '@/components/volume-table'
@@ -71,10 +70,8 @@ export function CronJobDetail(props: { namespace: string; name: string }) {
   const [isSavingYaml, setIsSavingYaml] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
   const [isTogglingSuspend, setIsTogglingSuspend] = useState(false)
   const [isRunningNow, setIsRunningNow] = useState(false)
-  const navigate = useNavigate()
   const { t } = useTranslation()
 
   const {
@@ -313,20 +310,6 @@ export function CronJobDetail(props: { namespace: string; name: string }) {
     }
   }
 
-  const handleDelete = async () => {
-    setIsDeleting(true)
-    try {
-      await deleteResource('cronjobs', name, namespace)
-      toast.success('CronJob deleted successfully')
-      navigate('/cronjobs')
-    } catch (error) {
-      toast.error(translateError(error, t))
-    } finally {
-      setIsDeleting(false)
-      setIsDeleteDialogOpen(false)
-    }
-  }
-
   if (isLoading) {
     return (
       <div className="p-6">
@@ -404,7 +387,6 @@ export function CronJobDetail(props: { namespace: string; name: string }) {
             variant="destructive"
             size="sm"
             onClick={() => setIsDeleteDialogOpen(true)}
-            disabled={isDeleting}
           >
             <IconTrash className="w-4 h-4" />
             Delete
@@ -693,14 +675,12 @@ export function CronJobDetail(props: { namespace: string; name: string }) {
         ]}
       />
 
-      <DeleteConfirmationDialog
+      <ResourceDeleteConfirmationDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={handleDelete}
         resourceName={name}
-        resourceType="cronjob"
+        resourceType="cronjobs"
         namespace={namespace}
-        isDeleting={isDeleting}
       />
     </div>
   )

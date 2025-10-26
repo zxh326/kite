@@ -582,5 +582,17 @@
       "desiredScheduled": "Desired Scheduled",
       "currentScheduled": "Current Scheduled"
     }
+  },
+  "deleteConfirmation": {
+    "title": "Delete {{type}}",
+    "description": "This action cannot be undone.",
+    "aboutToDelete": "You are about to delete:",
+    "type": "Type",
+    "typeToConfirm": "Type",
+    "toConfirm": "to confirm:",
+    "wait": "Wait",
+    "forceDelete": "Force delete (set grace period to 0)",
+    "finalizerNote": "If finalizers exist and resource is not deleted after 3 seconds, finalizers will be removed automatically",
+    "deleting": "Deleting..."
   }
 }
