@@ -23,6 +23,7 @@ import {
   Trash2,
   XCircle,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { ResourceType } from '@/types/api'
@@ -81,6 +82,7 @@ export function ResourceTable<T>({
   showCreateButton = false,
   onCreateClick,
 }: ResourceTableProps<T>) {
+  const { t } = useTranslation()
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
@@ -234,7 +236,7 @@ export function ResourceTable<T>({
       if (!hasNamespaceColumn) {
         const namespaceColumn = {
           id: 'namespace',
-          header: 'Namespace',
+          header: t('resourceTable.namespace'),
           accessorFn: (row: T) => {
             // Try to get namespace from metadata.namespace
             const metadata = (row as { metadata?: { namespace?: string } })
@@ -255,7 +257,7 @@ export function ResourceTable<T>({
       }
     }
     return baseColumns
-  }, [columns, clusterScope, selectedNamespace])
+  }, [columns, clusterScope, selectedNamespace, t])
 
   const data = useMemo(() => {
     if (useSSE) return watchData
@@ -324,16 +326,12 @@ export function ResourceTable<T>({
       .getSelectedRowModel()
       .rows.map((row) => row.original)
 
-    console.log('Selected rows:', selectedRows)
-
     const deletePromises = selectedRows.map((row) => {
       const metadata = (
         row as { metadata?: { name?: string; namespace?: string } }
       )?.metadata
       const name = metadata?.name
       const namespace = clusterScope ? undefined : metadata?.namespace
-
-      console.log('Deleting resource:', { name, namespace })
 
       if (!name) {
         return Promise.resolve()
@@ -345,19 +343,19 @@ export function ResourceTable<T>({
         namespace
       )
         .then(() => {
-          console.log(`Successfully deleted ${name}`)
-          toast.success(`Deleted ${name} successfully`)
+          toast.success(t('resourceTable.deleteSuccess', { name }))
         })
         .catch((error) => {
           console.error(`Failed to delete ${name}:`, error)
-          toast.error(`Failed to delete ${name}: ${error.message}`)
+          toast.error(
+            t('resourceTable.deleteFailed', { name, error: error.message })
+          )
           throw error
         })
     })
 
     try {
       await Promise.allSettled(deletePromises)
-      console.log('All delete operations completed')
       // Reset selection and close dialog
       setRowSelection({})
       setDeleteDialogOpen(false)
@@ -366,7 +364,7 @@ export function ResourceTable<T>({
     } finally {
       setIsDeleting(false)
     }
-  }, [table, clusterScope, resourceType, resourceName, refetch])
+  }, [table, clusterScope, resourceType, resourceName, refetch, t])
 
   // Calculate total and filtered row counts
   const totalRowCount = useMemo(
@@ -473,7 +471,7 @@ export function ResourceTable<T>({
         {row.getVisibleCells().map((cell, index) => (
           <TableCell
             key={cell.id}
-            className={`align-middle ${index === 0 ? 'text-left' : 'text-center'}`}
+            className={`align-middle ${index <= 1 ? 'text-left' : 'text-center'}`}
           >
             {cell.column.columnDef.cell
               ? flexRender(cell.column.columnDef.cell, cell.getContext())
@@ -509,10 +507,10 @@ export function ResourceTable<T>({
                 <Label className="text-sm">
                   {useSSE ? (
                     <ConnectionIndicator isConnected={isConnected}>
-                      Watch
+                      {t('resourceTable.watch')}
                     </ConnectionIndicator>
                   ) : (
-                    'Watch'
+                    t('resourceTable.watch')
                   )}
                 </Label>
                 <Switch
@@ -639,7 +637,9 @@ export function ResourceTable<T>({
               className="gap-2"
             >
               <Trash2 className="h-4 w-4" />
-              Delete ({table.getSelectedRowModel().rows.length})
+              {t('resourceTable.deleteSelected', {
+                count: table.getSelectedRowModel().rows.length,
+              })}
             </Button>
           )}
           {showCreateButton && onCreateClick && (
@@ -668,7 +668,7 @@ export function ResourceTable<T>({
                     {headerGroup.headers.map((header, index) => (
                       <TableHead
                         key={header.id}
-                        className={index === 0 ? 'text-left' : 'text-center'}
+                        className={index <= 1 ? 'text-left' : 'text-center'}
                       >
                         {header.isPlaceholder ? null : header.column.getCanSort() ? (
                           <Button
@@ -783,11 +783,12 @@ export function ResourceTable<T>({
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogTitle>{t('resourceTable.confirmDeletion')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete{' '}
-              {table.getSelectedRowModel().rows.length} selected{' '}
-              {resourceName.toLowerCase()}? This action cannot be undone.
+              {t('resourceTable.confirmDeletionMessage', {
+                count: table.getSelectedRowModel().rows.length,
+                resourceName: resourceName.toLowerCase(),
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -796,14 +797,14 @@ export function ResourceTable<T>({
               onClick={() => setDeleteDialogOpen(false)}
               disabled={isDeleting}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleBatchDelete}
               disabled={isDeleting}
             >
-              {isDeleting ? 'Deleting...' : 'Delete'}
+              {isDeleting ? t('resourceTable.deleting') : t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -229,7 +229,18 @@
   },
   "resourceTable": {
     "errorLoading": "Error loading {{resourceName}}",
-    "tryAgain": "Try Again"
+    "tryAgain": "Try Again",
+    "delete": "Delete",
+    "deleteSelected": "Delete ({{count}})",
+    "selectAll": "Select All ({{count}})",
+    "deselectAll": "Deselect All",
+    "confirmDeletion": "Confirm Deletion",
+    "confirmDeletionMessage": "Are you sure you want to delete {{count}} selected {{resourceName}}? This action cannot be undone.",
+    "deleting": "Deleting...",
+    "deleteSuccess": "Deleted {{name}} successfully",
+    "deleteFailed": "Failed to delete {{name}}: {{error}}",
+    "watch": "Watch",
+    "namespace": "Namespace"
   },
   "rbac": {
     "noPermissionCluster": "User {{user}} does not have permission to {{verb}} {{resource}} on cluster {{cluster}}",
