@@ -8,23 +8,23 @@ import {
 import * as yaml from 'js-yaml'
 import { Service } from 'kubernetes-types/core/v1'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { ResourceType } from '@/types/api'
-import { deleteResource, updateResource, useResource } from '@/lib/api'
+import { updateResource, useResource } from '@/lib/api'
 import { getOwnerInfo } from '@/lib/k8s'
 import { formatDate, translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 import { DescribeDialog } from '@/components/describe-dialog'
 import { ErrorMessage } from '@/components/error-message'
 import { EventTable } from '@/components/event-table'
 import { LabelsAnno } from '@/components/lables-anno'
 import { RelatedResourcesTable } from '@/components/related-resource-table'
+import { ResourceDeleteConfirmationDialog } from '@/components/resource-delete-confirmation-dialog'
 import { ResourceHistoryTable } from '@/components/resource-history-table'
 import { YamlEditor } from '@/components/yaml-editor'
 
@@ -34,8 +34,6 @@ export function ServiceDetail(props: { name: string; namespace?: string }) {
   const [isSavingYaml, setIsSavingYaml] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const navigate = useNavigate()
 
   const { t } = useTranslation()
 
@@ -52,22 +50,6 @@ export function ServiceDetail(props: { name: string; namespace?: string }) {
       setYamlContent(yaml.dump(data, { indent: 2 }))
     }
   }, [data])
-
-  const handleDelete = async () => {
-    setIsDeleting(true)
-    try {
-      await deleteResource('services', name, namespace)
-      toast.success(`Service deleted successfully`)
-
-      // Navigate back to the services list page
-      navigate(`/${'services'}`)
-    } catch (error) {
-      toast.error(translateError(error, t))
-    } finally {
-      setIsDeleting(false)
-      setIsDeleteDialogOpen(false)
-    }
-  }
 
   const handleSaveYaml = async (content: Service) => {
     setIsSavingYaml(true)
@@ -141,7 +123,7 @@ export function ServiceDetail(props: { name: string; namespace?: string }) {
             Refresh
           </Button>
           <DescribeDialog
-            resourceType={'service' as ResourceType}
+            resourceType={'services' as ResourceType}
             namespace={namespace}
             name={name}
           />
@@ -149,7 +131,6 @@ export function ServiceDetail(props: { name: string; namespace?: string }) {
             variant="destructive"
             size="sm"
             onClick={() => setIsDeleteDialogOpen(true)}
-            disabled={isDeleting}
           >
             <IconTrash className="w-4 h-4" />
             Delete
@@ -299,14 +280,12 @@ export function ServiceDetail(props: { name: string; namespace?: string }) {
         ]}
       />
 
-      <DeleteConfirmationDialog
+      <ResourceDeleteConfirmationDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={handleDelete}
         resourceName={name}
-        resourceType={'services'}
+        resourceType="services"
         namespace={namespace}
-        isDeleting={isDeleting}
       />
     </div>
   )

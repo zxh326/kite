@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/cluster"
@@ -15,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/klog/v2"
 	"k8s.io/kubectl/pkg/describe"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -379,12 +381,40 @@ func (h *CRHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	// Delete the custom resource
-	if err := cs.K8sClient.Delete(ctx, cr, &client.DeleteOptions{
-		PropagationPolicy: &[]metav1.DeletionPropagation{metav1.DeletePropagationForeground}[0],
-	}); err != nil {
+	forceDelete := c.Query("force") == "true"
+
+	opts := &client.DeleteOptions{
+		PropagationPolicy: &[]metav1.DeletionPropagation{metav1.DeletePropagationBackground}[0],
+	}
+	if forceDelete {
+		gracePeriodSeconds := int64(0)
+		opts.GracePeriodSeconds = &gracePeriodSeconds
+	}
+	if err := cs.K8sClient.Delete(ctx, cr, opts); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	if wait := c.Query("wait") != "false"; wait {
+		timeout := 1 * time.Minute
+		if forceDelete {
+			timeout = 3 * time.Second
+		}
+		err := kube.WaitForResourceDeletion(ctx, cs.K8sClient, cr, timeout)
+		if err != nil {
+			if forceDelete {
+				cr.SetFinalizers([]string{})
+				if err := cs.K8sClient.Update(ctx, cr); err != nil {
+					klog.Errorf("Failed to remove finalizers for %s/%s: %v", cr.GetNamespace(), cr.GetName(), err)
+				}
+				err = kube.WaitForResourceDeletion(ctx, cs.K8sClient, cr, 1*time.Second)
+				if err == nil {
+					return
+				}
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Custom resource deleted successfully"})

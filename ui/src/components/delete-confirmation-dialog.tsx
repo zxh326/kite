@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -18,10 +20,11 @@ interface DeleteConfirmationDialogProps {
   onOpenChange: (open: boolean) => void
   resourceName: string
   resourceType: string
-  onConfirm: () => void
+  onConfirm: (force?: boolean, wait?: boolean) => void
   isDeleting?: boolean
   namespace?: string
   additionalNote?: string
+  showAdditionalOptions?: boolean
 }
 
 export function DeleteConfirmationDialog({
@@ -30,22 +33,27 @@ export function DeleteConfirmationDialog({
   resourceName,
   resourceType,
   onConfirm,
-  isDeleting = false,
+  isDeleting,
   namespace,
   additionalNote,
+  showAdditionalOptions = false,
 }: DeleteConfirmationDialogProps) {
+  const { t } = useTranslation()
   const [confirmationInput, setConfirmationInput] = useState('')
+  const [forceDelete, setForceDelete] = useState(false)
+  const [wait, setWait] = useState(true)
 
   const handleDialogChange = (open: boolean) => {
     if (!open) {
       setConfirmationInput('')
+      setForceDelete(false)
     }
     onOpenChange(open)
   }
 
   const handleConfirm = () => {
     if (confirmationInput === resourceName) {
-      onConfirm()
+      onConfirm(forceDelete, wait)
     }
   }
 
@@ -61,10 +69,10 @@ export function DeleteConfirmationDialog({
             </div>
             <div className="flex-1">
               <DialogTitle className="text-left">
-                Delete {resourceType}
+                {t('deleteConfirmation.title', { type: resourceType })}
               </DialogTitle>
               <DialogDescription className="text-left">
-                This action cannot be undone.
+                {t('deleteConfirmation.description')}
               </DialogDescription>
             </div>
           </div>
@@ -77,18 +85,25 @@ export function DeleteConfirmationDialog({
           <div className="rounded-lg bg-destructive/5 p-4 border border-destructive/20">
             <div className="text-sm">
               <p className="font-medium text-destructive mb-2">
-                You are about to delete:
+                {t('deleteConfirmation.aboutToDelete')}
               </p>
               <div className="space-y-1 text-muted-foreground">
                 <p>
-                  <span className="font-medium">Name:</span> {resourceName}
+                  <span className="font-medium">{t('common.name')}:</span>{' '}
+                  {resourceName}
                 </p>
                 <p>
-                  <span className="font-medium">Type:</span> {resourceType}
+                  <span className="font-medium">
+                    {t('deleteConfirmation.type')}:
+                  </span>{' '}
+                  {resourceType}
                 </p>
                 {namespace && (
                   <p>
-                    <span className="font-medium">Namespace:</span> {namespace}
+                    <span className="font-medium">
+                      {t('common.namespace')}:
+                    </span>{' '}
+                    {namespace}
                   </p>
                 )}
               </div>
@@ -97,8 +112,9 @@ export function DeleteConfirmationDialog({
 
           <div className="space-y-2">
             <Label htmlFor="confirmation">
-              Type <span className=" font-semibold">{resourceName}</span> to
-              confirm:
+              {t('deleteConfirmation.typeToConfirm')}{' '}
+              <span className=" font-semibold">{resourceName}</span>{' '}
+              {t('deleteConfirmation.toConfirm')}
             </Label>
             <Input
               id="confirmation"
@@ -108,6 +124,42 @@ export function DeleteConfirmationDialog({
               autoComplete="off"
             />
           </div>
+          {showAdditionalOptions && (
+            <>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="wait"
+                  checked={wait}
+                  onCheckedChange={(checked) => setWait(checked === true)}
+                />
+                <label
+                  htmlFor="wait"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {t('deleteConfirmation.wait')}
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="force-delete"
+                  checked={forceDelete}
+                  onCheckedChange={(checked) =>
+                    setForceDelete(checked === true)
+                  }
+                />
+                <label
+                  htmlFor="force-delete"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {t('deleteConfirmation.forceDelete')}
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground ml-6 -mt-2">
+                {t('deleteConfirmation.finalizerNote')}
+              </p>
+            </>
+          )}
         </div>
 
         <DialogFooter>
@@ -116,14 +168,14 @@ export function DeleteConfirmationDialog({
             onClick={() => handleDialogChange(false)}
             disabled={isDeleting}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             variant="destructive"
             onClick={handleConfirm}
             disabled={isConfirmDisabled}
           >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {isDeleting ? t('deleteConfirmation.deleting') : t('common.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>

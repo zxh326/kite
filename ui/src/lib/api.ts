@@ -255,10 +255,21 @@ export const createResource = async <T extends ResourceType>(
 export const deleteResource = async <T extends ResourceType>(
   resource: T,
   name: string,
-  namespace: string | undefined
+  namespace: string | undefined,
+  opts?: {
+    force?: boolean
+    wait?: boolean
+  }
 ): Promise<void> => {
-  const endpoint = `/${resource}/${namespace || '_all'}/${name}`
-  await apiClient.delete(`${endpoint}`)
+  const params = new URLSearchParams()
+  if (opts?.force) {
+    params.append('force', 'true')
+  }
+  if (opts?.wait) {
+    params.append('wait', 'true')
+  }
+  const endpoint = `/${resource}/${namespace || '_all'}/${name}?${params.toString()}`
+  await apiClient.delete(endpoint)
 }
 
 // Apply resource from YAML

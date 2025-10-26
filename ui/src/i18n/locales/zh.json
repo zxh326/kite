@@ -538,5 +538,17 @@
       "keyLabel": "API 密钥",
       "assignRoles": "分配角色"
     }
+  },
+  "deleteConfirmation": {
+    "title": "删除{{type}}",
+    "description": "此操作无法撤销。",
+    "aboutToDelete": "您即将删除：",
+    "type": "类型",
+    "typeToConfirm": "输入",
+    "toConfirm": "以确认：",
+    "wait": "等待",
+    "forceDelete": "强制删除（将宽限期设置为 0）",
+    "finalizerNote": "如果存在 finalizer，3 秒后如果还未被删除，将会自动清理 finalizer",
+    "deleting": "删除中..."
   }
 }

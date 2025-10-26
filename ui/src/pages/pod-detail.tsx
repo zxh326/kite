@@ -8,10 +8,10 @@ import {
 import * as yaml from 'js-yaml'
 import { Pod } from 'kubernetes-types/core/v1'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
-import { deleteResource, updateResource, useResource } from '@/lib/api'
+import { updateResource, useResource } from '@/lib/api'
 import { getOwnerInfo, getPodErrorMessage, getPodStatus } from '@/lib/k8s'
 import { formatDate, translateError } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -20,7 +20,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { ContainerTable } from '@/components/container-table'
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 import { DescribeDialog } from '@/components/describe-dialog'
 import { ErrorMessage } from '@/components/error-message'
 import { EventTable } from '@/components/event-table'
@@ -29,6 +28,7 @@ import { LogViewer } from '@/components/log-viewer'
 import { PodMonitoring } from '@/components/pod-monitoring'
 import { PodStatusIcon } from '@/components/pod-status-icon'
 import { RelatedResourcesTable } from '@/components/related-resource-table'
+import { ResourceDeleteConfirmationDialog } from '@/components/resource-delete-confirmation-dialog'
 import { Terminal } from '@/components/terminal'
 import { VolumeTable } from '@/components/volume-table'
 import { YamlEditor } from '@/components/yaml-editor'
@@ -39,9 +39,7 @@ export function PodDetail(props: { namespace: string; name: string }) {
   const [isSavingYaml, setIsSavingYaml] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
 
-  const navigate = useNavigate()
   const { t } = useTranslation()
 
   const {
@@ -80,22 +78,6 @@ export function PodDetail(props: { namespace: string; name: string }) {
     // Increment refresh key to force YamlEditor re-render
     setRefreshKey((prev) => prev + 1)
     await handleRefresh()
-  }
-
-  const handleDelete = async () => {
-    setIsDeleting(true)
-    try {
-      await deleteResource('pods', name, namespace)
-      toast.success('Pod deleted successfully')
-
-      // Navigate back to the pods list page
-      navigate(`/pods`)
-    } catch (error) {
-      toast.error(translateError(error, t))
-    } finally {
-      setIsDeleting(false)
-      setIsDeleteDialogOpen(false)
-    }
   }
 
   const podStatus = useMemo(() => {
@@ -151,7 +133,6 @@ export function PodDetail(props: { namespace: string; name: string }) {
             variant="destructive"
             size="sm"
             onClick={() => setIsDeleteDialogOpen(true)}
-            disabled={isDeleting}
           >
             <IconTrash className="w-4 h-4" />
             Delete
@@ -511,14 +492,12 @@ export function PodDetail(props: { namespace: string; name: string }) {
         ]}
       />
 
-      <DeleteConfirmationDialog
+      <ResourceDeleteConfirmationDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={handleDelete}
         resourceName={name}
-        resourceType="pod"
+        resourceType="pods"
         namespace={namespace}
-        isDeleting={isDeleting}
       />
     </div>
   )
