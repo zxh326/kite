@@ -59,7 +59,7 @@ spec:
             - name: DB_TYPE
               value: sqlite
             - name: DB_DSN
-              value: {{ (printf "%s/%s" .Values.db.sqlite.persistence.mountPath .Values.db.sqlite.persistence.filename) }}
+              value: {{ (printf "%s/%s?%s" .Values.db.sqlite.persistence.mountPath .Values.db.sqlite.persistence.filename .Values.db.sqlite.options) }}
             {{- end }}
           {{- with .Values.extraEnvs }}
           {{- toYaml . | nindent 12 }}
