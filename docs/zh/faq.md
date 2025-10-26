@@ -30,6 +30,31 @@ Kite 作为服务端应用运行，无法执行这些客户端身份验证工具
 
 请参考[托管 Kubernetes 集群配置指南](./config/managed-k8s-auth)，了解如何创建和使用 Service Account token 进行身份验证的详细说明。
 
+## SQLite 使用 hostPath 存储问题
+
+如果您使用 SQLite 作为数据库，并在使用 `hostPath` 进行持久化存储时遇到"out of memory"错误：
+
+```txt
+panic: failed to connect database: unable to open database file: out of memory (14)
+```
+
+此问题与 Kite 使用的纯 Go SQLite 驱动有关（为避免 CGO 依赖）。该驱动在访问某些存储后端上的数据
+库文件时存在限制。
+
+**解决方案**：添加 SQLite 连接选项以提高与 hostPath 存储的兼容性。在 Helm values 中设置：
+
+```yaml
+db:
+  sqlite:
+    options: "_journal_mode=WAL&_busy_timeout=5000"
+```
+
+这些选项启用预写日志（WAL）模式并增加忙碌超时时间，可以解决大多数 hostPath 兼容性问题。
+
+**生产环境推荐**：对于需要持久化存储的生产环境部署，建议使用 MySQL 或 PostgreSQL 代替 SQLite。这些数据库更适合容器化环境和持久化存储场景。
+
+更多详情请参见 [Issue #204](https://github.com/zxh326/kite/issues/204)。
+
 ## 如何更改字体
 
 Kite 默认提供三种字体：系统默认、`Maple Mono` 和 `JetBrains Mono`。

@@ -30,6 +30,30 @@ Kite runs as a server-side application and cannot execute these client-side auth
 
 Please refer to the [Managed Kubernetes Cluster Configuration Guide](./config/managed-k8s-auth) for detailed instructions on creating and using Service Account tokens for authentication.
 
+## SQLite with hostPath Storage
+
+If you're using SQLite as the database and encountering an "out of memory" error when using `hostPath` for persistent storage:
+
+```txt
+panic: failed to connect database: unable to open database file: out of memory (14)
+```
+
+This issue is related to the pure Go SQLite driver used by Kite (to avoid CGO dependencies). The driver has limitations when accessing database files on certain storage backends.
+
+**Solution**: Add SQLite connection options to improve compatibility with hostPath storage. In your Helm values, set:
+
+```yaml
+db:
+  sqlite:
+    options: "_journal_mode=WAL&_busy_timeout=5000"
+```
+
+These options enable Write-Ahead Logging (WAL) mode and increase the busy timeout, which resolves most hostPath compatibility issues.
+
+**Recommended for Production**: For production deployments requiring persistent storage, use MySQL or PostgreSQL instead of SQLite. These databases are better suited for containerized environments and persistent storage scenarios.
+
+For more details, see [Issue #204](https://github.com/zxh326/kite/issues/204).
+
 ## How to Change Font
 
 By default, Kite provides three fonts: system default, `Maple Mono`, and `JetBrains Mono`.
