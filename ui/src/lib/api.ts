@@ -265,8 +265,8 @@ export const deleteResource = async <T extends ResourceType>(
   if (opts?.force) {
     params.append('force', 'true')
   }
-  if (opts?.wait) {
-    params.append('wait', 'true')
+  if (opts?.wait === false) {
+    params.append('wait', 'false')
   }
   const endpoint = `/${resource}/${namespace || '_all'}/${name}?${params.toString()}`
   await apiClient.delete(endpoint)

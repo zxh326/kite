@@ -243,7 +243,18 @@
   },
   "resourceTable": {
     "errorLoading": "加载 {{resourceName}} 时出错",
-    "tryAgain": "重试"
+    "tryAgain": "重试",
+    "delete": "删除",
+    "deleteSelected": "删除 ({{count}})",
+    "selectAll": "全选 ({{count}})",
+    "deselectAll": "取消全选",
+    "confirmDeletion": "确认删除",
+    "confirmDeletionMessage": "确定要删除选中的 {{count}} 个 {{resourceName}} 吗？此操作无法撤销。",
+    "deleting": "删除中...",
+    "deleteSuccess": "成功删除 {{name}}",
+    "deleteFailed": "删除 {{name}} 失败：{{error}}",
+    "watch": "监听",
+    "namespace": "命名空间"
   },
   "rbac": {
     "title": "角色管理",

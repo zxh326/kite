@@ -10,15 +10,35 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   PaginationState,
+  RowSelectionState,
   SortingState,
   useReactTable,
 } from '@tanstack/react-table'
-import { Box, Database, Plus, RefreshCw, Search, XCircle } from 'lucide-react'
+import {
+  Box,
+  Database,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+  XCircle,
+} from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 
 import { ResourceType } from '@/types/api'
-import { useResources, useResourcesWatch } from '@/lib/api'
+import { deleteResource, useResources, useResourcesWatch } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -62,8 +82,12 @@ export function ResourceTable<T>({
   showCreateButton = false,
   onCreateClick,
 }: ResourceTableProps<T>) {
+  const { t } = useTranslation()
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [searchQuery, setSearchQuery] = useState<string>(() => {
     const currentCluster = localStorage.getItem('current-cluster')
     const storageKey = `${currentCluster}-${resourceName}-searchQuery`
@@ -168,6 +192,31 @@ export function ResourceTable<T>({
 
   // Add namespace column when showing all namespaces
   const enhancedColumns = useMemo(() => {
+    const selectColumn: ColumnDef<T> = {
+      id: 'select',
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && 'indeterminate')
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    }
+
+    const baseColumns = [selectColumn, ...columns]
+
     // Only add namespace column if not cluster scope, showing all namespaces,
     // and there isn't already a namespace column in the provided columns
     if (!clusterScope && selectedNamespace === '_all') {
@@ -187,7 +236,7 @@ export function ResourceTable<T>({
       if (!hasNamespaceColumn) {
         const namespaceColumn = {
           id: 'namespace',
-          header: 'Namespace',
+          header: t('resourceTable.namespace'),
           accessorFn: (row: T) => {
             // Try to get namespace from metadata.namespace
             const metadata = (row as { metadata?: { namespace?: string } })
@@ -201,14 +250,14 @@ export function ResourceTable<T>({
           ),
         }
 
-        // Insert namespace column after the first column (typically name)
-        const newColumns = [...columns]
-        newColumns.splice(1, 0, namespaceColumn)
-        return newColumns
+        // Insert namespace column after select and first column (typically name)
+        const columnsWithNamespace = [...baseColumns]
+        columnsWithNamespace.splice(2, 0, namespaceColumn)
+        return columnsWithNamespace
       }
     }
-    return columns
-  }, [columns, clusterScope, selectedNamespace])
+    return baseColumns
+  }, [columns, clusterScope, selectedNamespace, t])
 
   const data = useMemo(() => {
     if (useSSE) return watchData
@@ -241,11 +290,13 @@ export function ResourceTable<T>({
     getFacetedUniqueValues: getFacetedUniqueValues(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
+    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
       columnFilters,
       globalFilter: searchQuery,
       pagination,
+      rowSelection,
     },
     onPaginationChange: setPagination,
     // Let TanStack Table handle pagination automatically based on filtered data
@@ -265,7 +316,55 @@ export function ResourceTable<T>({
     },
     // Add this to prevent unnecessary pagination resets
     autoResetPageIndex: false,
+    enableRowSelection: true,
   })
+
+  // Handle batch delete - must be after table is defined
+  const handleBatchDelete = useCallback(async () => {
+    setIsDeleting(true)
+    const selectedRows = table
+      .getSelectedRowModel()
+      .rows.map((row) => row.original)
+
+    const deletePromises = selectedRows.map((row) => {
+      const metadata = (
+        row as { metadata?: { name?: string; namespace?: string } }
+      )?.metadata
+      const name = metadata?.name
+      const namespace = clusterScope ? undefined : metadata?.namespace
+
+      if (!name) {
+        return Promise.resolve()
+      }
+
+      return deleteResource(
+        resourceType ?? (resourceName.toLowerCase() as ResourceType),
+        name,
+        namespace
+      )
+        .then(() => {
+          toast.success(t('resourceTable.deleteSuccess', { name }))
+        })
+        .catch((error) => {
+          console.error(`Failed to delete ${name}:`, error)
+          toast.error(
+            t('resourceTable.deleteFailed', { name, error: error.message })
+          )
+          throw error
+        })
+    })
+
+    try {
+      await Promise.allSettled(deletePromises)
+      // Reset selection and close dialog
+      setRowSelection({})
+      setDeleteDialogOpen(false)
+      // Refetch data
+      refetch()
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [table, clusterScope, resourceType, resourceName, refetch, t])
 
   // Calculate total and filtered row counts
   const totalRowCount = useMemo(
@@ -372,7 +471,7 @@ export function ResourceTable<T>({
         {row.getVisibleCells().map((cell, index) => (
           <TableCell
             key={cell.id}
-            className={`align-middle ${index === 0 ? 'text-left' : 'text-center'}`}
+            className={`align-middle ${index <= 1 ? 'text-left' : 'text-center'}`}
           >
             {cell.column.columnDef.cell
               ? flexRender(cell.column.columnDef.cell, cell.getContext())
@@ -408,10 +507,10 @@ export function ResourceTable<T>({
                 <Label className="text-sm">
                   {useSSE ? (
                     <ConnectionIndicator isConnected={isConnected}>
-                      Watch
+                      {t('resourceTable.watch')}
                     </ConnectionIndicator>
                   ) : (
-                    'Watch'
+                    t('resourceTable.watch')
                   )}
                 </Label>
                 <Switch
@@ -530,6 +629,19 @@ export function ResourceTable<T>({
               </Button>
             )}
           </div>
+          {/* Batch delete button */}
+          {table.getSelectedRowModel().rows.length > 0 && (
+            <Button
+              variant="destructive"
+              onClick={() => setDeleteDialogOpen(true)}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              {t('resourceTable.deleteSelected', {
+                count: table.getSelectedRowModel().rows.length,
+              })}
+            </Button>
+          )}
           {showCreateButton && onCreateClick && (
             <Button onClick={onCreateClick} className="gap-1">
               <Plus className="h-2 w-2" />
@@ -556,7 +668,7 @@ export function ResourceTable<T>({
                     {headerGroup.headers.map((header, index) => (
                       <TableHead
                         key={header.id}
-                        className={index === 0 ? 'text-left' : 'text-center'}
+                        className={index <= 1 ? 'text-left' : 'text-center'}
                       >
                         {header.isPlaceholder ? null : header.column.getCanSort() ? (
                           <Button
@@ -566,7 +678,10 @@ export function ResourceTable<T>({
                               header.column.getIsSorted() ? 'text-primary' : ''
                             }
                           >
-                            {header.column.columnDef.header as React.ReactNode}
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                             {header.column.getIsSorted() && (
                               <span className="ml-2">
                                 {header.column.getIsSorted() === 'asc'
@@ -576,7 +691,10 @@ export function ResourceTable<T>({
                             )}
                           </Button>
                         ) : (
-                          (header.column.columnDef.header as React.ReactNode)
+                          flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )
                         )}
                       </TableHead>
                     ))}
@@ -660,6 +778,37 @@ export function ResourceTable<T>({
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('resourceTable.confirmDeletion')}</DialogTitle>
+            <DialogDescription>
+              {t('resourceTable.confirmDeletionMessage', {
+                count: table.getSelectedRowModel().rows.length,
+                resourceName: resourceName.toLowerCase(),
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleBatchDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? t('resourceTable.deleting') : t('common.delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
