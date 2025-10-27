@@ -13,6 +13,7 @@ import { toast } from 'sonner'
 
 import { updateResource, useResource } from '@/lib/api'
 import { getOwnerInfo, getPodErrorMessage, getPodStatus } from '@/lib/k8s'
+import { withSubPath } from '@/lib/subpath'
 import { formatDate, translateError } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -288,7 +289,9 @@ export function PodDetail(props: { namespace: string; name: string }) {
                                 key={`${port.containerPort}-${port.protocol}`}
                               >
                                 <a
-                                  href={`/api/v1/namespaces/${namespace}/pods/${name}:${port.containerPort}/proxy/`}
+                                  href={withSubPath(
+                                    `/api/v1/namespaces/${namespace}/pods/${name}:${port.containerPort}/proxy/`
+                                  )}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="font-mono text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"

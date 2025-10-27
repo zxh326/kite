@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import { ResourceType } from '@/types/api'
 import { updateResource, useResource } from '@/lib/api'
 import { getOwnerInfo } from '@/lib/k8s'
+import { withSubPath } from '@/lib/subpath'
 import { formatDate, translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -201,7 +202,9 @@ export function ServiceDetail(props: { name: string; namespace?: string }) {
                             (port, index, array) => (
                               <span key={`${port.port}-${port.protocol}`}>
                                 <a
-                                  href={`/api/v1/namespaces/${namespace}/services/${name}:${port.port}/proxy/`}
+                                  href={withSubPath(
+                                    `/api/v1/namespaces/${namespace}/services/${name}:${port.port}/proxy/`
+                                  )}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="font-mono text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"

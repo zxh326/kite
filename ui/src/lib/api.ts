@@ -22,6 +22,7 @@ import {
 } from '@/types/api'
 
 import { API_BASE_URL, apiClient } from './api-client'
+import { getWebSocketUrl } from './subpath'
 import useWebSocket, { WebSocketMessage } from './useWebSocket'
 
 type ResourcesItems<T extends ResourceType> = ResourcesTypeMap[T]['items']
@@ -1139,10 +1140,8 @@ export const useLogsWebSocket = (
       params.append('x-cluster-name', currentCluster)
     }
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const isDev = process.env.NODE_ENV === 'development'
-    const host = isDev ? 'localhost:8080' : window.location.host
-    return `${protocol}//${host}/api/v1/logs/${namespace}/${podName}/ws?${params.toString()}`
+    const wsPath = `/api/v1/logs/${namespace}/${podName}/ws?${params.toString()}`
+    return getWebSocketUrl(wsPath)
   }, [
     namespace,
     podName,

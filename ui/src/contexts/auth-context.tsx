@@ -7,6 +7,8 @@ import {
   useState,
 } from 'react'
 
+import { withSubPath } from '@/lib/subpath'
+
 interface User {
   id: string
   username: string
@@ -44,8 +46,6 @@ interface AuthProviderProps {
   children: ReactNode
 }
 
-const base = ''
-
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const loadProviders = async () => {
     try {
-      const response = await fetch(`${base}/api/auth/providers`)
+      const response = await fetch(withSubPath('/api/auth/providers'))
       if (response.ok) {
         const data = await response.json()
         setProviders(data.providers || [])
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const checkAuth = async () => {
     try {
-      const response = await fetch(`${base}/api/auth/user`, {
+      const response = await fetch(withSubPath('/api/auth/user'), {
         credentials: 'include',
       })
 
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (provider: string = 'github') => {
     try {
       const response = await fetch(
-        `${base}/api/auth/login?provider=${provider}`,
+        withSubPath(`/api/auth/login?provider=${provider}`),
         {
           credentials: 'include',
         }
@@ -114,7 +114,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const loginWithPassword = async (username: string, password: string) => {
     try {
-      const response = await fetch(`${base}/api/auth/login/password`, {
+      const response = await fetch(withSubPath('/api/auth/login/password'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -137,7 +137,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const refreshToken = async () => {
     try {
-      const response = await fetch(`${base}/api/auth/refresh`, {
+      const response = await fetch(withSubPath('/api/auth/refresh'), {
         method: 'POST',
         credentials: 'include',
       })
@@ -147,22 +147,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     } catch (error) {
       console.error('Token refresh failed:', error)
-      // If refresh fails, redirect to login
       setUser(null)
-      window.location.href = '/login'
+      window.location.href = withSubPath('/login')
     }
   }
 
   const logout = async () => {
     try {
-      const response = await fetch(`${base}/api/auth/logout`, {
+      const response = await fetch(withSubPath('/api/auth/logout'), {
         method: 'POST',
         credentials: 'include',
       })
 
       if (response.ok) {
         setUser(null)
-        window.location.href = '/login'
+        window.location.href = withSubPath('/login')
       } else {
         throw new Error('Failed to logout')
       }

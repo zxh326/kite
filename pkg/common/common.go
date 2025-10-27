@@ -2,6 +2,7 @@ package common
 
 import (
 	"os"
+	"strings"
 
 	"k8s.io/klog/v2"
 )
@@ -19,6 +20,7 @@ var (
 	JwtSecret       = "kite-default-jwt-secret-key-change-in-production"
 	EnableAnalytics = false
 	Host            = ""
+	Base            = ""
 
 	NodeTerminalImage = "busybox:latest"
 	DBType            = "sqlite"
@@ -83,5 +85,13 @@ func LoadEnvs() {
 
 	if v := os.Getenv("DISABLE_VERSION_CHECK"); v == "true" {
 		DisableVersionCheck = true
+	}
+
+	if v := os.Getenv("KITE_BASE"); v != "" {
+		if v[0] != '/' {
+			v = "/" + v
+		}
+		Base = strings.TrimRight(v, "/")
+		klog.Infof("Using base path: %s", Base)
 	}
 }

@@ -701,7 +701,7 @@ export function ResourceTable<T>({
                   </TableRow>
                 ))}
               </TableHeader>
-              <TableBody className="**:data-[slot=table-cell]:first:w-8">
+              <TableBody className="**:data-[slot=table-cell]:first:w-0">
                 {renderRows()}
               </TableBody>
             </Table>
