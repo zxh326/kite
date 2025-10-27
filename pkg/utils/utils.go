@@ -16,9 +16,6 @@ func InjectAnalytics(htmlContent string) string {
 }
 
 func InjectKiteBase(htmlContent string, base string) string {
-	if base == "" {
-		return htmlContent
-	}
 	baseScript := fmt.Sprintf(`<script>window.__dynamic_base__='%s';</script>`, base)
 	re := regexp.MustCompile(`<head>`)
 	return re.ReplaceAllString(htmlContent, "<head>\n    "+baseScript)
