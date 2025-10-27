@@ -1,4 +1,6 @@
 // API client with authentication support
+import { withSubPath } from './subpath'
+
 class ApiClient {
   private baseUrl: string = ''
   private isRefreshing = false
@@ -9,7 +11,6 @@ class ApiClient {
     this.baseUrl = baseUrl
   }
 
-  // Set cluster provider function
   setClusterProvider(provider: () => string | null) {
     this.getCurrentCluster = provider
   }
@@ -20,7 +21,7 @@ class ApiClient {
     }
 
     this.isRefreshing = true
-    this.refreshPromise = fetch('/api/auth/refresh', {
+    this.refreshPromise = fetch(withSubPath('/api/auth/refresh'), {
       method: 'POST',
       credentials: 'include',
     })
@@ -41,7 +42,7 @@ class ApiClient {
     url: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const fullUrl = this.baseUrl + url
+    const fullUrl = withSubPath(this.baseUrl + url)
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -71,9 +72,8 @@ class ApiClient {
           // Retry the original request
           response = await fetch(fullUrl, defaultOptions)
         } catch (refreshError) {
-          // If refresh fails, redirect to login page
           console.error('Token refresh failed:', refreshError)
-          window.location.href = '/login'
+          window.location.href = withSubPath('/login')
           throw new Error('Authentication failed')
         }
       }

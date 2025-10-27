@@ -102,11 +102,12 @@ func (h *AuthHandler) PasswordLogin(c *gin.Context) {
 }
 
 func (h *AuthHandler) Callback(c *gin.Context) {
+	base := common.Base
 	code := c.Query("code")
 	provider, err := c.Cookie("oauth_provider")
 	if err != nil {
 		klog.Error("OAuth Callback - No provider found in cookie: ", err)
-		c.Redirect(http.StatusFound, "/login?error=missing_provider&reason=no_provider_in_cookie")
+		c.Redirect(http.StatusFound, base+"/login?error=missing_provider&reason=no_provider_in_cookie")
 		return
 	}
 
@@ -121,7 +122,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		// Clear oauth cookies
 		setCookieSecure(c, "oauth_state", "", -1)
 		setCookieSecure(c, "oauth_provider", "", -1)
-		c.Redirect(http.StatusFound, "/login?error=invalid_state&reason=state_mismatch")
+		c.Redirect(http.StatusFound, base+"/login?error=invalid_state&reason=state_mismatch")
 		return
 	}
 
@@ -149,7 +150,7 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 	// Exchange code for token
 	tokenResp, err := oauthProvider.ExchangeCodeForToken(code)
 	if err != nil {
-		c.Redirect(http.StatusFound, "/login?error=token_exchange_failed&reason=token_exchange_failed&provider="+provider)
+		c.Redirect(http.StatusFound, base+"/login?error=token_exchange_failed&reason=token_exchange_failed&provider="+provider)
 		return
 	}
 
@@ -157,41 +158,41 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 	// Get user info
 	user, err := oauthProvider.GetUserInfo(tokenResp.AccessToken)
 	if err != nil {
-		c.Redirect(http.StatusFound, "/login?error=user_info_failed&reason=user_info_failed&provider="+provider)
+		c.Redirect(http.StatusFound, base+"/login?error=user_info_failed&reason=user_info_failed&provider="+provider)
 		return
 	}
 
 	if user.Sub == "" {
-		c.Redirect(http.StatusFound, "/login?error=user_info_failed&reason=user_info_failed&provider="+provider)
+		c.Redirect(http.StatusFound, base+"/login?error=user_info_failed&reason=user_info_failed&provider="+provider)
 		return
 	}
 
 	if err := model.FindWithSubOrUpsertUser(user); err != nil {
-		c.Redirect(http.StatusFound, "/login?error=user_upsert_failed&reason=user_upsert_failed&provider="+provider)
+		c.Redirect(http.StatusFound, base+"/login?error=user_upsert_failed&reason=user_upsert_failed&provider="+provider)
 		return
 	}
 	role := rbac.GetUserRoles(*user)
 	if len(role) == 0 {
 		klog.Warningf("OAuth Callback - Access denied for user: %s (provider: %s)", user.Key(), provider)
-		c.Redirect(http.StatusFound, "/login?error=insufficient_permissions&reason=insufficient_permissions&user="+user.Key()+"&provider="+provider)
+		c.Redirect(http.StatusFound, base+"/login?error=insufficient_permissions&reason=insufficient_permissions&user="+user.Key()+"&provider="+provider)
 		return
 	}
 	if !user.Enabled {
-		c.Redirect(http.StatusFound, "/login?error=user_disabled&reason=user_disabled")
+		c.Redirect(http.StatusFound, base+"/login?error=user_disabled&reason=user_disabled")
 		return
 	}
 
 	// Generate JWT with refresh token support
 	jwtToken, err := h.manager.GenerateJWT(user, tokenResp.RefreshToken)
 	if err != nil {
-		c.Redirect(http.StatusFound, "/login?error=jwt_generation_failed&reason=jwt_generation_failed&user="+user.Key()+"&provider="+provider)
+		c.Redirect(http.StatusFound, base+"/login?error=jwt_generation_failed&reason=jwt_generation_failed&user="+user.Key()+"&provider="+provider)
 		return
 	}
 
 	// Set JWT as HTTP-only cookie with secure/samesite settings
 	setCookieSecure(c, "auth_token", jwtToken, common.CookieExpirationSeconds)
 
-	c.Redirect(http.StatusFound, "/dashboard")
+	c.Redirect(http.StatusFound, base+"/")
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {

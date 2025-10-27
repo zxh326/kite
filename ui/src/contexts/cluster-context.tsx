@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { Cluster } from '@/types/api'
+import { withSubPath } from '@/lib/subpath'
 
 interface ClusterContextType {
   clusters: Cluster[]
@@ -35,8 +36,7 @@ export const ClusterProvider: React.FC<{ children: React.ReactNode }> = ({
   } = useQuery<Cluster[]>({
     queryKey: ['clusters'],
     queryFn: async () => {
-      // Use direct fetch for clusters endpoint to avoid circular dependency
-      const response = await fetch('/api/v1/clusters', {
+      const response = await fetch(withSubPath('/api/v1/clusters'), {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',

@@ -37,14 +37,20 @@ import (
 var static embed.FS
 
 func setupStatic(r *gin.Engine) {
+	base := common.Base
+	if base != "" && base != "/" {
+		r.GET("/", func(c *gin.Context) {
+			c.Redirect(http.StatusFound, base+"/")
+		})
+	}
 	assertsFS, err := fs.Sub(static, "static/assets")
 	if err != nil {
 		panic(err)
 	}
-	r.StaticFS("/assets", http.FS(assertsFS))
+	r.StaticFS(base+"/assets", http.FS(assertsFS))
 	r.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path
-		if len(path) >= 5 && path[:5] == "/api/" {
+		if len(path) >= len(base)+5 && path[len(base):len(base)+5] == "/api/" {
 			c.JSON(http.StatusNotFound, gin.H{"error": "API endpoint not found"})
 			return
 		}
@@ -56,18 +62,17 @@ func setupStatic(r *gin.Engine) {
 		}
 
 		htmlContent := string(content)
+		htmlContent = utils.InjectKiteBase(htmlContent, base)
 		if common.EnableAnalytics {
-			// Inject analytics if enabled
-			htmlContent = utils.InjectAnalytics(string(content))
+			htmlContent = utils.InjectAnalytics(htmlContent)
 		}
 
-		// Set content type and serve modified HTML
 		c.Header("Content-Type", "text/html; charset=utf-8")
 		c.String(http.StatusOK, htmlContent)
 	})
 }
 
-func setupAPIRouter(r *gin.Engine, cm *cluster.ClusterManager) {
+func setupAPIRouter(r *gin.RouterGroup, cm *cluster.ClusterManager) {
 	r.GET("/metrics", gin.WrapH(promhttp.HandlerFor(prometheus.Gatherers{
 		prometheus.DefaultGatherer,
 		ctrlmetrics.Registry,
@@ -214,8 +219,9 @@ func main() {
 		log.Fatalf("Failed to create ClusterManager: %v", err)
 	}
 
+	base := r.Group(common.Base)
 	// Setup router
-	setupAPIRouter(r, cm)
+	setupAPIRouter(base, cm)
 	setupStatic(r)
 
 	srv := &http.Server{

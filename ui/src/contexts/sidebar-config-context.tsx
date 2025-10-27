@@ -42,6 +42,7 @@ import {
   SidebarGroup,
   SidebarItem,
 } from '@/types/sidebar'
+import { withSubPath } from '@/lib/subpath'
 
 import { useAuth } from './auth-context'
 
@@ -197,7 +198,7 @@ const defaultMenus: DefaultMenus = {
   ],
 }
 
-const CURRENT_CONFIG_VERSION = 1
+const CURRENT_CONFIG_VERSION = 2
 
 const defaultConfigs = (): SidebarConfig => {
   const groups: SidebarGroup[] = []
@@ -274,16 +275,19 @@ export const SidebarConfigProvider: React.FC<SidebarConfigProviderProps> = ({
           version: CURRENT_CONFIG_VERSION,
         }
 
-        const response = await fetch('/api/users/sidebar_preference', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            sidebar_preference: JSON.stringify(configToSave),
-          }),
-        })
+        const response = await fetch(
+          withSubPath('/api/users/sidebar_preference'),
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              sidebar_preference: JSON.stringify(configToSave),
+            }),
+          }
+        )
 
         if (response.ok) {
           setConfig(configToSave)

@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next'
 
 import { TERMINAL_THEMES, TerminalTheme } from '@/types/themes'
 import { toSimpleContainer } from '@/lib/k8s'
+import { getWebSocketUrl } from '@/lib/subpath'
 import { translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -299,14 +300,12 @@ export function Terminal({
 
     // WebSocket connection
     setIsConnected(false)
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const isDev = process.env.NODE_ENV === 'development'
-    const host = isDev ? 'localhost:8080' : window.location.host
     const currentCluster = localStorage.getItem('current-cluster')
-    const wsUrl =
+    const wsPath =
       type === 'pod'
-        ? `${protocol}//${host}/api/v1/terminal/${namespace}/${selectedPod}/ws?container=${selectedContainer}&x-cluster-name=${currentCluster}`
-        : `${protocol}//${host}/api/v1/node-terminal/${nodeName}/ws?x-cluster-name=${currentCluster}`
+        ? `/api/v1/terminal/${namespace}/${selectedPod}/ws?container=${selectedContainer}&x-cluster-name=${currentCluster}`
+        : `/api/v1/node-terminal/${nodeName}/ws?x-cluster-name=${currentCluster}`
+    const wsUrl = getWebSocketUrl(wsPath)
     const websocket = new WebSocket(wsUrl)
     wsRef.current = websocket
 

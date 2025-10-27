@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { useTranslation } from 'react-i18next'
 import { Navigate, useSearchParams } from 'react-router-dom'
 
+import { withSubPath } from '@/lib/subpath'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -181,8 +182,7 @@ export function LoginPage() {
                       <Button
                         variant="outline"
                         onClick={() => {
-                          // Clear error parameters and allow retry
-                          window.location.href = '/login'
+                          window.location.href = withSubPath('/login')
                         }}
                         className="w-full"
                       >
