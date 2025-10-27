@@ -147,6 +147,11 @@ func WaitForResourceDeletion(ctx context.Context, client client.Client, obj clie
 					return nil
 				}
 				return fmt.Errorf("failed to get resource: %w", err)
+			} else if obj.GetDeletionTimestamp().IsZero() {
+				// resource still exist, but deletion timestamp is not set
+				// may be created again after deletion
+				// we can consider it successfully deleted.
+				return nil
 			}
 		}
 	}
