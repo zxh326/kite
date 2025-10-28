@@ -27,6 +27,12 @@ debug: false
 # Example: https://kite.zzde.me
 host: ""
 
+# Base path for the application
+# If you are serving kite under a subpath, set this value accordingly.
+# Remember to also set the ingress path to match.
+# Example: "/kite"
+basePath: ""
+
 # Set to true to enable the anonymous user with full-admin access
 # Be careful with this setting in production
 anonymousUserEnabled: false

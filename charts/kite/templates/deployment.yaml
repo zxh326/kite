@@ -65,6 +65,10 @@ spec:
             - name: DB_DSN
               value: {{ (printf "%s/%s?%s" .Values.db.sqlite.persistence.mountPath .Values.db.sqlite.persistence.filename .Values.db.sqlite.options) }}
             {{- end }}
+            {{- if .Values.basePath }}
+            - name: KITE_BASE
+              value: {{ .Values.basePath }}
+            {{- end }}
           {{- with .Values.extraEnvs }}
           {{- toYaml . | nindent 12 }}
           {{- end }}
