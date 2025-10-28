@@ -198,7 +198,7 @@ const defaultMenus: DefaultMenus = {
   ],
 }
 
-const CURRENT_CONFIG_VERSION = 2
+const CURRENT_CONFIG_VERSION = 1
 
 const defaultConfigs = (): SidebarConfig => {
   const groups: SidebarGroup[] = []

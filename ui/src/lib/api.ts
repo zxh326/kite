@@ -22,7 +22,7 @@ import {
 } from '@/types/api'
 
 import { API_BASE_URL, apiClient } from './api-client'
-import { getWebSocketUrl } from './subpath'
+import { getWebSocketUrl, withSubPath } from './subpath'
 import useWebSocket, { WebSocketMessage } from './useWebSocket'
 
 type ResourcesItems<T extends ResourceType> = ResourcesTypeMap[T]['items']
@@ -381,7 +381,9 @@ export function useResourcesWatch<T extends ResourceType>(
       params.append('fieldSelector', options.fieldSelector)
     const cluster = localStorage.getItem('current-cluster')
     if (cluster) params.append('x-cluster-name', cluster)
-    return `${API_BASE_URL}/${resource}/${ns}/watch?${params.toString()}`
+    return withSubPath(
+      `${API_BASE_URL}/${resource}/${ns}/watch?${params.toString()}`
+    )
   }, [
     resource,
     namespace,

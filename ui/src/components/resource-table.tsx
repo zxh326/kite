@@ -360,11 +360,13 @@ export function ResourceTable<T>({
       setRowSelection({})
       setDeleteDialogOpen(false)
       // Refetch data
-      refetch()
+      if (!useSSE) {
+        refetch()
+      }
     } finally {
       setIsDeleting(false)
     }
-  }, [table, clusterScope, resourceType, resourceName, refetch, t])
+  }, [table, clusterScope, resourceType, resourceName, t, useSSE, refetch])
 
   // Calculate total and filtered row counts
   const totalRowCount = useMemo(

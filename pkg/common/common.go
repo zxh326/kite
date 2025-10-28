@@ -3,6 +3,7 @@ package common
 import (
 	"os"
 	"strings"
+	"time"
 
 	"k8s.io/klog/v2"
 )
@@ -13,6 +14,11 @@ const (
 	NodeTerminalPodName = "kite-node-terminal-agent"
 
 	KubectlAnnotation = "kubectl.kubernetes.io/last-applied-configuration"
+
+	// db connection max idle time
+	DBMaxIdleTime  = 10 * time.Minute
+	DBMaxOpenConns = 100
+	DBMaxIdleConns = 10
 )
 
 var (

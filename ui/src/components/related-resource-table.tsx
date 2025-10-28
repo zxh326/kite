@@ -4,6 +4,7 @@ import { IconExternalLink, IconLoader } from '@tabler/icons-react'
 import { RelatedResources, ResourceType } from '@/types/api'
 import { useRelatedResources } from '@/lib/api'
 import { getCRDResourcePath, isStandardK8sResource } from '@/lib/k8s'
+import { withSubPath } from '@/lib/subpath'
 import {
   Dialog,
   DialogContent,
@@ -96,14 +97,14 @@ function RelatedResourceCell({ rs }: { rs: RelatedResources }) {
       <DialogContent className="!max-w-[60%] !h-[80%] flex flex-col">
         <DialogHeader className="flex flex-row justify-between items-center">
           <DialogTitle className="capitalize">{rs.type}</DialogTitle>
-          <a href={path} target="_blank" rel="noopener noreferrer">
+          <a href={withSubPath(path)} target="_blank" rel="noopener noreferrer">
             <Button variant="outline" size="icon">
               <IconExternalLink size={12} />
             </Button>
           </a>
         </DialogHeader>
         <iframe
-          src={`${path}?iframe=true`}
+          src={`${withSubPath(path)}?iframe=true`}
           className="w-full flex-grow border-none"
         />
       </DialogContent>

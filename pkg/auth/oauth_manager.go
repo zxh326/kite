@@ -49,7 +49,7 @@ func (om *OAuthManager) GetProvider(c *gin.Context, name string) (OAuthProvider,
 	if err != nil {
 		return nil, err
 	}
-	dbProvider.RedirectURL, _ = url.JoinPath(getRequestHost(c), "/api/auth/callback")
+	dbProvider.RedirectURL, _ = url.JoinPath(getRequestHost(c), common.Base+"/api/auth/callback")
 	return NewGenericProvider(dbProvider)
 }
 
