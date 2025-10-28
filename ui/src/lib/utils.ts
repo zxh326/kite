@@ -90,6 +90,25 @@ export function formatBytes(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
+export function parseBytes(capacity: string): number {
+  const units: { [key: string]: number } = {
+    Ki: 1024,
+    Mi: 1024 ** 2,
+    Gi: 1024 ** 3,
+    Ti: 1024 ** 4,
+    Pi: 1024 ** 5,
+    Ei: 1024 ** 6,
+  }
+
+  const match = capacity.match(/^(\d+)([KMGTP]i)?$/)
+  if (match) {
+    const value = parseInt(match[1], 10)
+    const unit = match[2]
+    return unit ? value * units[unit] : value
+  }
+  return parseInt(capacity, 10)
+}
+
 // Format CPU cores
 export function formatCPU(cores: string | number): string {
   if (typeof cores === 'string') {

@@ -4,7 +4,7 @@ import { PersistentVolumeClaim } from 'kubernetes-types/core/v1'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
-import { formatDate } from '@/lib/utils'
+import { formatDate, parseBytes } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { ResourceTable } from '@/components/resource-table'
 
@@ -53,16 +53,42 @@ export function PVCListPage() {
       }),
       columnHelper.accessor('spec.volumeName', {
         header: t('pvcs.volume'),
-        cell: ({ getValue }) => getValue() || '-',
+        cell: ({ getValue }) => {
+          const volumeName = getValue()
+          if (volumeName) {
+            return (
+              <div className="font-medium text-blue-500 hover:underline">
+                <Link to={`/persistentvolumes/${volumeName}`}>
+                  {volumeName}
+                </Link>
+              </div>
+            )
+          }
+          return '-'
+        },
       }),
       columnHelper.accessor('spec.storageClassName', {
         header: t('pvcs.storageClass'),
-        cell: ({ getValue }) => getValue() || '-',
+        cell: ({ getValue }) => {
+          const scName = getValue()
+          if (scName) {
+            return (
+              <div className="font-medium text-blue-500 hover:underline">
+                <Link to={`/storageclasses/${scName}`}>{scName}</Link>
+              </div>
+            )
+          }
+          return '-'
+        },
       }),
-      columnHelper.accessor('spec.resources.requests.storage', {
-        header: t('pvcs.capacity'),
-        cell: ({ getValue }) => getValue() || '-',
-      }),
+      columnHelper.accessor(
+        (row) => parseBytes(row.spec?.resources?.requests?.storage || '0'),
+        {
+          header: t('pvcs.capacity'),
+          cell: ({ row }) =>
+            row.original.spec?.resources?.requests?.storage || '-',
+        }
+      ),
       columnHelper.accessor('spec.accessModes', {
         header: t('pvcs.accessModes'),
         cell: ({ getValue }) => {
