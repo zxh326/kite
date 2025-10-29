@@ -627,120 +627,113 @@ export function DeploymentCreateDialog({
       case 2:
         return (
           <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Volume</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addVolume}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Volume
+              </Button>
+            </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Volume</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addVolume}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Volume
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Choose the appropriate volume type for your needs. emptyDir for
-                temporary storage, hostPath for host access, configMap/secret
-                for configuration, and pvc for persistent storage.
-              </p>
-              <div className="space-y-2">
-                {(formData.podSpec?.volumes || []).map((volume, index) => (
-                  <div key={index} className="flex gap-2 items-center">
+              {(formData.podSpec?.volumes || []).map((volume, index) => (
+                <div key={index} className="flex gap-2 items-center">
+                  <Input
+                    className="flex-1"
+                    placeholder="name"
+                    value={volume.name}
+                    onChange={(e) =>
+                      updateVolume(index, 'name', e.target.value)
+                    }
+                  />
+                  <Select
+                    value={volume.sourceType}
+                    onValueChange={(val) =>
+                      updateVolume(index, 'sourceType', val)
+                    }
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select Volume Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="emptyDir">emptyDir</SelectItem>
+                      <SelectItem value="hostPath">hostPath</SelectItem>
+                      <SelectItem value="configMap">configMap</SelectItem>
+                      <SelectItem value="secret">secret</SelectItem>
+                      <SelectItem value="pvc">pvc</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {volume.sourceType === 'emptyDir' && (
+                    <Input
+                      className="flex-1 select-none cursor-default text-muted-foreground bg-muted"
+                      readOnly
+                      onFocus={(e) => e.target.blur()}
+                      tabIndex={-1}
+                    />
+                  )}
+                  {volume.sourceType === 'hostPath' && (
                     <Input
                       className="flex-1"
-                      placeholder="name"
-                      value={volume.name}
+                      placeholder="host path"
+                      value={volume.options?.path || ''}
                       onChange={(e) =>
-                        updateVolume(index, 'name', e.target.value)
+                        updateVolume(index, 'path', e.target.value)
                       }
                     />
-                    <Select
-                      value={volume.sourceType}
-                      onValueChange={(val) =>
-                        updateVolume(index, 'sourceType', val)
+                  )}
+
+                  {volume.sourceType === 'configMap' && (
+                    <ConfigMapSelector
+                      className="flex-1"
+                      selectedConfigMap={volume.options?.configMapName || ''}
+                      onConfigMapChange={(val) =>
+                        updateVolume(index, 'configMapName', val)
                       }
+                      namespace={formData.namespace}
+                      placeholder="Select configmap"
+                    />
+                  )}
+
+                  {volume.sourceType === 'secret' && (
+                    <SecretSelector
+                      className="flex-1"
+                      selectedSecret={volume.options?.secretName || ''}
+                      onSecretChange={(val) =>
+                        updateVolume(index, 'secretName', val)
+                      }
+                      namespace={formData.namespace}
+                      placeholder="Select secret"
+                    />
+                  )}
+
+                  {volume.sourceType === 'pvc' && (
+                    <PVCSelector
+                      className="flex-1"
+                      selectedPVC={volume.options?.claimName || ''}
+                      onPVCChange={(val) =>
+                        updateVolume(index, 'claimName', val)
+                      }
+                      namespace={formData.namespace}
+                      placeholder="Select PVC"
+                    />
+                  )}
+
+                  {(formData.podSpec?.volumes?.length || 0) > 0 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeVolume(index)}
                     >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select Volume Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="emptyDir">emptyDir</SelectItem>
-                        <SelectItem value="hostPath">hostPath</SelectItem>
-                        <SelectItem value="configMap">configMap</SelectItem>
-                        <SelectItem value="secret">secret</SelectItem>
-                        <SelectItem value="pvc">pvc</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {volume.sourceType === 'emptyDir' && (
-                      <Input
-                        className="flex-1 select-none cursor-default text-muted-foreground bg-muted"
-                        readOnly
-                        onFocus={(e) => e.target.blur()}
-                        tabIndex={-1}
-                      />
-                    )}
-                    {volume.sourceType === 'hostPath' && (
-                      <Input
-                        className="flex-1"
-                        placeholder="host path"
-                        value={volume.options?.path || ''}
-                        onChange={(e) =>
-                          updateVolume(index, 'path', e.target.value)
-                        }
-                      />
-                    )}
-
-                    {volume.sourceType === 'configMap' && (
-                      <ConfigMapSelector
-                        className="flex-1"
-                        selectedConfigMap={volume.options?.configMapName || ''}
-                        onConfigMapChange={(val) =>
-                          updateVolume(index, 'configMapName', val)
-                        }
-                        namespace={formData.namespace}
-                        placeholder="Select configmap"
-                      />
-                    )}
-
-                    {volume.sourceType === 'secret' && (
-                      <SecretSelector
-                        className="flex-1"
-                        selectedSecret={volume.options?.secretName || ''}
-                        onSecretChange={(val) =>
-                          updateVolume(index, 'secretName', val)
-                        }
-                        namespace={formData.namespace}
-                        placeholder="Select secret"
-                      />
-                    )}
-
-                    {volume.sourceType === 'pvc' && (
-                      <PVCSelector
-                        className="flex-1"
-                        selectedPVC={volume.options?.claimName || ''}
-                        onPVCChange={(val) =>
-                          updateVolume(index, 'claimName', val)
-                        }
-                        namespace={formData.namespace}
-                        placeholder="Select PVC"
-                      />
-                    )}
-
-                    {(formData.podSpec?.volumes?.length || 0) > 0 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeVolume(index)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )
@@ -759,12 +752,6 @@ export function DeploymentCreateDialog({
                 Add Container
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Choose the appropriate volume type for your needs. emptyDir for
-              temporary storage, hostPath for host access, configMap/secret for
-              configuration, and pvc for persistent storage.
-            </p>
-
             {formData.containers.map((containerConfig, containerIndex) => (
               <Card key={containerIndex}>
                 <CardHeader className="pb-3">
