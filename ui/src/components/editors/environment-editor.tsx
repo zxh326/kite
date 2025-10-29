@@ -6,7 +6,6 @@ import {
   EnvVarSource,
 } from 'kubernetes-types/core/v1'
 import { Plus, Trash2 } from 'lucide-react'
-import { useParams } from 'react-router-dom'
 
 import { ConfigMapSelector } from '../selector/configmap-selector'
 import { SecretSelector } from '../selector/secret-selector'
@@ -24,17 +23,17 @@ import { Separator } from '../ui/separator'
 
 interface EnvironmentEditorProps {
   container: Container
+  namespace: string
   onUpdate: (updates: Partial<Container>) => void
 }
 
 export function EnvironmentEditor({
   container,
+  namespace,
   onUpdate,
 }: EnvironmentEditorProps) {
   const [envVars, setEnvVars] = useState<EnvVar[]>([])
   const [envFromSources, setEnvFromSources] = useState<EnvFromSource[]>([])
-
-  const { namespace } = useParams()
 
   useEffect(() => {
     setEnvVars(container.env || [])
@@ -413,6 +412,7 @@ export function EnvironmentEditor({
                               namespace={namespace}
                               placeholder="Select secret"
                               className="text-sm w-full"
+                              avoidHelmSecrets
                             />
                           </div>
                           <div className="min-w-0">
@@ -653,6 +653,7 @@ export function EnvironmentEditor({
                       namespace={namespace}
                       placeholder="Select secret"
                       className="text-sm w-full"
+                      avoidHelmSecrets
                     />
                   )}
                 </div>

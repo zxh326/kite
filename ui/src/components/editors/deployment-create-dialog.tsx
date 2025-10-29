@@ -892,6 +892,7 @@ export function DeploymentCreateDialog({
                   <div className="space-y-2">
                     <EnvironmentEditor
                       container={containerConfig.container}
+                      namespace={formData.namespace}
                       onUpdate={(updates) =>
                         updateContainer(containerIndex, {
                           container: {
