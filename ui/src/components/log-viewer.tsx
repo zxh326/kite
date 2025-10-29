@@ -51,45 +51,61 @@ interface LogLineProps {
   line: string
   searchTerm: string
   wordWrap: boolean
+  activeOccurrenceIndex?: number
 }
 
-const LogLine = memo(({ line, searchTerm, wordWrap }: LogLineProps) => {
-  const segments = parseAnsi(line)
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-  return (
-    <div className={wordWrap ? 'break-words' : 'break-all'}>
-      {segments.map((segment, segIndex) => {
-        const text = segment.text
-        if (!searchTerm) {
-          return (
-            <span key={segIndex} style={ansiStateToCss(segment.styles)}>
-              {text}
-            </span>
-          )
-        }
+const LogLine = memo(
+  ({ line, searchTerm, wordWrap, activeOccurrenceIndex }: LogLineProps) => {
+    const segments = parseAnsi(line)
 
-        const parts = text.split(new RegExp(`(${searchTerm})`, 'gi'))
-        return (
-          <span key={segIndex} style={ansiStateToCss(segment.styles)}>
-            {parts.map((part, i) => {
-              if (part.toLowerCase() === searchTerm.toLowerCase()) {
-                return (
-                  <span
-                    key={i}
-                    className="bg-yellow-500/50 dark:bg-yellow-500/30 rounded px-0.5"
-                  >
-                    {part}
-                  </span>
-                )
-              }
-              return part
-            })}
-          </span>
-        )
-      })}
-    </div>
-  )
-})
+    return (
+      <div className={wordWrap ? 'wrap-break-word' : 'break-all'}>
+        {(() => {
+          let occurrenceCounter = 0
+          return segments.map((segment, segIndex) => {
+            const text = segment.text
+            if (!searchTerm) {
+              return (
+                <span key={segIndex} style={ansiStateToCss(segment.styles)}>
+                  {text}
+                </span>
+              )
+            }
+
+            const safe = escapeRegExp(searchTerm)
+            const parts = text.split(new RegExp(`(${safe})`, 'gi'))
+            return (
+              <span key={segIndex} style={ansiStateToCss(segment.styles)}>
+                {parts.map((part, i) => {
+                  if (part.toLowerCase() === searchTerm.toLowerCase()) {
+                    const occIndex = occurrenceCounter
+                    occurrenceCounter++
+                    return (
+                      <span
+                        key={i}
+                        className={
+                          activeOccurrenceIndex !== undefined &&
+                          occIndex === activeOccurrenceIndex
+                            ? 'bg-yellow-500 dark:bg-yellow-600 text-black rounded px-0.5'
+                            : 'bg-yellow-500/50 dark:bg-yellow-500/30 rounded px-0.5'
+                        }
+                      >
+                        {part}
+                      </span>
+                    )
+                  }
+                  return part
+                })}
+              </span>
+            )
+          })
+        })()}
+      </div>
+    )
+  }
+)
 
 LogLine.displayName = 'LogLine'
 
@@ -148,6 +164,7 @@ export function LogViewer({
   })
   const logContainerRef = useRef<HTMLDivElement>(null)
   const [logStartIndex, setLogStartIndex] = useState(0)
+  const [activeMatchPos, setActiveMatchPos] = useState<number>(-1)
 
   const [selectPodName, setSelectPodName] = useState<string | undefined>(
     podName || pods?.[0]?.metadata?.name || undefined
@@ -368,11 +385,6 @@ export function LogViewer({
     }
   }, [autoScroll])
 
-  const displayedLogCount = useMemo(
-    () => (logsData?.logs?.slice(logStartIndex) || []).length,
-    [logsData?.logs, logStartIndex]
-  )
-
   const filteredLogs = useMemo(() => {
     const logsToFilter = logsData?.logs?.slice(logStartIndex) || []
     const logs =
@@ -388,6 +400,77 @@ export function LogViewer({
     }
     return logs
   }, [logsData?.logs, searchTerm, isFilterMode, logStartIndex])
+
+  const matchOccurrences = useMemo(() => {
+    if (!searchTerm)
+      return [] as { lineIndex: number; occurrenceIndex: number }[]
+    const safe = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const re = new RegExp(safe, 'gi')
+    const matches: { lineIndex: number; occurrenceIndex: number }[] = []
+    filteredLogs.forEach((line, lineIndex) => {
+      const plain = stripAnsi(line)
+      const occurrences = plain.match(re)
+      const count = occurrences ? occurrences.length : 0
+      for (let i = 0; i < count; i++) {
+        matches.push({ lineIndex, occurrenceIndex: i })
+      }
+    })
+    return matches
+  }, [filteredLogs, searchTerm])
+
+  useEffect(() => {
+    setActiveMatchPos(-1)
+  }, [searchTerm])
+
+  useEffect(() => {
+    if (activeMatchPos === -1) return
+    const total = matchOccurrences.length
+    if (total === 0) {
+      setActiveMatchPos(-1)
+      return
+    }
+    if (activeMatchPos >= total) {
+      setActiveMatchPos(total - 1)
+    }
+  }, [activeMatchPos, matchOccurrences.length])
+
+  const scrollToLineIndex = useCallback(
+    (lineIndex: number) => {
+      const container = logContainerRef.current
+      if (!container) return
+      const el = container.querySelector(
+        `[data-log-line-index="${lineIndex}"]`
+      ) as HTMLElement | null
+      if (el) {
+        setAutoScroll(false)
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    },
+    [logContainerRef]
+  )
+
+  const jumpToNextMatch = useCallback(() => {
+    if (!matchOccurrences.length) return
+    const nextPos =
+      activeMatchPos === -1
+        ? matchOccurrences.length - 1
+        : (activeMatchPos + 1) % matchOccurrences.length
+    const target = matchOccurrences[nextPos]
+    setActiveMatchPos(nextPos)
+    scrollToLineIndex(target.lineIndex)
+  }, [matchOccurrences, activeMatchPos, scrollToLineIndex])
+
+  const jumpToPrevMatch = useCallback(() => {
+    if (!matchOccurrences.length) return
+    const prevPos =
+      activeMatchPos === -1
+        ? matchOccurrences.length - 1
+        : (activeMatchPos - 1 + matchOccurrences.length) %
+          matchOccurrences.length
+    const target = matchOccurrences[prevPos]
+    setActiveMatchPos(prevPos)
+    scrollToLineIndex(target.lineIndex)
+  }, [matchOccurrences, activeMatchPos, scrollToLineIndex])
 
   const downloadLogs = () => {
     if (!logsData?.logs) return
@@ -478,9 +561,6 @@ export function LogViewer({
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span>
                   {filteredLogs?.length || 0} lines
-                  {searchTerm &&
-                    isFilterMode &&
-                    ` (filtered from ${displayedLogCount || 0})`}
                   {logsData?.logs && logsData.logs.length > 10000 && (
                     <span className="text-yellow-600 ml-1">
                       (showing last 10k lines)
@@ -507,29 +587,49 @@ export function LogViewer({
             <div className="relative">
               <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={isFilterMode ? 'Filter logs...' : 'Search logs...'}
+                placeholder={'Search logs...'}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 pr-10 w-48"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchTerm) {
+                    e.preventDefault()
+                    jumpToNextMatch()
+                  }
+                  if (e.key === 'ArrowDown' && searchTerm) {
+                    e.preventDefault()
+                    jumpToNextMatch()
+                  }
+                  if (e.key === 'ArrowUp' && searchTerm) {
+                    e.preventDefault()
+                    jumpToPrevMatch()
+                  }
+                }}
+                className="pl-8 w-full pr-14"
               />
               {searchTerm && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsFilterMode(!isFilterMode)}
-                  className={`absolute right-1 top-1 h-6 w-6 p-0 ${
-                    isFilterMode
-                      ? 'text-blue-600 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-800/50'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                  title={
-                    isFilterMode
-                      ? 'Switch to highlight mode'
-                      : 'Switch to filter mode'
-                  }
-                >
-                  <IconFilter className="h-3 w-3" />
-                </Button>
+                <>
+                  <span className="absolute right-8 top-2.5 text-xs text-muted-foreground pointer-events-none">
+                    {`${activeMatchPos >= 0 ? activeMatchPos + 1 : 0}/${matchOccurrences.length}`}
+                  </span>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsFilterMode(!isFilterMode)}
+                    className={`absolute right-1 top-1 h-6 w-6 p-0 ${
+                      isFilterMode
+                        ? 'text-blue-600 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-800/50'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                    title={
+                      isFilterMode
+                        ? 'Switch to highlight mode'
+                        : 'Switch to filter mode'
+                    }
+                  >
+                    <IconFilter className="h-3 w-3" />
+                  </Button>
+                </>
               )}
             </div>
 
@@ -713,6 +813,23 @@ export function LogViewer({
                         </kbd>
                       </div>
                       <div className="flex justify-between">
+                        <span>Next Match</span>
+                        <div className="flex gap-1">
+                          <kbd className="px-1 py-0.5 bg-muted rounded text-xs">
+                            Enter
+                          </kbd>
+                          <kbd className="px-1 py-0.5 bg-muted rounded text-xs">
+                            ↓
+                          </kbd>
+                        </div>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Previous Match</span>
+                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs">
+                          ↑
+                        </kbd>
+                      </div>
+                      <div className="flex justify-between">
                         <span>Clear Search</span>
                         <kbd className="px-1 py-0.5 bg-muted rounded text-xs">
                           ESC
@@ -834,12 +951,20 @@ export function LogViewer({
           )}
 
           {filteredLogs?.map((line, index) => (
-            <LogLine
-              key={index}
-              line={line}
-              searchTerm={searchTerm}
-              wordWrap={wordWrap}
-            />
+            <div key={index} data-log-line-index={index}>
+              <LogLine
+                line={line}
+                searchTerm={searchTerm}
+                wordWrap={wordWrap}
+                activeOccurrenceIndex={
+                  searchTerm && matchOccurrences.length && activeMatchPos >= 0
+                    ? matchOccurrences[activeMatchPos].lineIndex === index
+                      ? matchOccurrences[activeMatchPos].occurrenceIndex
+                      : undefined
+                    : undefined
+                }
+              />
+            </div>
           ))}
 
           {!autoScroll && (
