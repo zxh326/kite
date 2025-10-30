@@ -1173,7 +1173,7 @@ export const useLogsWebSocket = (
           break
       }
     },
-    [options?.onNewLog]
+    [options]
   )
 
   const handleOpen = useCallback(() => {
@@ -1181,7 +1181,7 @@ export const useLogsWebSocket = (
     if (options?.onClear) {
       options.onClear()
     }
-  }, [options?.onClear])
+  }, [options])
 
   const handleClose = useCallback(() => {
     console.debug('WebSocket connection closed')
@@ -1214,7 +1214,7 @@ export const useLogsWebSocket = (
     if (options?.onClear) {
       options.onClear()
     }
-  }, [wsActions, options?.onClear])
+  }, [wsActions, options])
 
   const stopStreaming = useCallback(() => {
     wsActions.disconnect()
@@ -1224,7 +1224,7 @@ export const useLogsWebSocket = (
     if (options?.onClear) {
       options.onClear()
     }
-  }, [options?.onClear])
+  }, [options])
 
   return useMemo(
     () => ({
