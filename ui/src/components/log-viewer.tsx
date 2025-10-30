@@ -108,7 +108,6 @@ export function LogViewer({
     return saved ? parseInt(saved, 10) : 14
   })
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
-  const logsRef = useRef<string[]>([])
   const [logCount, setLogCount] = useState(0) // Track log count for re-rendering
 
   const [selectPodName, setSelectPodName] = useState<string | undefined>(
@@ -181,6 +180,55 @@ export function LogViewer({
     })
   }, [])
 
+  const appendLog = useCallback(
+    (log: string) => {
+      setLogCount((count) => count + 1)
+      if (filterTerm) {
+        if (!log.toLocaleLowerCase().includes(filterTerm)) {
+          return
+        }
+      }
+      if (editorRef.current) {
+        const model = editorRef.current.getModel()
+        if (model) {
+          const lineCount = model.getLineCount()
+          const lineMaxColumn = model.getLineMaxColumn(lineCount)
+          const prefix = model.getValueLength() === 0 ? '' : '\n'
+          model.applyEdits([
+            {
+              range: {
+                startColumn: lineMaxColumn,
+                endColumn: lineMaxColumn,
+                startLineNumber: lineCount,
+                endLineNumber: lineCount,
+              },
+              text: `${prefix}${log}`,
+              forceMoveMarkers: true,
+            },
+          ])
+          const visibleRange = editorRef.current.getVisibleRanges()[0]
+          if (visibleRange?.endLineNumber + 2 >= lineCount) {
+            editorRef.current.revealLine(model.getLineCount())
+            setShowScrollToBottom(false)
+          } else {
+            setShowScrollToBottom(true)
+          }
+        }
+      }
+    },
+    [filterTerm]
+  )
+
+  const cleanLog = useCallback(() => {
+    setLogCount(0)
+    if (editorRef.current) {
+      const model = editorRef.current.getModel()
+      if (model) {
+        model.setValue('')
+      }
+    }
+  }, [])
+
   const logsOptions = useMemo(
     () => ({
       container: selectedContainer,
@@ -189,50 +237,8 @@ export function LogViewer({
       previous,
       enabled: !!selectPodName,
       labelSelector,
-      onNewLog: (log: string) => {
-        setLogCount((count) => count + 1)
-        if (filterTerm) {
-          if (!log.toLocaleLowerCase().includes(filterTerm)) {
-            return
-          }
-        }
-        if (editorRef.current) {
-          const model = editorRef.current.getModel()
-          if (model) {
-            const lineCount = model.getLineCount()
-            const lineMaxColumn = model.getLineMaxColumn(lineCount)
-            model.applyEdits([
-              {
-                range: {
-                  startColumn: lineMaxColumn,
-                  endColumn: lineMaxColumn,
-                  startLineNumber: lineCount,
-                  endLineNumber: lineCount,
-                },
-                text: `\n${log}`,
-                forceMoveMarkers: true,
-              },
-            ])
-            const visibleRange = editorRef.current.getVisibleRanges()[0]
-            if (visibleRange?.endLineNumber + 2 >= lineCount) {
-              editorRef.current.revealLine(model.getLineCount())
-              setShowScrollToBottom(false)
-            } else {
-              setShowScrollToBottom(true)
-            }
-          }
-        }
-      },
-      onClear: () => {
-        logsRef.current = []
-        setLogCount(0)
-        if (editorRef.current) {
-          const model = editorRef.current.getModel()
-          if (model) {
-            model.setValue('')
-          }
-        }
-      },
+      onNewLog: appendLog,
+      onClear: cleanLog,
     }),
     [
       selectedContainer,
@@ -241,7 +247,8 @@ export function LogViewer({
       previous,
       selectPodName,
       labelSelector,
-      filterTerm,
+      appendLog,
+      cleanLog,
     ]
   )
 
