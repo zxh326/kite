@@ -14,6 +14,7 @@ This document describes all available configuration options for the Kite Helm Ch
 | `nameOverride`     | Override chart name                                        | `""`                  |
 | `fullnameOverride` | Override full name                                         | `""`                  |
 | `debug`            | Enable debug mode                                          | `false`               |
+| `basePath`         | Base path where Kite is served. See notes below. | `""`                 |
 
 ## Authentication & Security
 

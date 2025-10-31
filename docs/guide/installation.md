@@ -105,6 +105,41 @@ spec:
       secretName: kite-tls
 ```
 
+## Serving under a subpath (basePath)
+
+If you want to serve Kite under a subpath (for example `https://example.com/kite`), use the Helm chart `basePath` value.
+
+How to set it:
+
+- In `values.yaml`:
+
+```yaml
+basePath: "/kite"
+```
+
+- Or with Helm CLI:
+
+```fish
+helm install kite kite/kite -n kite-system --create-namespace --set basePath="/kite"
+```
+
+Important notes:
+
+- Ingress configuration: make sure your Ingress `paths` match the subpath and use a matching pathType (e.g., `Prefix`). Example:
+
+```yaml
+ingress:
+  enabled: true
+  hosts:
+    - host: kite.example.com
+      paths:
+        - path: /kite
+          pathType: Prefix
+```
+
+- OAuth / redirects: if you enable OAuth (or any external redirect flows), update the redirect URLs in your OAuth provider to include the base path, e.g. `https://kite.example.com/kite/oauth/callback`.
+- Environment overrides: if you provide environment variables via `extraEnvs` or an existing secret, ensure `KITE_BASE` is set consistently with the `basePath` value (otherwise behavior may differ).
+
 ## Verifying Installation
 
 After installation, you can access the dashboard to verify that Kite is deployed successfully. The expected interface is as follows:
