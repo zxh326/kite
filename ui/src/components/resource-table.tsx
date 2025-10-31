@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -71,6 +71,7 @@ export interface ResourceTableProps<T> {
   searchQueryFilter?: (item: T, query: string) => boolean // Custom filter function
   showCreateButton?: boolean // If true, show create button
   onCreateClick?: () => void // Callback for create button click
+  extraToolbars?: React.ReactNode[] // Additional toolbar components
 }
 
 export function ResourceTable<T>({
@@ -81,6 +82,7 @@ export function ResourceTable<T>({
   searchQueryFilter,
   showCreateButton = false,
   onCreateClick,
+  extraToolbars = [],
 }: ResourceTableProps<T>) {
   const { t } = useTranslation()
   const [sorting, setSorting] = useState<SortingState>([])
@@ -116,7 +118,6 @@ export function ResourceTable<T>({
       : storedNamespace || 'default' // Default to 'default' if not set
   })
   const [useSSE, setUseSSE] = useState(false)
-
   const {
     isLoading: queryLoading,
     data: queryData,
@@ -367,7 +368,6 @@ export function ResourceTable<T>({
       setIsDeleting(false)
     }
   }, [table, clusterScope, resourceType, resourceName, t, useSSE, refetch])
-
   // Calculate total and filtered row counts
   const totalRowCount = useMemo(
     () => (data as T[] | undefined)?.length || 0,
@@ -503,6 +503,9 @@ export function ResourceTable<T>({
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="flex items-center gap-2 flex-wrap">
+            {extraToolbars?.map((toolbar, index) => (
+              <React.Fragment key={index}>{toolbar}</React.Fragment>
+            ))}
             {/* Watch/Live mode toggle switch */}
             {resourceName === 'Pods' && (
               <div className="flex items-center gap-2">
