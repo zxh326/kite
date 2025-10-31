@@ -21,8 +21,9 @@ type ClientSet struct {
 	K8sClient  *kube.K8sClient
 	PromClient *prometheus.Client
 
-	config        string
-	prometheusURL string
+	DiscoveredPrometheusURL string
+	config                  string
+	prometheusURL           string
 }
 
 type ClusterManager struct {
@@ -65,7 +66,13 @@ func newClientSet(name string, k8sConfig *rest.Config, prometheusURL string) (*C
 		klog.Warningf("Failed to create k8s client for cluster %s: %v", name, err)
 		return nil, err
 	}
-
+	if prometheusURL == "" {
+		prometheusURL = discoveryPrometheusURL(cs.K8sClient)
+		if prometheusURL != "" {
+			cs.DiscoveredPrometheusURL = prometheusURL
+			klog.Infof("Discovered Prometheus URL for cluster %s: %s", name, cs.DiscoveredPrometheusURL)
+		}
+	}
 	if prometheusURL != "" {
 		cs.PromClient, err = prometheus.NewClient(prometheusURL)
 		if err != nil {
