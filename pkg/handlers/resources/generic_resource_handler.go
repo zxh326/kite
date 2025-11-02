@@ -496,7 +496,7 @@ func (h *GenericResourceHandler[T, V]) Search(c *gin.Context, q string, limit in
 			klog.Errorf("item is not a client.Object: %v", item)
 			continue
 		}
-		if isLabelSearch || !strings.Contains(strings.ToLower(obj.GetName()), strings.ToLower(q)) {
+		if !isLabelSearch && !strings.Contains(strings.ToLower(obj.GetName()), strings.ToLower(q)) {
 			continue
 		}
 		result := common.SearchResult{
