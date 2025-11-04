@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/model"
 	"github.com/zxh326/kite/pkg/rbac"
+	"k8s.io/klog/v2"
 )
 
 type createPasswordUser struct {
@@ -202,6 +203,7 @@ func UpdateSidebarPreference(c *gin.Context) {
 	}
 	user.SidebarPreference = req.SidebarPreference
 	if err := model.UpdateUser(&user); err != nil {
+		klog.Errorf("failed to update sidebar preference for user %s: %v", user.Username, err)
 		c.JSON(500, gin.H{"error": "failed to update sidebar preference"})
 		return
 	}

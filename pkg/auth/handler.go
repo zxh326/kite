@@ -259,7 +259,13 @@ func (h *AuthHandler) RequireAPIKeyAuth(c *gin.Context, token string) {
 func (h *AuthHandler) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if common.AnonymousUserEnabled {
-			c.Set("user", model.AnonymousUser)
+			u := model.GetAnonymousUser()
+			if u == nil {
+				c.Set("user", model.AnonymousUser)
+			} else {
+				u.Roles = model.AnonymousUser.Roles
+				c.Set("user", *u)
+			}
 			c.Next()
 			return
 		}
