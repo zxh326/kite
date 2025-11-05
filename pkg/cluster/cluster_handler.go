@@ -171,7 +171,7 @@ func (cm *ClusterManager) UpdateCluster(c *gin.Context) {
 	}
 
 	if req.Config != "" {
-		updates["config"] = req.Config
+		updates["config"] = model.SecretString(req.Config)
 	}
 
 	if err := model.UpdateCluster(cluster, updates); err != nil {
