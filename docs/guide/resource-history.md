@@ -12,13 +12,13 @@ You need the appropriate resource "read" permission to view its history; "write"
   - Standard operations: create, update, delete, apply
   - Deployment actions: edit, scale, restart, rollback, suspend, resume
 - **Tracking Dimensions**: cluster, resource type, namespace, resource name, operation type, operator, success status, and error message
-- **Color-Coded Operation Types**: Each operation has a unique color badge for easy visual identification:
-  - 🔵 **Edit**: Blue - YAML configuration modifications
-  - 🟢 **Resume**: Green - FluxCD auto-sync resumed
-  - 🟡 **Rollback**: Amber - Helm release rolled back to previous revision
-  - ⚪ **Restart**: Gray - Deployment pods restarted
-  - 🔵 **Scale**: Cyan - Replica count changed
-  - 🟠 **Suspend**: Orange - FluxCD auto-sync paused
+- **Color-Coded Operation Types**: Each operation type is visually distinguished with different badge styles for quick identification:
+  - **Edit**: Configuration changes via YAML editor
+  - **Resume**: FluxCD auto-sync resumed
+  - **Rollback**: Helm release rolled back to previous revision
+  - **Restart**: Deployment pods restarted
+  - **Scale**: Replica count adjusted
+  - **Suspend**: FluxCD auto-sync paused
 - **Change Comparison**: Built-in YAML diff viewer with three-way comparison:
   - Compare "previous version" vs "current change" (default)
   - Compare with "version currently in the cluster"
@@ -29,14 +29,14 @@ You need the appropriate resource "read" permission to view its history; "write"
 
 ## Operation Type Reference
 
-| Type | Color | Description | Example Use Case |
-|------|-------|-------------|------------------|
-| **edit** | Blue | Direct YAML configuration changes | Updating container image, environment variables, or resource limits |
-| **scale** | Cyan | Replica count adjustments | Scaling up for high traffic or down to save resources |
-| **restart** | Gray | Pod recreation without config changes | Refreshing pods after external dependency changes |
-| **rollback** | Amber | Reverting to a previous Helm revision | Rolling back after a bad deployment |
-| **suspend** | Orange | Pausing FluxCD auto-reconciliation | Testing manual changes without GitOps interference |
-| **resume** | Green | Re-enabling FluxCD auto-sync | Returning to GitOps-managed state after testing |
+| Type | Description | Example Use Case |
+|------|-------------|------------------|
+| **edit** | Direct YAML configuration changes | Updating container image, environment variables, or resource limits |
+| **scale** | Replica count adjustments | Scaling up for high traffic or down to save resources |
+| **restart** | Pod recreation without config changes | Refreshing pods after external dependency changes |
+| **rollback** | Reverting to a previous Helm revision | Rolling back after a bad deployment |
+| **suspend** | Pausing FluxCD auto-reconciliation | Testing manual changes without GitOps interference |
+| **resume** | Re-enabling FluxCD auto-sync | Returning to GitOps-managed state after testing |
 
 ## Best Practices
 

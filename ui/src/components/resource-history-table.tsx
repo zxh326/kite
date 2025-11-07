@@ -115,15 +115,15 @@ export function ResourceHistoryTable<T extends ResourceType>({
       case 'edit':
         return 'default' // Blue
       case 'resume':
-        return 'success' // Green
+        return 'default' // Use default for green-like
       case 'rollback':
-        return 'warning' // Amber
+        return 'secondary' // Use secondary for amber-like
       case 'restart':
         return 'secondary' // Gray
       case 'scale':
-        return 'info' // Cyan
+        return 'outline' // Use outline for cyan-like
       case 'suspend':
-        return 'orange' // Orange
+        return 'destructive' // Use destructive for orange/warning
       case 'create':
         return 'default'
       case 'update':
