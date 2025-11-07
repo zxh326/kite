@@ -4,7 +4,8 @@ import "gorm.io/gorm"
 
 type ResourceHistory struct {
 	Model
-	ClusterName string `json:"clusterName" gorm:"type:varchar(100);not null;index"`
+	SequenceID  uint   `json:"sequenceId" gorm:"not null;index:idx_cluster_sequence,unique"` // ID per cluster
+	ClusterName string `json:"clusterName" gorm:"type:varchar(100);not null;index;index:idx_cluster_sequence,unique"`
 
 	ResourceType string `json:"resourceType" gorm:"type:varchar(50);not null;index"`
 	ResourceName string `json:"resourceName" gorm:"type:varchar(255);not null;index"`
@@ -24,6 +25,24 @@ type ResourceHistory struct {
 
 func (ResourceHistory) TableName() string {
 	return "resource_histories"
+}
+
+// BeforeCreate hook to auto-generate SequenceID per cluster
+func (rh *ResourceHistory) BeforeCreate(tx *gorm.DB) error {
+	// Get max sequence_id for this cluster
+	var maxSeq uint
+	err := tx.Model(&ResourceHistory{}).
+		Where("cluster_name = ?", rh.ClusterName).
+		Select("COALESCE(MAX(sequence_id), 0)").
+		Scan(&maxSeq).Error
+	
+	if err != nil {
+		return err
+	}
+	
+	// Set next sequence ID
+	rh.SequenceID = maxSeq + 1
+	return nil
 }
 
 func (ResourceHistory) AfterMigrate(tx *gorm.DB) error {

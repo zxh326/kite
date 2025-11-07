@@ -27,6 +27,7 @@ interface SimpleTableProps<T> {
     showPageInfo?: boolean
     currentPage?: number
     onPageChange?: (page: number) => void
+    totalCount?: number // For server-side pagination
   }
 }
 
@@ -55,29 +56,50 @@ export function SimpleTable<T>({
     [pagination]
   )
 
-  const { paginatedData, totalPages, startIndex, endIndex } = useMemo(() => {
+  const { paginatedData, totalPages, startIndex, endIndex, totalCount } = useMemo(() => {
     if (!paginationConfig.enabled) {
       return {
         paginatedData: data,
         totalPages: 1,
         startIndex: 1,
         endIndex: data.length,
+        totalCount: data.length,
       }
     }
 
     const { pageSize } = paginationConfig
-    const totalPages = Math.ceil(data.length / pageSize)
-    const startIndex = (currentPage - 1) * pageSize
-    const endIndex = Math.min(startIndex + pageSize, data.length)
-    const paginatedData = data.slice(startIndex, endIndex)
+    const isServerSide = pagination?.totalCount !== undefined
+    
+    if (isServerSide) {
+      // Server-side pagination
+      const totalCount = pagination!.totalCount!
+      const totalPages = Math.ceil(totalCount / pageSize)
+      const startIndex = (currentPage - 1) * pageSize + 1
+      const endIndex = Math.min(currentPage * pageSize, totalCount)
+      
+      return {
+        paginatedData: data,
+        totalPages,
+        startIndex,
+        endIndex,
+        totalCount,
+      }
+    } else {
+      // Client-side pagination
+      const totalPages = Math.ceil(data.length / pageSize)
+      const startIndex = (currentPage - 1) * pageSize
+      const endIndex = Math.min(startIndex + pageSize, data.length)
+      const paginatedData = data.slice(startIndex, endIndex)
 
-    return {
-      paginatedData,
-      totalPages,
-      startIndex: startIndex + 1,
-      endIndex,
+      return {
+        paginatedData,
+        totalPages,
+        startIndex: startIndex + 1,
+        endIndex,
+        totalCount: data.length,
+      }
     }
-  }, [data, currentPage, paginationConfig])
+  }, [data, currentPage, paginationConfig, pagination])
 
   const handlePreviousPage = () => {
     if (isControlled) {
@@ -156,7 +178,7 @@ export function SimpleTable<T>({
         <div className="flex items-center justify-between">
           {paginationConfig.showPageInfo && (
             <div className="text-sm text-muted-foreground">
-              Showing {startIndex} - {endIndex} of {data.length} entries
+              Showing {startIndex} - {endIndex} of {totalCount} entries
             </div>
           )}
 

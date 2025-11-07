@@ -52,7 +52,16 @@ export function ResourceHistoryTable<T extends ResourceType>({
   )
 
   const history = historyResponse?.data || []
-  // const pagination = historyResponse?.pagination
+  const total = historyResponse?.pagination?.total || 0
+
+  // Add row numbers (DESC order - newest gets highest number)
+  type HistoryWithRowNumber = ResourceHistory & { rowNumber: number }
+  const historyWithRowNumbers = useMemo((): HistoryWithRowNumber[] => {
+    return history.map((item, index) => ({
+      ...item,
+      rowNumber: total - ((currentPage - 1) * pageSize) - index
+    }))
+  }, [history, currentPage, pageSize, total])
 
   // Convert current resource to YAML
   const currentYaml = useMemo(() => {
@@ -103,6 +112,18 @@ export function ResourceHistoryTable<T extends ResourceType>({
 
   const getOperationTypeColor = (operationType: string) => {
     switch (operationType.toLowerCase()) {
+      case 'edit':
+        return 'default' // Blue
+      case 'resume':
+        return 'success' // Green
+      case 'rollback':
+        return 'warning' // Amber
+      case 'restart':
+        return 'secondary' // Gray
+      case 'scale':
+        return 'info' // Cyan
+      case 'suspend':
+        return 'orange' // Orange
       case 'create':
         return 'default'
       case 'update':
@@ -136,17 +157,17 @@ export function ResourceHistoryTable<T extends ResourceType>({
 
   // History table columns
   const historyColumns = useMemo(
-    (): Column<ResourceHistory>[] => [
+    (): Column<HistoryWithRowNumber>[] => [
       {
-        header: 'ID',
-        accessor: (item: ResourceHistory) => item.id,
+        header: 'No',
+        accessor: (item: HistoryWithRowNumber) => item.rowNumber,
         cell: (value: unknown) => (
           <div className="font-mono text-sm">{value as number}</div>
         ),
       },
       {
         header: t('resourceHistory.operator'),
-        accessor: (item: ResourceHistory) => item.operator,
+        accessor: (item: HistoryWithRowNumber) => item.operator,
         cell: (value: unknown) => (
           <div className="font-medium">
             {(value as { username: string }).username}
@@ -160,7 +181,7 @@ export function ResourceHistoryTable<T extends ResourceType>({
       },
       {
         header: t('resourceHistory.operationTime'),
-        accessor: (item: ResourceHistory) => item.createdAt,
+        accessor: (item: HistoryWithRowNumber) => item.createdAt,
         cell: (value: unknown) => (
           <span className="text-muted-foreground text-sm">
             {formatDate(value as string)}
@@ -169,7 +190,7 @@ export function ResourceHistoryTable<T extends ResourceType>({
       },
       {
         header: t('resourceHistory.operationType'),
-        accessor: (item: ResourceHistory) => item.operationType,
+        accessor: (item: HistoryWithRowNumber) => item.operationType,
         cell: (value: unknown) => {
           const operationType = value as string
           return (
@@ -181,7 +202,7 @@ export function ResourceHistoryTable<T extends ResourceType>({
       },
       {
         header: t('resourceHistory.status'),
-        accessor: (item: ResourceHistory) => item.success,
+        accessor: (item: HistoryWithRowNumber) => item.success,
         cell: (value: unknown) => {
           const success = value as boolean
           return (
@@ -195,9 +216,9 @@ export function ResourceHistoryTable<T extends ResourceType>({
       },
       {
         header: t('resourceHistory.actions'),
-        accessor: (item: ResourceHistory) => item,
+        accessor: (item: HistoryWithRowNumber) => item,
         cell: (value: unknown) => {
-          const item = value as ResourceHistory
+          const item = value as HistoryWithRowNumber
           const isSuccess = item.success
 
           if (!isSuccess) {
@@ -260,7 +281,7 @@ export function ResourceHistoryTable<T extends ResourceType>({
         </CardHeader>
         <CardContent>
           <SimpleTable
-            data={history || []}
+            data={historyWithRowNumbers}
             columns={historyColumns}
             emptyMessage={t('resourceHistory.noHistoryFound')}
             pagination={{
@@ -269,6 +290,7 @@ export function ResourceHistoryTable<T extends ResourceType>({
               showPageInfo: true,
               currentPage,
               onPageChange: setCurrentPage,
+              totalCount: total,
             }}
           />
         </CardContent>

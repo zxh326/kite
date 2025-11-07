@@ -410,6 +410,7 @@ export interface APIKey {
 // Resource History types
 export interface ResourceHistory {
   id: number
+  sequenceId: number // Per-cluster sequential ID
   clusterName: string
   resourceType: string
   resourceName: string
