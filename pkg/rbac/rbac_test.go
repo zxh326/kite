@@ -12,18 +12,18 @@ func TestCanAccess(t *testing.T) {
 	adminRole := common.Role{
 		Name:        "admin",
 		Description: "Administrator with full access",
-		Clusters:    []string{"*"},
-		Resources:   []string{"*"},
-		Namespaces:  []string{"*"},
-		Verbs:       []string{"*"},
+		Clusters:    []string{".*"},
+		Resources:   []string{".*"},
+		Namespaces:  []string{".*"},
+		Verbs:       []string{".*"},
 	}
 
 	viewerRole := common.Role{
 		Name:        "viewer",
 		Description: "Read-only access to all resources",
-		Clusters:    []string{"*"},
-		Resources:   []string{"*"},
-		Namespaces:  []string{"*"},
+		Clusters:    []string{".*"},
+		Resources:   []string{".*"},
+		Namespaces:  []string{".*"},
 		Verbs:       []string{"get"},
 	}
 
@@ -48,10 +48,10 @@ func TestCanAccess(t *testing.T) {
 	notKubeSystemRole := common.Role{
 		Name:        "not-kube-system",
 		Description: "Access to all namespaces except kube-system",
-		Clusters:    []string{"*"},
-		Resources:   []string{"*"},
-		Namespaces:  []string{"!kube-system", "*"},
-		Verbs:       []string{"*"},
+		Clusters:    []string{".*"},
+		Resources:   []string{".*"},
+		Namespaces:  []string{"^(?!kube-system$).*"},
+		Verbs:       []string{".*"},
 	}
 
 	tests := []struct {
