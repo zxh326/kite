@@ -38,18 +38,18 @@ var (
 		Name:        "admin",
 		Description: "Administrator role with full access",
 		IsSystem:    true,
-		Clusters:    []string{"*"},
-		Resources:   []string{"*"},
-		Namespaces:  []string{"*"},
-		Verbs:       []string{"*"},
+		Clusters:    []string{".*"},
+		Resources:   []string{".*"},
+		Namespaces:  []string{".*"},
+		Verbs:       []string{".*"},
 	}
 	DefaultViewerRole = Role{
 		Name:        "viewer",
 		Description: "Viewer role with read-only access",
 		IsSystem:    true,
-		Clusters:    []string{"*"},
-		Resources:   []string{"*"},
-		Namespaces:  []string{"*"},
+		Clusters:    []string{".*"},
+		Resources:   []string{".*"},
+		Namespaces:  []string{".*"},
 		Verbs:       []string{"get", "log"},
 	}
 )
