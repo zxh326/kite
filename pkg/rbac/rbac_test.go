@@ -164,7 +164,7 @@ func TestCanAccess(t *testing.T) {
 			name:  "developer in correct cluster/namespace/resource by regexp",
 			roles: []common.Role{devRole},
 			mappings: []common.RoleMapping{
-				{Name: "developer", Users: []string{"dev-user"}},
+				{Name: "developer-regexp", Users: []string{"dev-user"}},
 			},
 			user:       "dev-user",
 			oidcGroups: []string{},
@@ -178,7 +178,7 @@ func TestCanAccess(t *testing.T) {
 			name:  "developer in wrong cluster by regexp",
 			roles: []common.Role{regexpDevRole},
 			mappings: []common.RoleMapping{
-				{Name: "developer", Users: []string{"dev-user"}},
+				{Name: "developer-regexp", Users: []string{"dev-user"}},
 			},
 			user:       "dev-user",
 			oidcGroups: []string{},
