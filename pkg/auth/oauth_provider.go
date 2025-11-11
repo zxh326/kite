@@ -41,13 +41,10 @@ type TokenResponse struct {
 
 // Claims represents JWT claims with refresh token support
 type Claims struct {
-	UserID       uint     `json:"user_id"`
-	Username     string   `json:"username"`
-	Name         string   `json:"name"`
-	AvatarURL    string   `json:"avatar_url"`
-	Provider     string   `json:"provider"`
-	RefreshToken string   `json:"refresh_token,omitempty"`
-	OIDCGroups   []string `json:"oidc_groups,omitempty"`
+	UserID       uint   `json:"user_id"`
+	Username     string `json:"username"`
+	Provider     string `json:"provider"`
+	RefreshToken string `json:"refresh_token,omitempty"`
 	jwt.RegisteredClaims
 }
 
