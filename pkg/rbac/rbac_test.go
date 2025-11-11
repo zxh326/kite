@@ -162,7 +162,7 @@ func TestCanAccess(t *testing.T) {
 		},
 		{
 			name:  "developer in correct cluster/namespace/resource by regexp",
-			roles: []common.Role{devRole},
+			roles: []common.Role{regexpDevRole},
 			mappings: []common.RoleMapping{
 				{Name: "developer-regexp", Users: []string{"dev-user"}},
 			},
