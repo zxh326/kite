@@ -39,7 +39,7 @@ func TestCanAccess(t *testing.T) {
 	regexpDevRole := common.Role{
 		Name:        "developer",
 		Description: "Developer access to specific resources by regexp",
-		Clusters:    []string{"dev-.*"},
+		Clusters:    []string{"dev.*"},
 		Resources:   []string{"pod", "deployment"},
 		Namespaces:  []string{"dev.*", "test.*"},
 		Verbs:       []string{"get", "create", "update", "delete"},
@@ -134,7 +134,7 @@ func TestCanAccess(t *testing.T) {
 		},
 		{
 			name:  "developer in correct cluster/namespace/resource",
-			roles: []common.Role{devRole, regexpDevRole},
+			roles: []common.Role{devRole},
 			mappings: []common.RoleMapping{
 				{Name: "developer", Users: []string{"dev-user"}},
 			},
@@ -148,7 +148,35 @@ func TestCanAccess(t *testing.T) {
 		},
 		{
 			name:  "developer in wrong cluster",
-			roles: []common.Role{devRole, regexpDevRole},
+			roles: []common.Role{devRole},
+			mappings: []common.RoleMapping{
+				{Name: "developer", Users: []string{"dev-user"}},
+			},
+			user:       "dev-user",
+			oidcGroups: []string{},
+			resource:   "deployment",
+			verb:       "update",
+			cluster:    "prod-cluster",
+			namespace:  "dev",
+			expected:   false,
+		},
+		{
+			name:  "developer in correct cluster/namespace/resource by regexp",
+			roles: []common.Role{devRole},
+			mappings: []common.RoleMapping{
+				{Name: "developer", Users: []string{"dev-user"}},
+			},
+			user:       "dev-user",
+			oidcGroups: []string{},
+			resource:   "deployment",
+			verb:       "update",
+			cluster:    "dev-cluster",
+			namespace:  "dev",
+			expected:   true,
+		},
+		{
+			name:  "developer in wrong cluster by regexp",
+			roles: []common.Role{regexpDevRole},
 			mappings: []common.RoleMapping{
 				{Name: "developer", Users: []string{"dev-user"}},
 			},
