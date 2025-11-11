@@ -37,7 +37,7 @@ func TestCanAccess(t *testing.T) {
 	}
 
 	regexpDevRole := common.Role{
-		Name:        "developer",
+		Name:        "developer-regexp",
 		Description: "Developer access to specific resources by regexp",
 		Clusters:    []string{"dev.*"},
 		Resources:   []string{"pod", "deployment"},
