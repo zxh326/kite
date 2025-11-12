@@ -7,6 +7,7 @@ export const colorThemes = {
   darkmatter: '',
   notebook: '',
   'clean-slate': '',
+  claude: '',
 }
 
 export type ColorTheme = keyof typeof colorThemes
