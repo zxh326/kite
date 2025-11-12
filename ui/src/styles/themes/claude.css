@@ -1,0 +1,110 @@
+/* Claude Theme */
+.color-claude {
+  --background: rgb(250, 249, 245);
+  --foreground: rgb(61, 57, 41);
+  --card: rgb(250, 249, 245);
+  --card-foreground: rgb(20, 20, 19);
+  --popover: rgb(255, 255, 255);
+  --popover-foreground: rgb(40, 38, 27);
+  --primary: rgb(201, 100, 66);
+  --primary-foreground: rgb(255, 255, 255);
+  --secondary: rgb(233, 230, 220);
+  --secondary-foreground: rgb(83, 81, 70);
+  --muted: rgb(237, 233, 222);
+  --muted-foreground: rgb(131, 130, 125);
+  --accent: rgb(233, 230, 220);
+  --accent-foreground: rgb(40, 38, 27);
+  --destructive: rgb(20, 20, 19);
+  --destructive-foreground: rgb(255, 255, 255);
+  --border: rgb(218, 217, 212);
+  --input: rgb(180, 178, 167);
+  --ring: rgb(201, 100, 66);
+  --chart-1: rgb(176, 87, 48);
+  --chart-2: rgb(156, 135, 245);
+  --chart-3: rgb(222, 216, 196);
+  --chart-4: rgb(219, 211, 240);
+  --chart-5: rgb(180, 85, 45);
+  --sidebar: rgb(245, 244, 238);
+  --sidebar-foreground: rgb(61, 61, 58);
+  --sidebar-primary: rgb(201, 100, 66);
+  --sidebar-primary-foreground: rgb(251, 251, 251);
+  --sidebar-accent: rgb(233, 230, 220);
+  --sidebar-accent-foreground: rgb(52, 52, 52);
+  --sidebar-border: rgb(235, 235, 235);
+  --sidebar-ring: rgb(181, 181, 181);
+  --radius: 0.5rem;
+  --shadow-x: 0;
+  --shadow-y: 1px;
+  --shadow-blur: 3px;
+  --shadow-spread: 0px;
+  --shadow-opacity: 0.1;
+  --shadow-color: oklch(0 0 0);
+  --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-sm:
+    0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+  --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+  --shadow-md:
+    0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+  --shadow-lg:
+    0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+  --shadow-xl:
+    0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
+  --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+}
+
+.dark.color-claude {
+  --background: rgb(38, 38, 36);
+  --foreground: rgb(195, 192, 182);
+  --card: rgb(38, 38, 36);
+  --card-foreground: rgb(250, 249, 245);
+  --popover: rgb(48, 48, 46);
+  --popover-foreground: rgb(229, 229, 226);
+  --primary: rgb(217, 119, 87);
+  --primary-foreground: rgb(255, 255, 255);
+  --secondary: rgb(250, 249, 245);
+  --secondary-foreground: rgb(48, 48, 46);
+  --muted: rgb(27, 27, 25);
+  --muted-foreground: rgb(183, 181, 169);
+  --accent: rgb(26, 25, 21);
+  --accent-foreground: rgb(245, 244, 238);
+  --destructive: rgb(239, 68, 68);
+  --destructive-foreground: rgb(255, 255, 255);
+  --border: rgb(62, 62, 56);
+  --input: rgb(82, 81, 74);
+  --ring: rgb(217, 119, 87);
+  --chart-1: rgb(176, 87, 48);
+  --chart-2: rgb(156, 135, 245);
+  --chart-3: rgb(26, 25, 21);
+  --chart-4: rgb(47, 43, 72);
+  --chart-5: rgb(180, 85, 45);
+  --sidebar: rgb(31, 30, 29);
+  --sidebar-foreground: rgb(195, 192, 182);
+  --sidebar-primary: rgb(217, 119, 87);
+  --sidebar-primary-foreground: rgb(251, 251, 251);
+  --sidebar-accent: rgb(15, 15, 14);
+  --sidebar-accent-foreground: rgb(195, 192, 182);
+  --sidebar-border: rgb(235, 235, 235);
+  --sidebar-ring: rgb(181, 181, 181);
+  --radius: 0.5rem;
+  --shadow-x: 0;
+  --shadow-y: 1px;
+  --shadow-blur: 3px;
+  --shadow-spread: 0px;
+  --shadow-opacity: 0.1;
+  --shadow-color: oklch(0 0 0);
+  --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-sm:
+    0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+  --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+  --shadow-md:
+    0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+  --shadow-lg:
+    0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+  --shadow-xl:
+    0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
+  --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+}
