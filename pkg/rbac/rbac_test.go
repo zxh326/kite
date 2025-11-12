@@ -36,6 +36,15 @@ func TestCanAccess(t *testing.T) {
 		Verbs:       []string{"get", "create", "update", "delete"},
 	}
 
+	regexpDevRole := common.Role{
+		Name:        "developer-regexp",
+		Description: "Developer access to specific resources by regexp",
+		Clusters:    []string{"dev.*"},
+		Resources:   []string{"pod", "deployment"},
+		Namespaces:  []string{"dev.*", "test.*"},
+		Verbs:       []string{"get", "create", "update", "delete"},
+	}
+
 	prodViewRole := common.Role{
 		Name:        "prod-viewer",
 		Description: "Read-only access to production",
@@ -142,6 +151,34 @@ func TestCanAccess(t *testing.T) {
 			roles: []common.Role{devRole},
 			mappings: []common.RoleMapping{
 				{Name: "developer", Users: []string{"dev-user"}},
+			},
+			user:       "dev-user",
+			oidcGroups: []string{},
+			resource:   "deployment",
+			verb:       "update",
+			cluster:    "prod-cluster",
+			namespace:  "dev",
+			expected:   false,
+		},
+		{
+			name:  "developer in correct cluster/namespace/resource by regexp",
+			roles: []common.Role{regexpDevRole},
+			mappings: []common.RoleMapping{
+				{Name: "developer-regexp", Users: []string{"dev-user"}},
+			},
+			user:       "dev-user",
+			oidcGroups: []string{},
+			resource:   "deployment",
+			verb:       "update",
+			cluster:    "dev-cluster",
+			namespace:  "dev",
+			expected:   true,
+		},
+		{
+			name:  "developer in wrong cluster by regexp",
+			roles: []common.Role{regexpDevRole},
+			mappings: []common.RoleMapping{
+				{Name: "developer-regexp", Users: []string{"dev-user"}},
 			},
 			user:       "dev-user",
 			oidcGroups: []string{},

@@ -2,6 +2,7 @@ package rbac
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -96,6 +97,15 @@ func match(list []string, val string) bool {
 			}
 		}
 		if v == "*" || v == val {
+			return true
+		}
+
+		re, err := regexp.Compile(v)
+		if err != nil {
+			klog.Error(err)
+			continue
+		}
+		if re.MatchString(val) {
 			return true
 		}
 	}
