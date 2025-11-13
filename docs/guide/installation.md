@@ -154,6 +154,16 @@ If you need to configure Kite through environment variables, please refer to [En
 
 You can complete cluster setup according to the page prompts.
 
+### Quick Setup with In-Cluster Mode
+
+For the simplest setup, select **`in-cluster`** as the cluster type. This option automatically uses the service account credentials that Kite is running with inside the cluster, requiring no additional configuration:
+
+- **No kubeconfig needed**: Kite will use its own service account to access the Kubernetes API
+- **Automatic authentication**: Works out of the box with the default RBAC permissions
+- **Ideal for single-cluster deployments**: Perfect when Kite is managing the same cluster it's running in
+
+This is the recommended option for getting started quickly, especially in development or when Kite only needs to manage its own cluste
+
 ## Uninstalling Kite
 
 ### Helm Uninstall
