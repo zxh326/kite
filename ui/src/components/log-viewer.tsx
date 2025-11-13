@@ -3,6 +3,7 @@ import Editor, { OnMount } from '@monaco-editor/react'
 import {
   IconClearAll,
   IconDownload,
+  IconExternalLink,
   IconMaximize,
   IconMinimize,
   IconPalette,
@@ -13,10 +14,12 @@ import {
 import { Container, Pod } from 'kubernetes-types/core/v1'
 import type { editor } from 'monaco-editor'
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
 
 import { TERMINAL_THEMES, TerminalTheme } from '@/types/themes'
 import { useLogsWebSocket } from '@/lib/api'
 import { toSimpleContainer } from '@/lib/k8s'
+import { openInNewWindow } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -85,7 +88,10 @@ export function LogViewer({
   const [filterTerm, setFilterTerm] = useState('')
   const [showScrollToBottom, setShowScrollToBottom] = useState(false)
   const [isReconnecting, setIsReconnecting] = useState(false)
-  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [searchParams] = useSearchParams()
+  const [isFullscreen, setIsFullscreen] = useState(() => {
+    return searchParams.get('fullscreen') === 'true'
+  })
   const [wordWrap, setWordWrap] = useState<boolean>(() => {
     const saved = localStorage.getItem('log-viewer-word-wrap')
     if (saved === null) {
@@ -394,7 +400,7 @@ export function LogViewer({
 
   return (
     <Card
-      className={`h-full flex flex-col py-4 gap-0 ${isFullscreen ? 'fixed inset-0 z-50 m-0 rounded-none' : ''} ${wordWrap ? 'whitespace-pre-wrap' : 'whitespace-pre'} `}
+      className={`h-full flex flex-col py-4 gap-0 ${isFullscreen ? 'fixed inset-0 z-50 m-0 rounded-none border-none' : ''} ${wordWrap ? 'whitespace-pre-wrap' : 'whitespace-pre'} `}
     >
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -662,6 +668,16 @@ export function LogViewer({
               disabled={logCount === 0}
             >
               <IconDownload className="h-4 w-4" />
+            </Button>
+
+            {/* Open in New Window */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={()=>openInNewWindow()}
+              title="Open in new window"
+            >
+              <IconExternalLink className="h-4 w-4" />
             </Button>
 
             {/* Fullscreen Toggle */}

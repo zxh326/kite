@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   IconClearAll,
+  IconExternalLink,
   IconMaximize,
   IconMinimize,
   IconPalette,
@@ -16,11 +17,12 @@ import { Container, Pod } from 'kubernetes-types/core/v1'
 import '@xterm/xterm/css/xterm.css'
 
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
 
 import { TERMINAL_THEMES, TerminalTheme } from '@/types/themes'
 import { toSimpleContainer } from '@/lib/k8s'
 import { getWebSocketUrl } from '@/lib/subpath'
-import { translateError } from '@/lib/utils'
+import { openInNewWindow, translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -92,7 +94,10 @@ export function Terminal({
       return (saved as 'block' | 'underline' | 'bar') || 'bar'
     }
   )
-  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [searchParams] = useSearchParams()
+  const [isFullscreen, setIsFullscreen] = useState(() => {
+    return searchParams.get('fullscreen') === 'true'
+  })
 
   const terminalRef = useRef<HTMLDivElement>(null)
   const xtermRef = useRef<XTerm | null>(null)
@@ -285,6 +290,7 @@ export function Terminal({
     if (terminal.element) {
       terminal.element.style.overscrollBehavior = 'none'
       terminal.element.style.touchAction = 'none'
+      terminal.element.style.height = '100%'
       terminal.element.addEventListener(
         'wheel',
         (e) => {
@@ -478,7 +484,7 @@ export function Terminal({
 
   return (
     <Card
-      className={`flex flex-col gap-0 py-2 ${isFullscreen ? 'fixed inset-0 z-50 h-[100dvh]' : 'h-[calc(100dvh-180px)]'}`}
+      className={`flex flex-col gap-0 py-2 ${isFullscreen ? 'fixed inset-0 z-50 h-[100dvh] pb-0 rounded-none border-none' : 'h-[calc(100dvh-180px)]'}`}
     >
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -670,6 +676,16 @@ export function Terminal({
             {/* Clear Terminal */}
             <Button variant="outline" size="sm" onClick={clearTerminal}>
               <IconClearAll className="h-4 w-4" />
+            </Button>
+
+            {/* Open in New Window */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openInNewWindow()}
+              title="Open in new window"
+            >
+              <IconExternalLink className="h-4 w-4" />
             </Button>
 
             <Button variant="outline" size="sm" onClick={toggleFullscreen}>

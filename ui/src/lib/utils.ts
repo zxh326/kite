@@ -268,3 +268,62 @@ export function enrichNodeConditionsWithHealth(data: NodeCondition[]) {
     }
   })
 }
+
+/**
+ * Open current page in a new window with specified parameters
+ */
+export function openInNewWindow(params?: {
+  /**
+   * @default true
+   */
+  fullscreen?: boolean
+  /**
+   * @default 1200
+   */
+  width?: number
+  /** @default 800 */
+  height?: number
+  /**
+   * @default true
+   */
+  centered?: boolean
+  left?: number
+  top?: number
+}) {
+  const {
+    fullscreen = true,
+    width = 1200,
+    height = 800,
+    centered = true,
+    left,
+    top,
+  } = params || {}
+
+  const searchParams = new URLSearchParams(new URL(location.href).searchParams)
+
+  if (fullscreen) {
+    searchParams.set('fullscreen', 'true')
+  } else {
+    searchParams.delete('fullscreen')
+  }
+
+  const url = `${location.origin}${location.pathname}?${searchParams.toString()}`
+
+  let windowFeatures = `width=${width},height=${height}`
+
+  if (left !== undefined && top !== undefined) {
+    windowFeatures += `,left=${left},top=${top}`
+  } else if (centered) {
+    const screenLeft = window.screenLeft ?? window.screenX
+    const screenTop = window.screenTop ?? window.screenY
+    const screenWidth = window.screen.width
+    const screenHeight = window.screen.height
+
+    const leftPos = screenLeft + (screenWidth - width) / 2
+    const topPos = screenTop + (screenHeight - height) / 2
+
+    windowFeatures += `,left=${leftPos},top=${topPos}`
+  }
+
+  window.open(url, '_blank', windowFeatures)
+}
