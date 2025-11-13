@@ -162,7 +162,7 @@ For the simplest setup, select **`in-cluster`** as the cluster type. This option
 - **Automatic authentication**: Works out of the box with the default RBAC permissions
 - **Ideal for single-cluster deployments**: Perfect when Kite is managing the same cluster it's running in
 
-This is the recommended option for getting started quickly, especially in development or when Kite only needs to manage its own cluste
+This is the recommended option for getting started quickly, especially in development or when Kite only needs to manage its own cluster.
 
 ## Uninstalling Kite
 
