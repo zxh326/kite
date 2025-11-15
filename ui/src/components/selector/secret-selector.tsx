@@ -16,12 +16,14 @@ export function SecretSelector({
   namespace,
   placeholder = 'Select a secret',
   className,
+  avoidHelmSecrets = false,
 }: {
   selectedSecret?: string
   onSecretChange: (secret: string) => void
   namespace?: string
   placeholder?: string
   className?: string
+  avoidHelmSecrets?: boolean
 }) {
   const { data, isLoading } = useResources('secrets', namespace)
 
@@ -44,14 +46,21 @@ export function SecretSelector({
             Loading secrets...
           </SelectItem>
         )}
-        {sortedSecrets?.map((secret: Secret) => (
-          <SelectItem
-            key={secret.metadata!.name}
-            value={secret.metadata!.name!}
-          >
-            {secret.metadata!.name}
-          </SelectItem>
-        ))}
+        {sortedSecrets
+          ?.filter((secret: Secret) => {
+            if (avoidHelmSecrets) {
+              return !secret.type?.includes('helm.sh/release.v1')
+            }
+            return true
+          })
+          .map((secret: Secret) => (
+            <SelectItem
+              key={secret.metadata!.name}
+              value={secret.metadata!.name!}
+            >
+              {secret.metadata!.name}
+            </SelectItem>
+          ))}
         {!isLoading && (!sortedSecrets || sortedSecrets.length === 0) && (
           <SelectItem disabled value="_empty">
             No secrets found

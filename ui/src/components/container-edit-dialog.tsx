@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { DialogDescription } from '@radix-ui/react-dialog'
 import { Container } from 'kubernetes-types/core/v1'
+import { useParams } from 'react-router-dom'
 
 import { EnvironmentEditor, ImageEditor, ResourceEditor } from './editors'
 import { Button } from './ui/button'
@@ -27,6 +28,8 @@ export function ContainerEditDialog({
   onSave,
 }: ContainerEditDialogProps) {
   const [editedContainer, setEditedContainer] = useState<Container>(container)
+
+  const { namespace } = useParams()
 
   useEffect(() => {
     setEditedContainer({ ...container })
@@ -73,6 +76,7 @@ export function ContainerEditDialog({
             <EnvironmentEditor
               container={editedContainer}
               onUpdate={handleUpdate}
+              namespace={namespace!}
             />
           </TabsContent>
         </Tabs>

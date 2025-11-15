@@ -79,11 +79,8 @@ func (om *OAuthManager) GenerateJWT(user *model.User, refreshToken string) (stri
 	claims := Claims{
 		UserID:       user.ID,
 		Username:     user.Username,
-		Name:         user.Name,
-		AvatarURL:    user.AvatarURL,
 		Provider:     user.Provider,
 		RefreshToken: refreshToken,
-		OIDCGroups:   user.OIDCGroups,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(now),
@@ -175,11 +172,8 @@ func (om *OAuthManager) RefreshJWT(c *gin.Context, tokenString string) (string, 
 		Model: model.Model{
 			ID: claims.UserID,
 		},
-		Username:   claims.Username,
-		Name:       claims.Name,
-		AvatarURL:  claims.AvatarURL,
-		Provider:   claims.Provider,
-		OIDCGroups: claims.OIDCGroups,
+		Username: claims.Username,
+		Provider: claims.Provider,
 	}
 
 	return om.GenerateJWT(user, "")

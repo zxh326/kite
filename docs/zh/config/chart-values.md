@@ -14,6 +14,7 @@
 | `nameOverride`     | 覆盖 chart 名称                                    | `""`                  |
 | `fullnameOverride` | 覆盖完整名称                                       | `""`                  |
 | `debug`            | 启用调试模式                                       | `false`               |
+| `basePath`         | 应用的基础路径，详见安装文档中的说明。     | `""`                 |
 
 ## 认证与安全
 

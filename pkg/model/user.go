@@ -64,6 +64,14 @@ func GetUserByID(id uint64) (*User, error) {
 	return &user, nil
 }
 
+func GetAnonymousUser() *User {
+	user := &User{}
+	if err := DB.Where("username = ? AND provider = ?", "anonymous", "Anonymous").First(user).Error; err != nil {
+		return nil
+	}
+	return user
+}
+
 func FindWithSubOrUpsertUser(user *User) error {
 	if user.Sub == "" {
 		return errors.New("user sub is empty")

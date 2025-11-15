@@ -106,6 +106,40 @@ spec:
       secretName: kite-tls
 ```
 
+  ## 在子路径下部署（basePath）
+
+  如果您希望将 Kite 部署在一个子路径下，例如 `https://example.com/kite`，可以使用 Helm Chart 的 `basePath` 值来配置。
+
+  如何设置：
+
+  - 在 `values.yaml` 中：
+
+  ```yaml
+  basePath: "/kite"
+  ```
+
+  - 或使用 Helm CLI：
+
+  ```fish
+  helm install kite kite/kite -n kite-system --create-namespace --set basePath="/kite"
+  ```
+
+  说明：
+
+  - Ingress 配置：确保 Ingress 的 `paths` 与子路径一致，并使用合适的 `pathType`（例如 `Prefix`）。示例：
+
+  ```yaml
+  ingress:
+    enabled: true
+    hosts:
+      - host: kite.example.com
+        paths:
+          - path: /kite
+            pathType: Prefix
+  ```
+
+  - OAuth / 重定向：如果启用了 OAuth 或其他外部重定向，请在 OAuth 提供方中将重定向 URL 更新为包含子路径，例如 `https://kite.example.com/kite/oauth/callback`。
+
 ## 验证安装
 
 安装完成后，可访问仪表盘验证 Kite 是否部署成功。预期界面如下：

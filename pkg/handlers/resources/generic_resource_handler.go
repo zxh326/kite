@@ -467,10 +467,21 @@ func (h *GenericResourceHandler[T, V]) Search(c *gin.Context, q string, limit in
 	cs := c.MustGet("cluster").(*cluster.ClientSet)
 	ctx := c.Request.Context()
 	objectList := reflect.New(h.listType).Interface().(V)
-	if err := cs.K8sClient.List(ctx, objectList); err != nil {
+	var listOpts []client.ListOption
+	if idx := strings.Index(q, ":"); idx > 0 {
+		labelKey := strings.TrimSpace(q[:idx])
+		labelValue := strings.TrimSpace(q[idx+1:])
+		listOpts = append(listOpts, client.MatchingLabels{labelKey: labelValue})
+	} else if idx := strings.Index(q, "="); idx > 0 {
+		labelKey := strings.TrimSpace(q[:idx])
+		labelValue := strings.TrimSpace(q[idx+1:])
+		listOpts = append(listOpts, client.MatchingLabels{labelKey: labelValue})
+	}
+	if err := cs.K8sClient.List(ctx, objectList, listOpts...); err != nil {
 		klog.Errorf("failed to list %s: %v", h.name, err)
 		return nil, err
 	}
+	isLabelSearch := strings.Contains(q, ":") || strings.Contains(q, "=")
 	items, err := meta.ExtractList(objectList)
 	if err != nil {
 		klog.Errorf("failed to extract items from list: %v", err)
@@ -485,7 +496,7 @@ func (h *GenericResourceHandler[T, V]) Search(c *gin.Context, q string, limit in
 			klog.Errorf("item is not a client.Object: %v", item)
 			continue
 		}
-		if !strings.Contains(strings.ToLower(obj.GetName()), strings.ToLower(q)) {
+		if !isLabelSearch && !strings.Contains(strings.ToLower(obj.GetName()), strings.ToLower(q)) {
 			continue
 		}
 		result := common.SearchResult{

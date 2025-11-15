@@ -1,8 +1,8 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Editor, { OnMount } from '@monaco-editor/react'
 import {
   IconClearAll,
   IconDownload,
-  IconFilter,
   IconMaximize,
   IconMinimize,
   IconPalette,
@@ -11,13 +11,12 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { Container, Pod } from 'kubernetes-types/core/v1'
+import type { editor } from 'monaco-editor'
 import { useTranslation } from 'react-i18next'
 
-import { LOG_THEMES, LogTheme } from '@/types/themes'
-import { ansiStateToCss, parseAnsi, stripAnsi } from '@/lib/ansi-parser'
+import { TERMINAL_THEMES, TerminalTheme } from '@/types/themes'
 import { useLogsWebSocket } from '@/lib/api'
 import { toSimpleContainer } from '@/lib/k8s'
-import { translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -47,52 +46,6 @@ import { NetworkSpeedIndicator } from './network-speed-indicator'
 import { ContainerSelector } from './selector/container-selector'
 import { PodSelector } from './selector/pod-selector'
 
-interface LogLineProps {
-  line: string
-  searchTerm: string
-  wordWrap: boolean
-}
-
-const LogLine = memo(({ line, searchTerm, wordWrap }: LogLineProps) => {
-  const segments = parseAnsi(line)
-
-  return (
-    <div className={wordWrap ? 'break-words' : 'break-all'}>
-      {segments.map((segment, segIndex) => {
-        const text = segment.text
-        if (!searchTerm) {
-          return (
-            <span key={segIndex} style={ansiStateToCss(segment.styles)}>
-              {text}
-            </span>
-          )
-        }
-
-        const parts = text.split(new RegExp(`(${searchTerm})`, 'gi'))
-        return (
-          <span key={segIndex} style={ansiStateToCss(segment.styles)}>
-            {parts.map((part, i) => {
-              if (part.toLowerCase() === searchTerm.toLowerCase()) {
-                return (
-                  <span
-                    key={i}
-                    className="bg-yellow-500/50 dark:bg-yellow-500/30 rounded px-0.5"
-                  >
-                    {part}
-                  </span>
-                )
-              }
-              return part
-            })}
-          </span>
-        )
-      })}
-    </div>
-  )
-})
-
-LogLine.displayName = 'LogLine'
-
 interface LogViewerProps {
   namespace: string
   podName?: string
@@ -112,7 +65,10 @@ export function LogViewer({
   onClose,
   labelSelector,
 }: LogViewerProps) {
-  console.log('LogViewer render')
+  const [logTheme, setLogTheme] = useState<TerminalTheme>(() => {
+    const saved = localStorage.getItem('log-viewer-theme')
+    return (saved as TerminalTheme) || 'classic'
+  })
   const containers = useMemo(() => {
     return toSimpleContainer(initContainers, _containers)
   }, [_containers, initContainers])
@@ -123,11 +79,11 @@ export function LogViewer({
     const saved = localStorage.getItem('log-viewer-tail-lines')
     return saved ? parseInt(saved, 10) : 100
   })
+  const { t } = useTranslation()
   const [timestamps, setTimestamps] = useState(false)
   const [previous, setPrevious] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [isFilterMode, setIsFilterMode] = useState(false)
-  const [autoScroll, setAutoScroll] = useState(true)
+  const [filterTerm, setFilterTerm] = useState('')
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false)
   const [isReconnecting, setIsReconnecting] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [wordWrap, setWordWrap] = useState<boolean>(() => {
@@ -138,22 +94,25 @@ export function LogViewer({
     }
     return saved === 'true'
   })
-  const [logTheme, setLogTheme] = useState<LogTheme>(() => {
-    const saved = localStorage.getItem('log-viewer-theme')
-    return (saved as LogTheme) || 'classic'
+
+  const [showLineNumbers, setShowLineNumbers] = useState<boolean>(() => {
+    const saved = localStorage.getItem('log-viewer-show-line-numbers')
+    if (saved === null) {
+      return false
+    }
+    return saved === 'true'
   })
+
   const [fontSize, setFontSize] = useState(() => {
     const saved = localStorage.getItem('log-viewer-font-size')
     return saved ? parseInt(saved, 10) : 14
   })
-  const logContainerRef = useRef<HTMLDivElement>(null)
-  const [logStartIndex, setLogStartIndex] = useState(0)
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
+  const [logCount, setLogCount] = useState(0) // Track log count for re-rendering
 
   const [selectPodName, setSelectPodName] = useState<string | undefined>(
     podName || pods?.[0]?.metadata?.name || undefined
   )
-
-  const { t } = useTranslation()
 
   useEffect(() => {
     if (podName) {
@@ -180,7 +139,7 @@ export function LogViewer({
   }, [containers])
 
   // Handle theme change and persist to localStorage
-  const handleThemeChange = useCallback((theme: LogTheme) => {
+  const handleThemeChange = useCallback((theme: TerminalTheme) => {
     setLogTheme(theme)
     localStorage.setItem('log-viewer-theme', theme)
   }, [])
@@ -201,25 +160,75 @@ export function LogViewer({
 
   // Quick theme cycling function
   const cycleTheme = useCallback(() => {
-    const themes = Object.keys(LOG_THEMES) as LogTheme[]
+    const themes = Object.keys(TERMINAL_THEMES) as TerminalTheme[]
     const currentIndex = themes.indexOf(logTheme)
     const nextIndex = (currentIndex + 1) % themes.length
     handleThemeChange(themes[nextIndex])
   }, [logTheme, handleThemeChange])
 
-  // Optimized auto scroll function
-  const scrollToBottom = useCallback(() => {
-    if (autoScroll && logContainerRef.current) {
-      requestAnimationFrame(() => {
-        if (logContainerRef.current) {
-          logContainerRef.current.scrollTop =
-            logContainerRef.current.scrollHeight
-        }
-      })
-    }
-  }, [autoScroll])
+  // Handle editor mount
+  const handleEditorMount: OnMount = useCallback((editor) => {
+    editorRef.current = editor
 
-  // Memoize options to prevent unnecessary re-renders
+    // Configure search widget
+    editor.updateOptions({
+      find: {
+        addExtraSpaceOnTop: false,
+        autoFindInSelection: 'never',
+        seedSearchStringFromSelection: 'never',
+      },
+    })
+  }, [])
+
+  const appendLog = useCallback(
+    (log: string) => {
+      setLogCount((count) => count + 1)
+      if (filterTerm) {
+        if (!log.toLocaleLowerCase().includes(filterTerm)) {
+          return
+        }
+      }
+      if (editorRef.current) {
+        const model = editorRef.current.getModel()
+        if (model) {
+          const lineCount = model.getLineCount()
+          const lineMaxColumn = model.getLineMaxColumn(lineCount)
+          const prefix = model.getValueLength() === 0 ? '' : '\n'
+          model.applyEdits([
+            {
+              range: {
+                startColumn: lineMaxColumn,
+                endColumn: lineMaxColumn,
+                startLineNumber: lineCount,
+                endLineNumber: lineCount,
+              },
+              text: `${prefix}${log}`,
+              forceMoveMarkers: true,
+            },
+          ])
+          const visibleRange = editorRef.current.getVisibleRanges()[0]
+          if (visibleRange?.endLineNumber + 2 >= lineCount) {
+            editorRef.current.revealLine(model.getLineCount())
+            setShowScrollToBottom(false)
+          } else {
+            setShowScrollToBottom(true)
+          }
+        }
+      }
+    },
+    [filterTerm]
+  )
+
+  const cleanLog = useCallback(() => {
+    setLogCount(0)
+    if (editorRef.current) {
+      const model = editorRef.current.getModel()
+      if (model) {
+        model.setValue('')
+      }
+    }
+  }, [])
+
   const logsOptions = useMemo(
     () => ({
       container: selectedContainer,
@@ -228,6 +237,8 @@ export function LogViewer({
       previous,
       enabled: !!selectPodName,
       labelSelector,
+      onNewLog: appendLog,
+      onClear: cleanLog,
     }),
     [
       selectedContainer,
@@ -236,27 +247,22 @@ export function LogViewer({
       previous,
       selectPodName,
       labelSelector,
+      appendLog,
+      cleanLog,
     ]
   )
 
   // Use the new WebSocket logs hook
   const {
-    logs,
     isLoading,
-    error,
     isConnected,
     downloadSpeed,
     refetch,
     stopStreaming,
+    clearLogs,
   } = useLogsWebSocket(namespace, selectPodName || '', logsOptions)
 
-  const handleClearLogs = useCallback(() => {
-    if (logs) {
-      setLogStartIndex(logs.length)
-    }
-  }, [logs])
-
-  const stopStreamingRef = useRef(stopStreaming)
+  const stopStreamingRef = useRef<() => void>(stopStreaming)
   stopStreamingRef.current = stopStreaming
 
   // Clean up WebSocket connection when component unmounts
@@ -298,112 +304,32 @@ export function LogViewer({
     }
   }, [isLoading])
 
-  // Convert logs array to the expected format with useMemo to prevent re-renders
-  const logsData = useMemo(
-    () => ({
-      logs: logs || [],
-      container: selectedContainer,
-      pod: selectPodName,
-      namespace,
-    }),
-    [logs, selectedContainer, selectPodName, namespace]
-  )
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [logsData.logs.length, scrollToBottom])
-
-  useEffect(() => {
-    const logContainer = logContainerRef.current
-    if (!logContainer) return
-
-    const handleWheelEvent = (e: WheelEvent) => {
-      e.stopPropagation()
-      setTimeout(() => {
-        if (logContainer) {
-          const { scrollTop, scrollHeight, clientHeight } = logContainer
-          const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10 // 10px tolerance
-
-          if (isAtBottom && !autoScroll) {
-            setAutoScroll(true)
-          } else if (!isAtBottom && autoScroll) {
-            setAutoScroll(false)
-          }
-        }
-      }, 50)
-    }
-
-    const handleTouchStart = (e: TouchEvent) => {
-      e.stopPropagation()
-    }
-
-    const handleTouchEnd = (e: TouchEvent) => {
-      e.stopPropagation()
-      setTimeout(() => {
-        if (logContainer) {
-          const { scrollTop, scrollHeight, clientHeight } = logContainer
-          const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10 // 10px tolerance
-
-          if (isAtBottom && !autoScroll) {
-            setAutoScroll(true)
-          } else if (!isAtBottom && autoScroll) {
-            setAutoScroll(false)
-          }
-        }
-      }, 50)
-    }
-
-    logContainer.addEventListener('wheel', handleWheelEvent, { passive: true })
-    logContainer.addEventListener('touchstart', handleTouchStart, {
-      passive: true,
-    })
-    logContainer.addEventListener('touchend', handleTouchEnd, {
-      passive: true,
-    })
-
-    return () => {
-      logContainer.removeEventListener('wheel', handleWheelEvent)
-      logContainer.removeEventListener('touchstart', handleTouchStart)
-      logContainer.removeEventListener('touchend', handleTouchEnd)
-    }
-  }, [autoScroll])
-
-  const displayedLogCount = useMemo(
-    () => (logsData?.logs?.slice(logStartIndex) || []).length,
-    [logsData?.logs, logStartIndex]
-  )
-
-  const filteredLogs = useMemo(() => {
-    const logsToFilter = logsData?.logs?.slice(logStartIndex) || []
-    const logs =
-      logsToFilter.filter((line) =>
-        searchTerm && isFilterMode
-          ? stripAnsi(line).toLowerCase().includes(searchTerm.toLowerCase())
-          : true
-      ) || []
-
-    const maxDisplayLines = 10000
-    if (logs.length > maxDisplayLines) {
-      return logs.slice(-maxDisplayLines)
-    }
-    return logs
-  }, [logsData?.logs, searchTerm, isFilterMode, logStartIndex])
-
   const downloadLogs = () => {
-    if (!logsData?.logs) return
-
-    const content = logsData.logs.join('\n')
-    const blob = new Blob([content], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    const podFileName = selectPodName || 'all-pods'
-    a.download = `${podFileName}-${selectedContainer || 'pod'}-logs.txt`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    const model = editorRef?.current?.getModel()
+    if (model) {
+      const content = model.getValue()
+      const blob = new Blob([content], { type: 'text/plain' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const podFileName = selectPodName || 'all-pods'
+      a.download = `${podFileName}-${selectedContainer || 'pod'}-logs.txt`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    }
   }
+
+  const scrollToBottom = useCallback(() => {
+    if (editorRef.current) {
+      const model = editorRef.current.getModel()
+      if (model) {
+        editorRef.current.revealLine(model.getLineCount())
+        setShowScrollToBottom(false)
+      }
+    }
+  }, [])
 
   // Handle fullscreen toggle
   const toggleFullscreen = useCallback(() => {
@@ -417,23 +343,23 @@ export function LogViewer({
     })
   }, [])
 
+  const toggleShowLineNumbers = useCallback(() => {
+    setShowLineNumbers((prev) => {
+      localStorage.setItem('log-viewer-show-line-numbers', `${!prev}`)
+      return !prev
+    })
+  }, [])
+
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl/Cmd + F to focus search
+      // Ctrl/Cmd + F to open Monaco search
       if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
         e.preventDefault()
-        const searchInput = document.querySelector(
-          'input[placeholder*="logs..."]'
-        ) as HTMLInputElement
-        searchInput?.focus()
+        editorRef.current?.getAction('actions.find')?.run()
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         toggleFullscreen()
-      }
-      if (e.key === 'Escape' && searchTerm) {
-        setSearchTerm('')
-        setIsFilterMode(false)
       }
       // Alt/Option + Z to toggle word wrap
       if (e.altKey && (e.key === 'z' || e.key === 'Z' || e.key === 'Ω')) {
@@ -458,7 +384,7 @@ export function LogViewer({
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [
-    searchTerm,
+    filterTerm,
     isFullscreen,
     toggleFullscreen,
     fontSize,
@@ -477,15 +403,7 @@ export function LogViewer({
             <CardDescription>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span>
-                  {filteredLogs?.length || 0} lines
-                  {searchTerm &&
-                    isFilterMode &&
-                    ` (filtered from ${displayedLogCount || 0})`}
-                  {logsData?.logs && logsData.logs.length > 10000 && (
-                    <span className="text-yellow-600 ml-1">
-                      (showing last 10k lines)
-                    </span>
-                  )}
+                  {logCount} lines {filterTerm.length > 0 && `(filtered)`}
                 </span>
                 <ConnectionIndicator
                   isConnected={isConnected}
@@ -503,34 +421,14 @@ export function LogViewer({
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            {/* Search */}
             <div className="relative">
               <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={isFilterMode ? 'Filter logs...' : 'Search logs...'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 pr-10 w-48"
+                placeholder={'Filter logs...'}
+                value={filterTerm}
+                onChange={(e) => setFilterTerm(e.target.value)}
+                className="pl-8 w-full pr-8"
               />
-              {searchTerm && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsFilterMode(!isFilterMode)}
-                  className={`absolute right-1 top-1 h-6 w-6 p-0 ${
-                    isFilterMode
-                      ? 'text-blue-600 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-800/50'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                  title={
-                    isFilterMode
-                      ? 'Switch to highlight mode'
-                      : 'Switch to filter mode'
-                  }
-                >
-                  <IconFilter className="h-3 w-3" />
-                </Button>
-              )}
             </div>
 
             {/* Container Selector */}
@@ -563,12 +461,15 @@ export function LogViewer({
               variant="outline"
               size="sm"
               onClick={cycleTheme}
-              title={`Current theme: ${LOG_THEMES[logTheme].name}`}
+              title={`Current theme: ${TERMINAL_THEMES[logTheme].name}`}
               className="relative"
             >
               <IconPalette className="h-4 w-4" />
               <div
-                className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${LOG_THEMES[logTheme].bg} border border-gray-400`}
+                className="absolute -top-1 -right-1 w-3 h-3 rounded-full border border-gray-400"
+                style={{
+                  backgroundColor: TERMINAL_THEMES[logTheme].background,
+                }}
               ></div>
             </Button>
 
@@ -622,20 +523,20 @@ export function LogViewer({
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="auto-scroll">Auto Scroll</Label>
-                    <Switch
-                      id="auto-scroll"
-                      checked={autoScroll}
-                      onCheckedChange={setAutoScroll}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
                     <Label htmlFor="word-wrap">Word Wrap</Label>
                     <Switch
                       id="word-wrap"
                       checked={wordWrap}
                       onCheckedChange={toggleWordWrap}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="show-line-numbers">Show Line Numbers</Label>
+                    <Switch
+                      id="show-line-numbers"
+                      checked={showLineNumbers}
+                      onCheckedChange={toggleShowLineNumbers}
                     />
                   </div>
 
@@ -651,20 +552,15 @@ export function LogViewer({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {Object.entries(LOG_THEMES).map(([key, theme]) => (
-                            <SelectItem key={key} value={key}>
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className={`w-3 h-3 rounded-full ${theme.bg} border border-gray-400`}
-                                ></div>
-                                <span
-                                  className={`${theme.text === 'text-gray-800' ? 'text-gray-600' : theme.text}`}
-                                >
+                          {Object.entries(TERMINAL_THEMES).map(
+                            ([key, theme]) => (
+                              <SelectItem key={key} value={key}>
+                                <div className="flex items-center gap-2">
                                   {theme.name}
-                                </span>
-                              </div>
-                            </SelectItem>
-                          ))}
+                                </div>
+                              </SelectItem>
+                            )
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
@@ -707,15 +603,9 @@ export function LogViewer({
                     </Label>
                     <div className="space-y-1 text-xs text-muted-foreground">
                       <div className="flex justify-between">
-                        <span>Focus Search</span>
+                        <span>Open Search</span>
                         <kbd className="px-1 py-0.5 bg-muted rounded text-xs">
                           Ctrl+F
-                        </kbd>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Clear Search</span>
-                        <kbd className="px-1 py-0.5 bg-muted rounded text-xs">
-                          ESC
                         </kbd>
                       </div>
                       <div className="flex justify-between">
@@ -758,7 +648,7 @@ export function LogViewer({
             <Button
               variant="outline"
               size="sm"
-              onClick={handleClearLogs}
+              onClick={clearLogs}
               title="Clear logs"
             >
               <IconClearAll className="h-4 w-4" />
@@ -769,7 +659,7 @@ export function LogViewer({
               variant="outline"
               size="sm"
               onClick={downloadLogs}
-              disabled={!logsData?.logs?.length}
+              disabled={logCount === 0}
             >
               <IconDownload className="h-4 w-4" />
             </Button>
@@ -800,82 +690,84 @@ export function LogViewer({
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 p-0">
-        <div
-          ref={logContainerRef}
-          className={`h-full overflow-auto ${LOG_THEMES[logTheme].bg} ${LOG_THEMES[logTheme].text} space-y-1`}
-          style={{
-            height: isFullscreen
-              ? 'calc(100dvh - 60px)'
-              : 'calc(100dvh - 255px)',
-            fontSize: `${fontSize}px`,
-            overscrollBehavior: 'contain',
-            touchAction: 'pan-y',
+      <CardContent className="flex-1 p-0 relative">
+        <Editor
+          height={isFullscreen ? 'calc(100dvh - 60px)' : 'calc(100dvh - 255px)'}
+          theme={`log-theme-${logTheme}`}
+          beforeMount={(monaco) => {
+            // Define custom themes for each log theme
+            Object.entries(TERMINAL_THEMES).forEach(([key, theme]) => {
+              monaco.editor.defineTheme(`log-theme-${key}`, {
+                base: key === 'github' ? 'vs' : 'vs-dark',
+                inherit: true,
+                rules: [
+                  { token: '', foreground: theme.foreground.replace('#', '') },
+                ],
+                colors: {
+                  'editor.background': theme.background,
+                  'editor.foreground': theme.foreground,
+                  'editorCursor.foreground': theme.cursor,
+                  'editor.selectionBackground': theme.selection,
+                  'editor.lineHighlightBackground': theme.selection,
+                },
+              })
+            })
           }}
-        >
-          {isLoading && !logsData && (
-            <div className="text-center opacity-60">Loading logs...</div>
-          )}
-
-          {error && (
-            <div className={`text-center ${LOG_THEMES[logTheme].error}`}>
-              {translateError(error, t)}
+          onMount={handleEditorMount}
+          options={{
+            readOnly: true,
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            fontSize: fontSize,
+            wordWrap: wordWrap ? 'on' : 'off',
+            lineHeight: 1.7,
+            insertSpaces: true,
+            fontFamily:
+              "'Maple Mono',Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace",
+            lineNumbers: showLineNumbers ? 'on' : 'off',
+            glyphMargin: false,
+            folding: false,
+            renderLineHighlight: 'gutter',
+            scrollbar: {
+              vertical: 'visible',
+              horizontal: 'visible',
+              useShadows: false,
+              verticalScrollbarSize: 10,
+              horizontalScrollbarSize: 10,
+            },
+            overviewRulerLanes: 0,
+            hideCursorInOverviewRuler: true,
+            overviewRulerBorder: false,
+            automaticLayout: true,
+          }}
+          loading={
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center opacity-60">Loading editor...</div>
             </div>
-          )}
-
-          {filteredLogs?.length === 0 && !isLoading && (
-            <div className="text-center opacity-60">
-              {searchTerm && isFilterMode
-                ? 'No logs match your search'
-                : searchTerm && !isFilterMode
-                  ? 'No logs available (search term present but no matches to highlight)'
-                  : 'No logs available'}
-            </div>
-          )}
-
-          {filteredLogs?.map((line, index) => (
-            <LogLine
-              key={index}
-              line={line}
-              searchTerm={searchTerm}
-              wordWrap={wordWrap}
-            />
-          ))}
-
-          {!autoScroll && (
-            <div
-              className={`sticky bottom-2 right-2 ml-auto w-fit animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ${
+          }
+        />
+        {showScrollToBottom && (
+          <div
+            className={`absolute bottom-4 right-4 shadow-lg z-10  ml-auto w-fit animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ${
+              logTheme === 'github'
+                ? 'bg-white/90 text-gray-600 border border-gray-200 shadow-sm'
+                : 'bg-gray-800/90 text-gray-300 border border-gray-600 shadow-sm'
+            } px-3 py-1.5 text-xs rounded-full backdrop-blur-sm`}
+          >
+            <Button
+              size="sm"
+              variant="ghost"
+              className={`h-auto p-0 text-xs font-normal ${
                 logTheme === 'github'
-                  ? 'bg-white/90 text-gray-600 border border-gray-200 shadow-sm'
-                  : 'bg-gray-800/90 text-gray-300 border border-gray-600 shadow-sm'
-              } px-3 py-1.5 text-xs rounded-full backdrop-blur-sm`}
+                  ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100/70'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700/70'
+              }`}
+              onClick={scrollToBottom}
             >
-              <Button
-                size="sm"
-                variant="ghost"
-                className={`h-auto p-0 text-xs font-normal ${
-                  logTheme === 'github'
-                    ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100/70'
-                    : 'text-gray-300 hover:text-white hover:bg-gray-700/70'
-                }`}
-                onClick={() => {
-                  if (logContainerRef.current) {
-                    setAutoScroll(true)
-                    // Use requestAnimationFrame to ensure autoScroll state is updated first
-                    requestAnimationFrame(() => {
-                      if (logContainerRef.current) {
-                        logContainerRef.current.scrollTop =
-                          logContainerRef.current.scrollHeight
-                      }
-                    })
-                  }
-                }}
-              >
-                ↓ {t('log.jumpToBottom', 'Jump to bottom')}
-              </Button>
-            </div>
-          )}
-        </div>
+              ↓ {t('log.jumpToBottom', 'Jump to bottom')}
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

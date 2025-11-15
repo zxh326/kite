@@ -8,6 +8,7 @@ import { CRDListPage } from './crd-list-page'
 import { CronJobListPage } from './cronjob-list-page'
 import { DaemonSetListPage } from './daemonset-list-page'
 import { DeploymentListPage } from './deployment-list-page'
+import { EventListPage } from './event-list-page'
 import { GatewayListPage } from './gateway-list-page'
 import { HorizontalPodAutoscalerListPage } from './horizontalpodautoscaler-list-page'
 import { HTTPRouteListPage } from './httproute-list-page'
@@ -66,6 +67,8 @@ export function ResourceList() {
       return <HTTPRouteListPage />
     case 'horizontalpodautoscalers':
       return <HorizontalPodAutoscalerListPage />
+    case 'events':
+      return <EventListPage />
     default:
       return <SimpleListPage resourceType={resource as ResourceType} />
   }

@@ -1108,10 +1108,10 @@ export const useLogsWebSocket = (
     sinceSeconds?: number
     enabled?: boolean
     labelSelector?: string
+    onNewLog?: (log: string) => void
+    onClear?: () => void
   }
 ) => {
-  const [logs, setLogs] = useState<string[]>([])
-
   // Build WebSocket URL
   const buildWebSocketUrl = useCallback(() => {
     if (!options?.enabled || !namespace || !podName) return ''
@@ -1157,26 +1157,31 @@ export const useLogsWebSocket = (
   ])
 
   // WebSocket event handlers
-  const handleMessage = useCallback((message: WebSocketMessage) => {
-    switch (message.type) {
-      case 'log':
-        if (message.data) {
-          setLogs((prev) => [...prev, message.data!])
-        }
-        break
-      case 'error':
-        console.error('Log streaming error:', message.data)
-        break
-      case 'close':
-        console.log('Log stream closed:', message.data)
-        break
-    }
-  }, [])
+  const handleMessage = useCallback(
+    (message: WebSocketMessage) => {
+      switch (message.type) {
+        case 'log':
+          if (message.data && options?.onNewLog) {
+            options.onNewLog(message.data)
+          }
+          break
+        case 'error':
+          console.error('Log streaming error:', message.data)
+          break
+        case 'close':
+          console.log('Log stream closed:', message.data)
+          break
+      }
+    },
+    [options]
+  )
 
   const handleOpen = useCallback(() => {
     console.debug('WebSocket connection opened')
-    setLogs([]) // Clear logs on new connection
-  }, [])
+    if (options?.onClear) {
+      options.onClear()
+    }
+  }, [options])
 
   const handleClose = useCallback(() => {
     console.debug('WebSocket connection closed')
@@ -1206,31 +1211,39 @@ export const useLogsWebSocket = (
 
   const refetch = useCallback(() => {
     wsActions.reconnect()
-    setLogs([])
-  }, [wsActions])
+    if (options?.onClear) {
+      options.onClear()
+    }
+  }, [wsActions, options])
 
   const stopStreaming = useCallback(() => {
     wsActions.disconnect()
   }, [wsActions])
 
+  const clearLogs = useCallback(() => {
+    if (options?.onClear) {
+      options.onClear()
+    }
+  }, [options])
+
   return useMemo(
     () => ({
-      logs,
       isLoading: wsState.isConnecting,
       error: wsState.error,
       isConnected: wsState.isConnected,
       downloadSpeed: wsState.networkStats.downloadSpeed,
       refetch,
       stopStreaming,
+      clearLogs,
     }),
     [
-      logs,
       wsState.isConnecting,
       wsState.error,
       wsState.isConnected,
       wsState.networkStats.downloadSpeed,
       refetch,
       stopStreaming,
+      clearLogs,
     ]
   )
 }
