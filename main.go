@@ -202,6 +202,7 @@ func main() {
 	common.LoadEnvs()
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
+        r.SetTrustedProxies(nil)
 	r.Use(middleware.Metrics())
 	if !common.DisableGZIP {
 		klog.Info("GZIP compression is enabled")
