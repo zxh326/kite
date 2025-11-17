@@ -84,7 +84,7 @@ func setupAPIRouter(r *gin.RouterGroup, cm *cluster.ClusterManager) {
 	})
 	r.GET("/api/v1/init_check", handlers.InitCheck)
 	r.GET("/api/v1/version", version.GetVersion)
-	// Auth routes (no auth required)
+
 	authHandler := auth.NewAuthHandler()
 	authGroup := r.Group("/api/auth")
 	{
@@ -102,10 +102,7 @@ func setupAPIRouter(r *gin.RouterGroup, cm *cluster.ClusterManager) {
 		userGroup.POST("/sidebar_preference", authHandler.RequireAuth(), handlers.UpdateSidebarPreference)
 	}
 
-	// admin apis
 	adminAPI := r.Group("/api/v1/admin")
-	// Initialize the setup API without authentication.
-	// Once users are configured, this API cannot be used.
 	adminAPI.POST("/users/create_super_user", handlers.CreateSuperUser)
 	adminAPI.POST("/clusters/import", cm.ImportClustersFromKubeconfig)
 	adminAPI.Use(authHandler.RequireAuth(), authHandler.RequireAdmin())
@@ -157,7 +154,6 @@ func setupAPIRouter(r *gin.RouterGroup, cm *cluster.ClusterManager) {
 		}
 	}
 
-	// API routes group (protected)
 	api := r.Group("/api/v1")
 	api.GET("/clusters", authHandler.RequireAuth(), cm.GetClusters)
 	api.Use(authHandler.RequireAuth(), middleware.ClusterMiddleware(cm))
@@ -201,16 +197,34 @@ func main() {
 	}()
 	common.LoadEnvs()
 	gin.SetMode(gin.ReleaseMode)
+
 	r := gin.New()
-        r.SetTrustedProxies(nil)
+
+	// ---------------------------
+	// Fix 1: Trust ingress proxy
+	r.SetTrustedProxies(nil)
+	// ---------------------------
+
 	r.Use(middleware.Metrics())
+
 	if !common.DisableGZIP {
 		klog.Info("GZIP compression is enabled")
-		r.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{"/metrics"})))
+
+		// ---------------------------
+		// Fix 2: exclude WebSocket paths
+		r.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{
+			"/metrics",
+			"/api/v1/logs",
+			"/api/v1/terminal",
+			"/api/v1/node-terminal",
+		})))
+		// ---------------------------
 	}
+
 	r.Use(gin.Recovery())
 	r.Use(middleware.Logger())
 	r.Use(middleware.CORS())
+
 	model.InitDB()
 	rbac.InitRBAC()
 	internal.LoadConfigFromEnv()
@@ -221,7 +235,6 @@ func main() {
 	}
 
 	base := r.Group(common.Base)
-	// Setup router
 	setupAPIRouter(base, cm)
 	setupStatic(r)
 
@@ -229,6 +242,7 @@ func main() {
 		Addr:    ":" + common.Port,
 		Handler: r.Handler(),
 	}
+
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			klog.Fatalf("Failed to start server: %v", err)
@@ -249,3 +263,4 @@ func main() {
 		klog.Fatalf("Failed to shutdown server: %v", err)
 	}
 }
+
