@@ -20,7 +20,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
@@ -105,16 +104,14 @@ export function ClusterManagement() {
         cell: ({ row: { original: cluster } }) => {
           if (cluster.error) {
             return (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Badge variant="destructive">Error</Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="max-w-xs break-all">{cluster.error}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="destructive">Error</Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs break-all">{cluster.error}</p>
+                </TooltipContent>
+              </Tooltip>
             )
           }
           return <Badge variant="secondary">{cluster.version || '-'}</Badge>

@@ -67,11 +67,16 @@ export function ClusterSelector() {
                 {cluster.isDefault && (
                   <Badge className="text-xs">Default</Badge>
                 )}
+                {cluster.error && (
+                  <Badge variant="destructive" className="text-xs">
+                    Sync Error
+                  </Badge>
+                )}
               </div>
               <span
                 className={cn(
                   'text-xs truncate',
-                  cluster.error ? 'text-destructive' : 'text-muted-foreground'
+                  cluster.error ? 'text-red-500' : 'text-muted-foreground'
                 )}
                 title={cluster.error}
               >
