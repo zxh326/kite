@@ -17,6 +17,12 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
 
 import { Action, ActionTable } from '../action-table'
@@ -96,9 +102,23 @@ export function ClusterManagement() {
       {
         id: 'version',
         header: t('common.version', 'Version'),
-        cell: ({ row: { original: cluster } }) => (
-          <Badge variant="secondary">{cluster.version || '-'}</Badge>
-        ),
+        cell: ({ row: { original: cluster } }) => {
+          if (cluster.error) {
+            return (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Badge variant="destructive">Error</Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs break-all">{cluster.error}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )
+          }
+          return <Badge variant="secondary">{cluster.version || '-'}</Badge>
+        },
       },
       {
         id: 'type',

@@ -1,5 +1,6 @@
 import { IconCheck, IconChevronDown, IconServer } from '@tabler/icons-react'
 
+import { cn } from '@/lib/utils'
 import { useCluster } from '@/hooks/use-cluster'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -52,22 +53,29 @@ export function ClusterSelector() {
           <IconChevronDown className="h-3 w-3 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[240px]">
+      <DropdownMenuContent align="end" className="w-60">
         {clusters.map((cluster) => (
           <DropdownMenuItem
             key={cluster.name}
             onClick={() => setCurrentCluster(cluster.name)}
+            disabled={!!cluster.error}
             className="flex items-center justify-between"
           >
-            <div className="flex flex-col">
+            <div className="flex flex-col overflow-hidden">
               <div className="flex items-center gap-2">
                 <span className="font-medium">{cluster.name}</span>
                 {cluster.isDefault && (
                   <Badge className="text-xs">Default</Badge>
                 )}
               </div>
-              <span className="text-xs text-muted-foreground">
-                {cluster.version}
+              <span
+                className={cn(
+                  'text-xs truncate',
+                  cluster.error ? 'text-destructive' : 'text-muted-foreground'
+                )}
+                title={cluster.error}
+              >
+                {cluster.error || cluster.version}
               </span>
             </div>
             {currentCluster === cluster.name && (

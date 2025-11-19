@@ -28,6 +28,7 @@ type ClientSet struct {
 
 type ClusterManager struct {
 	clusters       map[string]*ClientSet
+	errors         map[string]string
 	defaultContext string
 }
 
@@ -175,10 +176,14 @@ func syncClusters(cm *ClusterManager) error {
 			if cluster.Enable {
 				clientSet, err := buildClientSet(cluster)
 				if err != nil {
-					klog.Warningf("Failed to build k8s client for cluster %s, in cluster: %t, err: %v", cluster.Name, cluster.InCluster, err)
+					klog.Errorf("Failed to build k8s client for cluster %s, in cluster: %t, err: %v", cluster.Name, cluster.InCluster, err)
+					cm.errors[cluster.Name] = err.Error()
 					continue
 				}
+				delete(cm.errors, cluster.Name)
 				cm.clusters[cluster.Name] = clientSet
+			} else {
+				delete(cm.errors, cluster.Name)
 			}
 		}
 	}
@@ -186,6 +191,11 @@ func syncClusters(cm *ClusterManager) error {
 		if _, ok := dbClusterMap[name]; !ok {
 			delete(cm.clusters, name)
 			clientSet.K8sClient.Stop(name)
+		}
+	}
+	for name := range cm.errors {
+		if _, ok := dbClusterMap[name]; !ok {
+			delete(cm.errors, name)
 		}
 	}
 
@@ -244,6 +254,7 @@ func buildClientSet(cluster *model.Cluster) (*ClientSet, error) {
 func NewClusterManager() (*ClusterManager, error) {
 	cm := new(ClusterManager)
 	cm.clusters = make(map[string]*ClientSet)
+	cm.errors = make(map[string]string)
 	go func() {
 		ticker := time.NewTicker(1 * time.Minute)
 		defer ticker.Stop()
