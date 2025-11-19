@@ -29,6 +29,17 @@ func (cm *ClusterManager) GetClusters(c *gin.Context) {
 			IsDefault: name == cm.defaultContext,
 		})
 	}
+	for name, errMsg := range cm.errors {
+		if !rbac.CanAccessCluster(user, name) {
+			continue
+		}
+		result = append(result, common.ClusterInfo{
+			Name:      name,
+			Version:   "",
+			IsDefault: false,
+			Error:     errMsg,
+		})
+	}
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].Name < result[j].Name
 	})
@@ -57,6 +68,9 @@ func (cm *ClusterManager) GetClusterList(c *gin.Context) {
 
 		if clientSet, exists := cm.clusters[cluster.Name]; exists {
 			clusterInfo["version"] = clientSet.Version
+		}
+		if errMsg, exists := cm.errors[cluster.Name]; exists {
+			clusterInfo["error"] = errMsg
 		}
 
 		result = append(result, clusterInfo)
