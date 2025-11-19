@@ -43,3 +43,9 @@ docs/.vitepress/cache
 
 kite
 !charts/kite
+
+#pnpm
+/.pnpm-store
+
+#dev
+dev.db
