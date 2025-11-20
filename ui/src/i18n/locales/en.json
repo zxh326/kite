@@ -45,8 +45,11 @@
       "storage": "storage",
       "config": "config",
       "other": "other",
+      "kubernetes": "Kubernetes",
       "security": "Security",
-      "workloads": "Workloads"
+      "workloads": "Workloads",
+      "typesenseclusters": "Typesense",
+      "typesensebackups": "Velero Backups"
     },
     "short": {
       "pvcs": "PVCs",
@@ -63,6 +66,9 @@
   },
   "nav": {
     "overview": "Overview",
+    "tsclusters": "Clusters",
+    "tsoperators": "Operators",
+    "tsbackups": "Snapshot Backups",
     "pods": "Pods",
     "deployments": "Deployments",
     "statefulsets": "StatefulSets",

@@ -34,6 +34,9 @@ import {
   IconTopologyBus,
   IconUser,
   IconUsers,
+  IconServerBolt,
+  IconClockCog,
+  IconDatabaseExport,
 } from '@tabler/icons-react'
 
 import {
@@ -71,6 +74,9 @@ const iconMap = {
   IconBell,
   IconCode,
   IconArrowsHorizontal,
+  IconServerBolt,
+  IconClockCog,
+  IconDatabaseExport,
 }
 
 const getIconName = (iconComponent: React.ComponentType): string => {
@@ -119,82 +125,15 @@ interface SidebarConfigProviderProps {
 }
 
 const defaultMenus: DefaultMenus = {
-  'sidebar.groups.workloads': [
-    { titleKey: 'nav.pods', url: '/pods', icon: IconBox },
-    { titleKey: 'nav.deployments', url: '/deployments', icon: IconRocket },
-    {
-      titleKey: 'nav.statefulsets',
-      url: '/statefulsets',
-      icon: IconStack2,
-    },
-    {
-      titleKey: 'nav.daemonsets',
-      url: '/daemonsets',
-      icon: IconTopologyBus,
-    },
-    { titleKey: 'nav.jobs', url: '/jobs', icon: IconPlayerPlay },
-    { titleKey: 'nav.cronjobs', url: '/cronjobs', icon: IconClockHour4 },
+  'sidebar.groups.typesenseclusters': [
+    { titleKey: 'nav.tsclusters', url: '/pods1', icon: IconServerBolt },
+    { titleKey: 'nav.tsoperators', url: '/pods2', icon: IconClockCog },
   ],
-  'sidebar.groups.traffic': [
-    { titleKey: 'nav.ingresses', url: '/ingresses', icon: IconRouter },
-    { titleKey: 'nav.services', url: '/services', icon: IconNetwork },
-    { titleKey: 'nav.gateways', url: '/gateways', icon: IconLoadBalancer },
-    { titleKey: 'nav.httproutes', url: '/httproutes', icon: IconRoute },
+  'sidebar.groups.typesensebackups': [
+    { titleKey: 'nav.tsbackups', url: '/pods3', icon: IconDatabaseExport },
   ],
-  'sidebar.groups.storage': [
-    {
-      titleKey: 'sidebar.short.pvcs',
-      url: '/persistentvolumeclaims',
-      icon: IconFileDatabase,
-    },
-    {
-      titleKey: 'sidebar.short.pvs',
-      url: '/persistentvolumes',
-      icon: IconDatabase,
-    },
-    {
-      titleKey: 'nav.storageclasses',
-      url: '/storageclasses',
-      icon: IconFileDatabase,
-    },
-  ],
-  'sidebar.groups.config': [
-    { titleKey: 'nav.configMaps', url: '/configmaps', icon: IconMap },
-    { titleKey: 'nav.secrets', url: '/secrets', icon: IconLock },
-    {
-      titleKey: 'nav.horizontalpodautoscalers',
-      url: '/horizontalpodautoscalers',
-      icon: IconArrowsHorizontal,
-    },
-  ],
-  'sidebar.groups.security': [
-    {
-      titleKey: 'nav.serviceaccounts',
-      url: '/serviceaccounts',
-      icon: IconUser,
-    },
-    { titleKey: 'nav.roles', url: '/roles', icon: IconShield },
-    { titleKey: 'nav.rolebindings', url: '/rolebindings', icon: IconUsers },
-    {
-      titleKey: 'nav.clusterroles',
-      url: '/clusterroles',
-      icon: IconShieldCheck,
-    },
-    {
-      titleKey: 'nav.clusterrolebindings',
-      url: '/clusterrolebindings',
-      icon: IconKey,
-    },
-  ],
-  'sidebar.groups.other': [
-    {
-      titleKey: 'nav.namespaces',
-      url: '/namespaces',
-      icon: IconBoxMultiple,
-    },
+  'sidebar.groups.kubernetes': [   
     { titleKey: 'nav.nodes', url: '/nodes', icon: IconServer2 },
-    { titleKey: 'nav.events', url: '/events', icon: IconBell },
-    { titleKey: 'nav.crds', url: '/crds', icon: IconCode },
   ],
 }
 
