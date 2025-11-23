@@ -103,8 +103,8 @@ export function ResourceCharts(props: ResourceChartsProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 gap-16">
                   <div>
                     <div className="flex justify-between text-xs text-muted-foreground mb-1">
                       <span className="font-medium text-blue-600">

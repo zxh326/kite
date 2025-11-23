@@ -126,12 +126,12 @@ interface SidebarConfigProviderProps {
 
 const defaultMenus: DefaultMenus = {
   'sidebar.groups.typesenseclusters': [
-    { titleKey: 'nav.tsclusters', url: '/pods1', icon: IconServerBolt },
     { titleKey: 'nav.tsoperators', url: '/pods2', icon: IconClockCog },
+    { titleKey: 'nav.tsclusters', url: '/pods1', icon: IconServerBolt },
   ],
-  'sidebar.groups.typesensebackups': [
-    { titleKey: 'nav.tsbackups', url: '/pods3', icon: IconDatabaseExport },
-  ],
+  // 'sidebar.groups.typesensebackups': [
+  //   { titleKey: 'nav.tsbackups', url: '/pods3', icon: IconDatabaseExport },
+  // ],
   'sidebar.groups.kubernetes': [   
     { titleKey: 'nav.nodes', url: '/nodes', icon: IconServer2 },
   ],

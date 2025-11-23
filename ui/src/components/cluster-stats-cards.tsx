@@ -1,10 +1,11 @@
 import {
   IconAlertCircleFilled,
-  IconBox,
   IconCircleCheckFilled,
-  IconFolders,
-  IconNetwork,
   IconServer,
+  IconServerBolt,
+  IconClockCog,
+  IconLinkPlus,
+  IconAlertTriangleFilled,
 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -45,7 +46,7 @@ export function ClusterStatsCards({
 
   const statsConfig = [
     {
-      label: t('nav.nodes'),
+      label: t('overview.nodes'),
       value: stats.totalNodes,
       subValue: stats.readyNodes,
       icon: IconServer,
@@ -54,29 +55,31 @@ export function ClusterStatsCards({
       routePath: '/nodes',
     },
     {
-      label: t('nav.pods'),
-      value: stats.totalPods,
-      subValue: stats.runningPods,
-      icon: IconBox,
-      color: 'text-green-600 dark:text-green-400',
-      bgColor: 'bg-green-50 dark:bg-green-950/50',
-      routePath: '/pods',
-    },
-    {
-      label: t('nav.namespaces'),
-      value: stats.totalNamespaces,
-      icon: IconFolders,
+      label: t('overview.tsoperators'),
+      value: stats.totalOperators,
+      subValue: stats.runningOperators,
+      icon: IconClockCog,
       color: 'text-purple-600 dark:text-purple-400',
       bgColor: 'bg-purple-50 dark:bg-purple-950/50',
-      routePath: '/namespaces',
+      routePath: '/tsoperators',
     },
     {
-      label: t('nav.services'),
-      value: stats.totalServices,
-      icon: IconNetwork,
+      label: t('overview.tsclusters'),
+      value: stats.totalClusters,
+      subValue: stats.runningClusters,
+      icon: IconServerBolt,
       color: 'text-orange-600 dark:text-orange-400',
       bgColor: 'bg-orange-50 dark:bg-orange-950/50',
-      routePath: '/services',
+      routePath: '/tsclusters',
+    },
+    {
+      label: t('overview.docsearchscrapers'),
+      value: stats.totalScrapers,
+      subValue: stats.runningScrapers,
+      icon: IconLinkPlus,
+      color: 'text-red-600 dark:text-red-400',
+      bgColor: 'bg-red-50 dark:bg-red-950/50',
+      routePath: '/docsearchscrapers',
     },
   ]
 
@@ -95,28 +98,41 @@ export function ClusterStatsCards({
                   <div>
                     <CardDescription>{stat.label}</CardDescription>
                     <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-                      {stat.routePath ? (
-                        <Link
-                          to={stat.routePath}
-                          className="hover:text-primary/80 hover:underline transition-colors cursor-pointer"
-                        >
-                          {stat.value}
-                        </Link>
+                      {stat.subValue != null && stat.value != null ? (
+                        stat.routePath ? (
+                          <Link
+                            to={stat.routePath}
+                            className="hover:text-primary/80 hover:underline transition-colors cursor-pointer"
+                          >
+                            {stat.value}
+                          </Link>
+                        ) : (
+                          stat.value
+                        )
                       ) : (
-                        stat.value
+                        "-"
                       )}
                     </CardTitle>
                     <div className="text-sm text-muted-foreground">
-                      {stat.subValue === undefined ||
-                      stat.subValue === stat.value ? (
+                      {stat.subValue !== undefined && stat.value !== undefined &&
+                        stat.subValue === stat.value ? (
                         <div className="flex items-center gap-1">
                           <IconCircleCheckFilled className="size-4 text-green-600 flex-shrink-0" />
-                          All ready
+                          All Ready
                         </div>
                       ) : (
                         <div className="flex items-center gap-1">
-                          <IconAlertCircleFilled className="size-4 text-red-600 flex-shrink-0" />
-                          {stat.value - (stat.subValue || 0)} Not Ready
+                          {stat.subValue != null && stat.value != null ? (
+                            <>
+                              <IconAlertCircleFilled className="size-4 flex-shrink-0 text-amber-600" />
+                              {stat.value - stat.subValue} Not Ready
+                            </>
+                          ) : (
+                            <>
+                              <IconAlertTriangleFilled className="size-4 flex-shrink-0 text-yellow-600" />
+                              Not Available
+                            </>
+                          )}
                         </div>
                       )}
                     </div>

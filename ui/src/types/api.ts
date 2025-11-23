@@ -272,27 +272,57 @@ export interface PodMetrics {
   fallback?: boolean
 }
 
+// export interface OverviewData {
+//   totalNodes: number
+//   readyNodes: number
+//   totalPods: number
+//   runningPods: number
+//   totalNamespaces: number
+//   totalServices: number
+//   prometheusEnabled: boolean
+//   resource: {
+//     cpu: {
+//       allocatable: number
+//       requested: number
+//       limited: number
+//     }
+//     memory: {
+//       allocatable: number
+//       requested: number
+//       limited: number
+//     }
+//   }
+// }
+
 export interface OverviewData {
-  totalNodes: number
-  readyNodes: number
-  totalPods: number
-  runningPods: number
-  totalNamespaces: number
-  totalServices: number
-  prometheusEnabled: boolean
+  totalNodes: number;
+  readyNodes: number;
+
+  totalOperators: number;
+  runningOperators: number;
+
+  totalClusters: number;
+  runningClusters: number;
+
+  totalScrapers: number;
+  runningScrapers: number;
+
+  prometheusEnabled: boolean;
+
   resource: {
     cpu: {
-      allocatable: number
-      requested: number
-      limited: number
-    }
+      allocatable: number;
+      requested: number;
+      limited: number;
+    };
     memory: {
-      allocatable: number
-      requested: number
-      limited: number
-    }
-  }
+      allocatable: number;
+      requested: number;
+      limited: number;
+    };
+  };
 }
+
 
 // Pagination types
 export interface PaginationInfo {

@@ -3,6 +3,7 @@ module github.com/zxh326/kite
 go 1.24.9
 
 require (
+	github.com/akyriako/typesense-operator v0.0.0-20251110083605-2e68487450ed
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bytedance/mockey v1.2.16
 	github.com/gin-contrib/gzip v1.2.5

@@ -7,7 +7,7 @@ import { getSubPath } from './lib/subpath'
 import { CRListPage } from './pages/cr-list-page'
 import { InitializationPage } from './pages/initialization'
 import { LoginPage } from './pages/login'
-import { Overview } from './pages/overview'
+import { TypesenseOverview } from './pages/tsoverview'
 import { ResourceDetail } from './pages/resource-detail'
 import { ResourceList } from './pages/resource-list'
 import { SettingsPage } from './pages/settings'
@@ -40,11 +40,11 @@ export const router = createBrowserRouter(
       children: [
         {
           index: true,
-          element: <Overview />,
+          element: <TypesenseOverview />,
         },
         {
           path: 'dashboard',
-          element: <Overview />,
+          element: <TypesenseOverview />,
         },
         {
           path: 'settings',

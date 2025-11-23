@@ -69,6 +69,7 @@
     "tsclusters": "Clusters",
     "tsoperators": "Operators",
     "tsbackups": "Snapshot Backups",
+    "docsearchscrapers": "Scrapers",
     "pods": "Pods",
     "deployments": "Deployments",
     "statefulsets": "StatefulSets",
@@ -100,11 +101,17 @@
   },
   "overview": {
     "title": "Overview",
+    "setup": "Finalize Installation",
+    "kubernetesResources": "Kubernetes Resources",
     "clusterStats": "Cluster Statistics",
     "recentEvents": "Recent Events",
     "resourceCharts": "Resource Charts",
     "failedToLoad": "Failed to load overview data",
-    "unknownError": "Unknown error occurred"
+    "unknownError": "Unknown error occurred",
+    "nodes": "Kubernetes Nodes",
+    "tsclusters": "Typesense Clusters",
+    "tsoperators": "Typesense Operators",
+    "docsearchscrapers": "DocSearch Scrapers"
   },
   "pods": {
     "title": "Pods",
