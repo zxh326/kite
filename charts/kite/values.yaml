@@ -182,6 +182,71 @@ ingress:
   #  - hosts:
   #      - kite.zzde.me
 
+# Gateway API resources for exposing Kite
+# Requires Gateway API CRDs to be installed in the cluster
+# For more information: https://gateway-api.sigs.k8s.io/
+gateway:
+  enabled: false
+  # GatewayClass name - must exist in cluster
+  # Examples: "istio", "cilium", "nginx", "envoy-gateway"
+  className: ""
+  # Set to true to create a new Gateway resource
+  # Set to false to use an existing Gateway
+  create: false
+  # Name of the Gateway (used for both creating new or referencing existing)
+  name: ""
+  # Namespace of existing Gateway (only used when create is false)
+  # Defaults to release namespace if not specified
+  namespace: ""
+  # Annotations for the Gateway (only used when create is true)
+  annotations: {}
+  # Gateway listeners configuration (only used when create is true)
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      # Optional hostname for the listener
+      # hostname: "*.example.com"
+      allowedRoutes:
+        namespaces:
+          from: Same
+    # Uncomment to add HTTPS listener
+    # - name: https
+    #   port: 443
+    #   protocol: HTTPS
+    #   hostname: "kite.example.com"
+    #   allowedRoutes:
+    #     namespaces:
+    #       from: Same
+    #   tls:
+    #     mode: Terminate
+    #     certificateRefs:
+    #       - name: kite-tls-secret
+  # HTTPRoute configuration (supports multiple routes)
+  httpRoutes:
+    - name: kite
+      # Annotations for the HTTPRoute
+      annotations: {}
+      # Hostnames to match (optional, matches all if empty)
+      hostnames: []
+        # - kite.example.com
+      # Routing rules
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+    # Example: additional route for different hostname/path
+    # - name: kite-api
+    #   annotations: {}
+    #   hostnames:
+    #     - api.example.com
+    #   rules:
+    #     - matches:
+    #         - path:
+    #             type: PathPrefix
+    #             value: /api
+
 resources:
   {}
   # We usually recommend not to specify default resources and to leave this as a conscious
