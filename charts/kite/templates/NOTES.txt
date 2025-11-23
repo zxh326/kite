@@ -5,6 +5,20 @@
   http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
   {{- end }}
 {{- end }}
+{{- else if .Values.gateway.enabled }}
+{{- $hasHostnames := false }}
+{{- range .Values.gateway.httpRoutes }}
+{{- if .hostnames }}
+{{- $hasHostnames = true }}
+{{- range .hostnames }}
+  http://{{ . }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if not $hasHostnames }}
+  Gateway API is enabled. Get the Gateway address:
+  kubectl get gateway {{ .Values.gateway.name | default (include "kite.fullname" .) }} -n {{ .Release.Namespace }} -o jsonpath='{.status.addresses[0].value}'
+{{- end }}
 {{- else if contains "NodePort" .Values.service.type }}
   export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "kite.fullname" . }})
   export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
