@@ -7,17 +7,30 @@
 {{- end }}
 {{- else if .Values.gateway.enabled }}
 {{- $hasHostnames := false }}
+{{- $hasHTTPSListener := false }}
+{{- if .Values.gateway.listeners }}
+  {{- range .Values.gateway.listeners }}
+    {{- if eq .protocol "HTTPS" }}
+      {{- $hasHTTPSListener = true }}
+    {{- end }}
+  {{- end }}
+{{- end }}
 {{- range .Values.gateway.httpRoutes }}
 {{- if .hostnames }}
 {{- $hasHostnames = true }}
 {{- range .hostnames }}
-  http://{{ . }}
+  http{{ if $hasHTTPSListener }}s{{ end }}://{{ . }}
 {{- end }}
 {{- end }}
 {{- end }}
 {{- if not $hasHostnames }}
   Gateway API is enabled. Get the Gateway address:
+  {{- if .Values.gateway.create }}
   kubectl get gateway {{ .Values.gateway.name | default (include "kite.fullname" .) }} -n {{ .Release.Namespace }} -o jsonpath='{.status.addresses[0].value}'
+  {{- else }}
+  # NOTE: You are referencing an existing Gateway. Adjust the namespace below as needed.
+  kubectl get gateway {{ .Values.gateway.name | default (include "kite.fullname" .) }} -n <gateway-namespace> -o jsonpath='{.status.addresses[0].value}'
+  {{- end }}
 {{- end }}
 {{- else if contains "NodePort" .Values.service.type }}
   export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "kite.fullname" . }})
