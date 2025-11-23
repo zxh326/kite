@@ -57,7 +57,7 @@ metadata:
   {{- end }}
 spec:
   parentRefs:
-    - name: {{ $.Values.gateway.name | default (include "kite.fullname" $) }}
+    - name: {{ if not $.Values.gateway.create }}{{ $.Values.gateway.name | required "gateway.name is required when gateway.create is false" }}{{ else }}{{ $.Values.gateway.name | default (include "kite.fullname" $) }}{{ end }}
       {{- if and (not $.Values.gateway.create) $.Values.gateway.namespace }}
       namespace: {{ $.Values.gateway.namespace }}
       {{- end }}
@@ -69,6 +69,7 @@ spec:
     {{- range .rules }}
     - matches:
         {{- range .matches }}
+        {{- if or .path .headers .queryParams .method }}
         - {{- if .path }}
           path:
             type: {{ .path.type | default "PathPrefix" }}
@@ -85,6 +86,7 @@ spec:
           {{- with .method }}
           method: {{ . }}
           {{- end }}
+        {{- end }}
         {{- end }}
       backendRefs:
         - name: {{ include "kite.fullname" $ }}
