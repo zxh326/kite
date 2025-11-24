@@ -280,6 +280,7 @@ func (h *PodHandler) Watch(c *gin.Context) {
 					Namespace:         pod.Namespace,
 					CreationTimestamp: pod.CreationTimestamp,
 					DeletionTimestamp: pod.DeletionTimestamp,
+					GenerateName:      pod.GenerateName,
 				}
 				obj.Spec = corev1.PodSpec{
 					NodeName: pod.Spec.NodeName,
