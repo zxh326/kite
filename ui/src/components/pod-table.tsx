@@ -18,8 +18,9 @@ export function PodTable(props: {
   labelSelector?: string
   isLoading?: boolean
   hiddenNode?: boolean
+  allowLink?: boolean
 }) {
-  const { pods, isLoading } = props
+  const { pods, isLoading, allowLink = true } = props
 
   // Pod table columns
   const podColumns = useMemo(
@@ -30,10 +31,25 @@ export function PodTable(props: {
         cell: (value: unknown) => {
           const meta = value as Pod['metadata']
           return (
-            <div className="font-medium text-blue-500 hover:underline">
-              <Link to={`/pods/${meta!.namespace}/${meta!.name}`}>
-                {meta!.name}
-              </Link>
+            // <div className="font-medium text-blue-500 hover:underline">
+            //   <Link to={`/pods/${meta!.namespace}/${meta!.name}`}>
+            //     {meta!.name}
+            //   </Link>
+            // </div>
+            <div
+              className={
+                allowLink
+                  ? "font-medium hover:underline"
+                  : "font-medium text-foreground"  // no hover, no underline
+              }
+            >
+              {allowLink ? (
+                <Link to={`/pods/${meta!.namespace}/${meta!.name}`}>
+                  {meta!.name}
+                </Link>
+              ) : (
+                meta!.name
+              )}
             </div>
           )
         },
@@ -102,21 +118,28 @@ export function PodTable(props: {
         ),
       },
       ...(props.hiddenNode
-        ? []
-        : [
-            {
-              header: 'Node',
-              accessor: (pod: Pod) => pod.spec?.nodeName || '-',
-              cell: (value: unknown) => (
+     ? []
+     : [
+          {
+            header: 'Node',
+            accessor: (pod: Pod) => pod.spec?.nodeName || '-',
+            cell: (value: unknown) => (
+              allowLink ? (
                 <Link
                   to={`/nodes/${value}`}
                   className="text-blue-600 hover:text-blue-800 hover:underline"
                 >
                   {value as string}
                 </Link>
-              ),
-            },
-          ]),
+              ) : (
+                <span className="text-muted-foreground">
+                  {value as string}
+                </span>
+              )
+            ),
+          },
+        ]
+      ),
       {
         header: 'Created',
         accessor: (pod: Pod) => pod.metadata?.creationTimestamp || '',

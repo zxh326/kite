@@ -126,7 +126,7 @@ interface SidebarConfigProviderProps {
 
 const defaultMenus: DefaultMenus = {
   'sidebar.groups.typesenseclusters': [
-    { titleKey: 'nav.tsoperators', url: '/pods2', icon: IconClockCog },
+    { titleKey: 'nav.tsoperators', url: '/operators', icon: IconClockCog },
     { titleKey: 'nav.tsclusters', url: '/pods1', icon: IconServerBolt },
   ],
   // 'sidebar.groups.typesensebackups': [

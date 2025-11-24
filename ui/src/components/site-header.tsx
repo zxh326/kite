@@ -30,9 +30,9 @@ export function SiteHeader() {
             orientation="vertical"
             className="mx-2 data-[orientation=vertical]:h-4"
           />
-          <DynamicBreadcrumb />
+          {/* <DynamicBreadcrumb /> */}
           <div className="ml-auto flex items-center gap-2">
-            <Search />
+            {/* <Search /> */}
             <Plus
               className="h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground"
               onClick={() => setCreateDialogOpen(true)}

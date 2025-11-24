@@ -124,10 +124,11 @@ export function NodeListPage() {
       columnHelper.accessor('metadata.name', {
         header: t('common.name'),
         cell: ({ row }) => (
-          <div className="font-medium text-blue-500 hover:underline">
-            <Link to={`/nodes/${row.original.metadata!.name}`}>
+          <div className="font-medium text-blue-500">
+            {/* <Link to={`/nodes/${row.original.metadata!.name}`}>
               {row.original.metadata!.name}
-            </Link>
+            </Link> */}
+             {row.original.metadata!.name}
           </div>
         ),
       }),

@@ -22,6 +22,7 @@ import { SecretListPage } from './secret-list-page'
 import { ServiceListPage } from './service-list-page'
 import { SimpleListPage } from './simple-list-page'
 import { StatefulSetListPage } from './statefulset-list-page'
+import { TypesenseOperatorListPage } from './tsoperator-list-page'
 
 export function ResourceList() {
   const { resource } = useParams()
@@ -69,6 +70,8 @@ export function ResourceList() {
       return <HorizontalPodAutoscalerListPage />
     case 'events':
       return <EventListPage />
+    case 'operators':
+      return <TypesenseOperatorListPage />
     default:
       return <SimpleListPage resourceType={resource as ResourceType} />
   }

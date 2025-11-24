@@ -223,6 +223,13 @@ export function getPodErrorMessage(pod: Pod): string | undefined {
   return undefined
 }
 
+export function getOperatorVersion (deployment: Deployment) :string {
+  const version =
+    deployment?.metadata?.labels?.['app.kubernetes.io/version'];
+
+  return version ?? "Unknown";
+}
+
 export function getDeploymentStatus(
   deployment: Deployment
 ): DeploymentStatusType {

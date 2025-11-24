@@ -5,7 +5,7 @@ export function usePageTitle(title: string) {
     const previousTitle = document.title
 
     if (title) {
-      document.title = `${title} - Kite`
+      document.title = `${title} - Kitesense`
     }
 
     return () => {

@@ -61,7 +61,7 @@ export function ClusterStatsCards({
       icon: IconClockCog,
       color: 'text-purple-600 dark:text-purple-400',
       bgColor: 'bg-purple-50 dark:bg-purple-950/50',
-      routePath: '/tsoperators',
+      routePath: '/operators',
     },
     {
       label: t('overview.tsclusters'),
@@ -70,7 +70,7 @@ export function ClusterStatsCards({
       icon: IconServerBolt,
       color: 'text-orange-600 dark:text-orange-400',
       bgColor: 'bg-orange-50 dark:bg-orange-950/50',
-      routePath: '/tsclusters',
+      routePath: '/clusters',
     },
     {
       label: t('overview.docsearchscrapers'),

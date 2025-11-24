@@ -83,7 +83,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenuButton asChild>
                 <Link to="/" onClick={handleMenuItemClick}>
                   <img src={Icon} alt="Kite Logo" className="ml-1 h-8 w-8" />
-                  <span className="text-base font-semibold">Kite</span>
+                  <span className="text-base font-semibold">Kitesense</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -113,7 +113,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <img src={Icon} alt="Kite Logo" className="h-8 w-8" />
                     <div className="flex flex-col">
                       <span className="text-base font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                        Kite
+                        Kitesense
                       </span>
                       <VersionInfo />
                     </div>
