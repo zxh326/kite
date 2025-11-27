@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 
-type FontOption = 'system' | 'maple' | 'jetbrains'
+type FontOption = 'system' | 'maple' | 'jetbrains' |'inconsolata'
 
 type FontProviderProps = {
   children: React.ReactNode
@@ -15,7 +15,7 @@ type FontProviderState = {
 }
 
 const initialState: FontProviderState = {
-  font: 'maple',
+  font: 'inconsolata',
   setFont: () => null,
 }
 
@@ -23,7 +23,7 @@ const FontProviderContext = createContext<FontProviderState>(initialState)
 
 export function FontProvider({
   children,
-  defaultFont = 'maple',
+  defaultFont = 'inconsolata',
   storageKey = 'vite-ui-font',
   ...props
 }: FontProviderProps) {
@@ -34,6 +34,9 @@ export function FontProvider({
   useEffect(() => {
     const root = window.document.documentElement
     let value = "'Maple Mono', var(--font-sans)"
+     if (font === 'inconsolata') {
+      value = "'Inconsolata', var(--font-sans)"
+    }
     if (font === 'jetbrains') {
       value = "'JetBrains Mono', var(--font-sans)"
     }

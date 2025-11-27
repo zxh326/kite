@@ -1,5 +1,26 @@
 @custom-variant dark (&:is(.dark *));
 
+@layer base {
+  * {
+    font-size: inherit;
+  }
+
+  /* Match only elements that actually resolve to Inconsolata */
+  [style*="Inconsolata"],
+  .font-inconsolata {
+    font-size: calc(1em * 1.1);
+    /* 10% bigger */
+  }
+
+  /* Match only elements that actually resolve to Inconsolata */
+  [style*="JetBrains Mono"],
+  .font-jetbrains {
+    font-size: calc(0.9em * 1.1);
+    /* 10% bigger */
+  }
+}
+
+
 /* maple-mono-latin-400-normal */
 @font-face {
   font-family: 'Maple Mono';
@@ -7,10 +28,8 @@
   font-display: swap;
   font-weight: 400;
   src:
-    url(https://cdn.jsdelivr.net/fontsource/fonts/maple-mono@latest/latin-400-normal.woff2)
-      format('woff2'),
-    url(https://cdn.jsdelivr.net/fontsource/fonts/maple-mono@latest/latin-400-normal.woff)
-      format('woff');
+    url(https://cdn.jsdelivr.net/fontsource/fonts/maple-mono@latest/latin-400-normal.woff2) format('woff2'),
+    url(https://cdn.jsdelivr.net/fontsource/fonts/maple-mono@latest/latin-400-normal.woff) format('woff');
 }
 
 /* jetbrains-mono-latin-wght-normal */
@@ -19,12 +38,34 @@
   font-style: normal;
   font-display: auto;
   font-weight: 100 800;
-  src: url(https://cdn.jsdelivr.net/fontsource/fonts/jetbrains-mono:vf@latest/latin-wght-normal.woff2)
-    format('woff2-variations');
+  src: url(https://cdn.jsdelivr.net/fontsource/fonts/jetbrains-mono:vf@latest/latin-wght-normal.woff2) format('woff2-variations');
   unicode-range:
     U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
     U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
     U+2215, U+FEFF, U+FFFD;
+}
+
+/* inconsolata-latin-wght-normal */
+@font-face {
+  font-family: 'Inconsolata';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url(https://cdn.jsdelivr.net/fontsource/fonts/inconsolata:vf@latest/latin-wght-normal.woff2) format('woff2-variations');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
+/* fira-mono-latin-400-normal */
+@font-face {
+  font-family: 'Fira Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(@fontsource/fira-mono/files/fira-mono-latin-400-normal.woff2) format('woff2'), url(@fontsource/fira-mono/files/fira-mono-latin-400-normal.woff) format('woff');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 /*
@@ -39,7 +80,10 @@
     Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif,
     'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   --font-mono:
-    'Maple Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Fira Mono',
+    'Inconsolata',
+    'Maple Mono',
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     'Liberation Mono', 'Courier New', monospace;
   --app-font-sans: var(--font-sans);
 }
@@ -59,6 +103,7 @@ samp {
 .font-sans {
   font-family: var(--app-font-sans) !important;
 }
+
 .font-mono {
   font-family: var(--font-mono) !important;
 }
@@ -110,6 +155,7 @@ samp {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -117,22 +163,26 @@ samp {
 
 /* Breathing animation for log viewer connection indicator */
 @keyframes breathing {
+
   0%,
   100% {
     opacity: 0.5;
     transform: scale(1);
     box-shadow: 0 0 2px rgba(74, 222, 128, 0.4);
   }
+
   25% {
     opacity: 0.7;
     transform: scale(1.05);
     box-shadow: 0 0 4px rgba(74, 222, 128, 0.6);
   }
+
   50% {
     opacity: 1;
     transform: scale(1.1);
     box-shadow: 0 0 8px rgba(74, 222, 128, 0.9);
   }
+
   75% {
     opacity: 0.7;
     transform: scale(1.05);

@@ -15,7 +15,7 @@ type AppearanceProviderProps = {
   defaultColorTheme?: ColorTheme
   colorThemeStorageKey?: string
   // Font
-  defaultFont?: 'system' | 'maple' | 'jetbrains'
+  defaultFont?: 'system' | 'maple' | 'jetbrains' | 'inconsolata'
   fontStorageKey?: string
 }
 
@@ -25,7 +25,7 @@ export function AppearanceProvider({
   themeStorageKey = 'vite-ui-theme',
   defaultColorTheme = 'default',
   colorThemeStorageKey = 'vite-ui-color-theme',
-  defaultFont = 'maple',
+  defaultFont = 'inconsolata',
   fontStorageKey = 'vite-ui-font',
 }: AppearanceProviderProps) {
   return (

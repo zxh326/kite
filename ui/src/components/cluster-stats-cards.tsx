@@ -6,6 +6,8 @@ import {
   IconClockCog,
   IconLinkPlus,
   IconAlertTriangleFilled,
+  IconBolt,
+  IconRobot,
 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -58,7 +60,7 @@ export function ClusterStatsCards({
       label: t('overview.tsoperators'),
       value: stats.totalOperators,
       subValue: stats.runningOperators,
-      icon: IconClockCog,
+      icon: IconRobot,
       color: 'text-purple-600 dark:text-purple-400',
       bgColor: 'bg-purple-50 dark:bg-purple-950/50',
       routePath: '/operators',
@@ -67,10 +69,10 @@ export function ClusterStatsCards({
       label: t('overview.tsclusters'),
       value: stats.totalClusters,
       subValue: stats.runningClusters,
-      icon: IconServerBolt,
+      icon: IconBolt,
       color: 'text-orange-600 dark:text-orange-400',
       bgColor: 'bg-orange-50 dark:bg-orange-950/50',
-      routePath: '/clusters',
+      routePath: '/typesense',
     },
     {
       label: t('overview.docsearchscrapers'),

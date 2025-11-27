@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { getDeploymentStatus } from '@/lib/k8s'
-import { formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { DeploymentStatusIcon } from '@/components/deployment-status-icon'
 import { ResourceTable } from '@/components/resource-table'

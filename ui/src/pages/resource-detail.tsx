@@ -15,6 +15,7 @@ import { SecretDetail } from './secret-detail'
 import { ServiceDetail } from './service-detail'
 import { SimpleResourceDetail } from './simple-resource-detail'
 import { StatefulSetDetail } from './statefulset-detail'
+import { TypesenseClusterDetail } from './tscluster-detail'
 
 function getResourceTypeName(resource: string): string {
   const resourceMap: Record<string, string> = {
@@ -75,6 +76,8 @@ export function ResourceDetail() {
       return <ServiceDetail namespace={namespace!} name={name} />
     case 'operators':
       return <TypesenseOperatorDetail namespace={namespace!} name={name} />
+    case 'typesense':
+      return <TypesenseClusterDetail resourceType={resource as ResourceType} namespace={namespace!} name={name} />
     default:
       return (
         <SimpleResourceDetail

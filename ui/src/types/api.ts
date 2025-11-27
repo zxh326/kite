@@ -112,6 +112,7 @@ export type ResourceType =
   | 'clusterroles'
   | 'clusterrolebindings'
   | 'horizontalpodautoscalers'
+  | 'typesense'
 
 export const clusterScopeResources: ResourceType[] = [
   'crds',
@@ -235,6 +236,7 @@ export interface ResourceTypeMap {
   clusterroles: ClusterRole
   clusterrolebindings: ClusterRoleBinding
   horizontalpodautoscalers: HorizontalPodAutoscaler
+  typesense: CustomResource
 }
 
 export interface RecentEvent {

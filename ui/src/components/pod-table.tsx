@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { IconLoader } from '@tabler/icons-react'
+import { IconLoader, IconCircleDottedLetterL, IconCircleDottedLetterC, IconCircleDottedLetterF, IconCircleDottedLetterU } from '@tabler/icons-react'
 import { Pod } from 'kubernetes-types/core/v1'
 import { Link } from 'react-router-dom'
 
@@ -56,6 +56,29 @@ export function PodTable(props: {
         align: 'left' as const,
       },
       {
+        header: 'Image',
+        accessor: (pod: Pod) => pod.spec,
+        cell: (value: unknown) => {
+          const spec = value as Pod['spec']
+          return (
+            <Badge variant="outline" className="text-muted-foreground px-1.5">
+              {spec!.containers[0]!.image}
+            </Badge>
+          )
+        },
+      },
+      // {
+      //   header: 'Role',
+      //   accessor: (pod: Pod) => {
+      //     const role = "C"
+      //     return (
+      //       <IconCircleDottedLetterL className="w-5 h-5 ml-1 text-amber-600" />
+      //     )
+      //   },
+      //   cell: (value: unknown) => value as string,
+      //   align: 'left' as const,
+      // },
+      {
         header: 'Ready',
         accessor: (pod: Pod) => {
           const status = getPodStatus(pod)
@@ -108,38 +131,38 @@ export function PodTable(props: {
           return <MetricCell type="memory" metrics={value as MetricsData} />
         },
       },
-      {
-        header: 'IP',
-        accessor: (pod: Pod) => pod.status?.podIP || '-',
-        cell: (value: unknown) => (
-          <span className="text-sm text-muted-foreground font-mono">
-            {value as string}
-          </span>
-        ),
-      },
-      ...(props.hiddenNode
-     ? []
-     : [
-          {
-            header: 'Node',
-            accessor: (pod: Pod) => pod.spec?.nodeName || '-',
-            cell: (value: unknown) => (
-              allowLink ? (
-                <Link
-                  to={`/nodes/${value}`}
-                  className="text-blue-600 hover:text-blue-800 hover:underline"
-                >
-                  {value as string}
-                </Link>
-              ) : (
-                <span className="text-muted-foreground">
-                  {value as string}
-                </span>
-              )
-            ),
-          },
-        ]
-      ),
+      // {
+      //   header: 'IP',
+      //   accessor: (pod: Pod) => pod.status?.podIP || '-',
+      //   cell: (value: unknown) => (
+      //     <span className="text-sm text-muted-foreground font-mono">
+      //       {value as string}
+      //     </span>
+      //   ),
+      // },
+      // ...(props.hiddenNode
+      //   ? []
+      //   : [
+      //     {
+      //       header: 'Node',
+      //       accessor: (pod: Pod) => pod.spec?.nodeName || '-',
+      //       cell: (value: unknown) => (
+      //         allowLink ? (
+      //           <Link
+      //             to={`/nodes/${value}`}
+      //             className="text-blue-600 hover:text-blue-800 hover:underline"
+      //           >
+      //             {value as string}
+      //           </Link>
+      //         ) : (
+      //           <span className="text-sm text-muted-foreground font-mono">
+      //             {value as string}
+      //           </span>
+      //         )
+      //       ),
+      //     },
+      //   ]
+      // ),
       {
         header: 'Created',
         accessor: (pod: Pod) => pod.metadata?.creationTimestamp || '',

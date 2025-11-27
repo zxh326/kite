@@ -148,10 +148,23 @@ export function UserMenu() {
                 <Check className="h-4 w-4 text-primary" />
               )}
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setFont('inconsolata')}
+              role="menuitemradio"
+              aria-checked={font === 'inconsolata'}
+              className={`flex items-center justify-between gap-2 cursor-pointer ${
+                font === 'inconsolata' ? 'font-medium text-foreground' : ''
+              }`}
+            >
+              <span>Inconsolata</span>
+              {font === 'inconsolata' && (
+                <Check className="h-4 w-4 text-primary" />
+              )}
+            </DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuSub>
 
-        <SidebarCustomizer onOpenChange={(d) => setOpen(d)} />
+        {/* <SidebarCustomizer onOpenChange={(d) => setOpen(d)} /> */}
 
         {user.provider !== 'Anonymous' && (
           <>

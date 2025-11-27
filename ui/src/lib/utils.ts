@@ -56,11 +56,28 @@ export function getAge(timestamp: string): string {
   }
 }
 
+import { format, formatDistance } from 'date-fns'
+
 export function formatDate(timestamp: string, addTo = false): string {
-  const date = new Date(timestamp)
-  const s = format(date, 'yyyy-MM-dd HH:mm:ss')
-  return addTo ? `${s} (${formatDistance(new Date(), date)})` : s
+  try {
+    const date = new Date(timestamp)
+
+    // invalid date → return raw timestamp
+    if (isNaN(date.getTime())) return timestamp
+
+    const s = format(date, 'yyyy-MM-dd HH:mm:ss')
+
+    return addTo ? `${s} (${formatDistance(new Date(), date)})` : s
+  } catch (err) {
+    return timestamp
+  }
 }
+
+// export function formatDate(timestamp: string, addTo = false): string {
+//   const date = new Date(timestamp)
+//   const s = format(date, 'yyyy-MM-dd HH:mm:ss')
+//   return addTo ? `${s} (${formatDistance(new Date(), date)})` : s
+// }
 
 export function formatChartXTicks(
   timestamp: string,

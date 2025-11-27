@@ -39,14 +39,14 @@ export function EventTable(props: {
         header: t('events.reason'),
         accessor: (event: Event) => event.reason || '',
         cell: (value: unknown) => (
-          <div className="font-medium">{value as string}</div>
+          <div className="font-medium text-left">{value as string}</div>
         ),
       },
       {
-        header: t('events.message'),
+        header: '',
         accessor: (event: Event) => event.message || '',
         cell: (value: unknown) => (
-          <div className="text-sm whitespace-pre-wrap">{value as string}</div>
+          <div className="text-sm whitespace-pre-wrap text-left">{value as string}</div>
         ),
       },
       {
@@ -84,6 +84,7 @@ export function EventTable(props: {
           )
         },
       },
+       
     ],
     [t]
   )

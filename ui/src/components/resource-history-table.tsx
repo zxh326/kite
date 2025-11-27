@@ -209,7 +209,7 @@ export function ResourceHistoryTable<T extends ResourceType>({
                 disabled={!item.errorMessage}
               >
                 <IconAlertCircle className="w-4 h-4 mr-1" />
-                {t('resourceHistory.viewError', 'view error')}
+                {t('resourceHistory.viewError', 'View Error')}
               </Button>
             )
           }
@@ -292,11 +292,11 @@ export function ResourceHistoryTable<T extends ResourceType>({
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
-                {t('resourceHistory.errorDetails', 'error details')}
+                {t('resourceHistory.errorDetails', 'Error Details')}
               </DialogTitle>
             </DialogHeader>
             <div className="mt-4">
-              <pre className="bg-destructive/10 text-destructive p-4 rounded-md overflow-auto max-h-96 text-sm">
+              <pre className="bg-destructive/10 text-destructive p-4 rounded-md overflow-auto max-h-96 text-sm whitespace-pre-wrap">
                 {selectedHistory.errorMessage ||
                   t(
                     'resourceHistory.noErrorMessage',

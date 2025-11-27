@@ -143,7 +143,7 @@ export function LoginPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center space-x-2 mb-4">
-              <img src={Logo} className="h-10 w-10 dark:invert" />{' '}
+              {/* <img src={Logo} className="h-10 w-10 dark:invert" />{' '} */}
               <h1 className="text-2xl font-bold">Kitesense</h1>
             </div>
             <p className="text-gray-600">{t('login.kubernetesDashboard')}</p>

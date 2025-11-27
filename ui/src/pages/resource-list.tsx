@@ -23,6 +23,7 @@ import { ServiceListPage } from './service-list-page'
 import { SimpleListPage } from './simple-list-page'
 import { StatefulSetListPage } from './statefulset-list-page'
 import { TypesenseOperatorListPage } from './tsoperator-list-page'
+import { TypesenseClusterListPage } from './tscluster-list-page'
 
 export function ResourceList() {
   const { resource } = useParams()
@@ -72,6 +73,8 @@ export function ResourceList() {
       return <EventListPage />
     case 'operators':
       return <TypesenseOperatorListPage />
+    case 'typesense':
+      return <TypesenseClusterListPage resourceType={resource as ResourceType}/>
     default:
       return <SimpleListPage resourceType={resource as ResourceType} />
   }

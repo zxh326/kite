@@ -77,6 +77,7 @@ func RegisterRoutes(group *gin.RouterGroup) {
 		"httproutes":               NewGenericResourceHandler[*gatewayapiv1.HTTPRoute, *gatewayapiv1.HTTPRouteList]("httproutes", false, false),
 		"horizontalpodautoscalers": NewGenericResourceHandler[*autoscalingv2.HorizontalPodAutoscaler, *autoscalingv2.HorizontalPodAutoscalerList]("horizontalpodautoscalers", false, true),
 		"operators":                NewTypesenseOperatorHandler(),
+		"typesense":                NewTypesenseClusterHandler(),
 	}
 
 	for name, handler := range handlers {

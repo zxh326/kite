@@ -28,9 +28,10 @@ import { RelatedResourcesTable } from '@/components/related-resource-table'
 import { ResourceDeleteConfirmationDialog } from '@/components/resource-delete-confirmation-dialog'
 import { ResourceHistoryTable } from '@/components/resource-history-table'
 import { YamlEditor } from '@/components/yaml-editor'
+import { NestedResponsiveTabs } from '@/components/ui/nested-responsive-tabs'
 
-export function ServiceDetail(props: { name: string; namespace?: string }) {
-  const { namespace, name } = props
+export function ServiceDetail(props: { name: string; namespace?: string, isNested?: bool, isReadOnly?: bool }) {
+  const { namespace, name, isNested = false, isReadOnly = false } = props
   const [yamlContent, setYamlContent] = useState('')
   const [isSavingYaml, setIsSavingYaml] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -101,6 +102,157 @@ export function ServiceDetail(props: { name: string; namespace?: string }) {
     )
   }
 
+  const tabsList =
+    [
+      {
+        value: 'overview',
+        label: 'Overview',
+        content: (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="capitalize">
+                  Service Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">
+                      Created
+                    </Label>
+                    <p className="text-sm">
+                      {formatDate(data.metadata?.creationTimestamp || '')}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">
+                      UID
+                    </Label>
+                    <p className="text-sm font-mono">
+                      {data.metadata?.uid || 'N/A'}
+                    </p>
+                  </div>
+                  {getOwnerInfo(data.metadata) && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">
+                        Owner
+                      </Label>
+                      <p className="text-sm">
+                        {(() => {
+                          const ownerInfo = getOwnerInfo(data.metadata)
+                          if (!ownerInfo) {
+                            return 'No owner'
+                          }
+                          const ownerText = `${ownerInfo.kind}/${ownerInfo.name}`
+                          return isNested ? (
+                            ownerText
+                          ) : (
+                            <Link
+                              to={ownerInfo.path}
+                              className="text-blue-600 hover:text-blue-800 hover:underline"
+                            >
+                              {ownerText}
+                            </Link>
+                          )
+                        })()}
+                      </p>
+                    </div>
+                  )}
+                  <div>
+                    <Label className="text-xs text-muted-foreground">
+                      Ports
+                    </Label>
+                    <div className="flex flex-wrap items-center gap-1">
+                      {(data?.spec?.ports || []).map(
+                        (port, index, array) => (
+                          <span key={`${port.port}-${port.protocol}`}>
+                            <a
+                              href={withSubPath(
+                                `/api/v1/namespaces/${namespace}/services/${name}:${port.port}/proxy/`
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-mono text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
+                            >
+                              {(port.name || port.protocol) &&
+                                `${port.name || port.protocol}:`}
+                              {port.port}
+                              <IconExternalLink className="w-3 h-3" />
+                            </a>
+                            {index < array.length - 1 && ', '}
+                          </span>
+                        )
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <LabelsAnno
+                  labels={data.metadata?.labels || {}}
+                  annotations={data.metadata?.annotations || {}}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        ),
+      },
+      {
+        value: 'yaml',
+        label: 'YAML',
+        content: (
+          <div className="space-y-4">
+            <YamlEditor<'services'>
+              key={refreshKey}
+              value={yamlContent}
+              title="YAML Configuration"
+              onSave={handleSaveYaml}
+              onChange={handleYamlChange}
+              isSaving={isSavingYaml}
+            />
+          </div>
+        ),
+      },
+      {
+        value: 'Related',
+        label: 'Related',
+        content: (
+          <RelatedResourcesTable
+            resource={'services'}
+            name={name}
+            namespace={namespace}
+          />
+        ),
+      },
+      {
+        value: 'events',
+        label: 'Events',
+        content: (
+          <EventTable
+            resource={'services'}
+            namespace={namespace}
+            name={name}
+          />
+        ),
+      },
+      {
+        value: 'history',
+        label: 'History',
+        content: (
+          <ResourceHistoryTable<'services'>
+            resourceType={'services'}
+            name={name}
+            namespace={namespace}
+            currentResource={data}
+          />
+        ),
+      },
+    ]
+
+  const filteredTabsList = isNested
+    ? tabsList.filter(tab => tab.value !== 'Related')
+    : tabsList
+  const TabsComponent = isNested ? NestedResponsiveTabs : ResponsiveTabs
+
   return (
     <div className="space-y-2">
       {/* Header */}
@@ -123,165 +275,27 @@ export function ServiceDetail(props: { name: string; namespace?: string }) {
             <IconRefresh className="w-4 h-4" />
             Refresh
           </Button>
-          <DescribeDialog
-            resourceType={'services' as ResourceType}
-            namespace={namespace}
-            name={name}
-          />
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setIsDeleteDialogOpen(true)}
-          >
-            <IconTrash className="w-4 h-4" />
-            Delete
-          </Button>
+          {!isNested && (
+            <DescribeDialog
+              resourceType={'services' as ResourceType}
+              namespace={namespace}
+              name={name}
+            />
+          )}
+          {!isNested && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              <IconTrash className="w-4 h-4" />
+              Delete
+            </Button>
+          )}
         </div>
       </div>
 
-      <ResponsiveTabs
-        tabs={[
-          {
-            value: 'overview',
-            label: 'Overview',
-            content: (
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="capitalize">
-                      Service Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-xs text-muted-foreground">
-                          Created
-                        </Label>
-                        <p className="text-sm">
-                          {formatDate(data.metadata?.creationTimestamp || '')}
-                        </p>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">
-                          UID
-                        </Label>
-                        <p className="text-sm font-mono">
-                          {data.metadata?.uid || 'N/A'}
-                        </p>
-                      </div>
-                      {getOwnerInfo(data.metadata) && (
-                        <div>
-                          <Label className="text-xs text-muted-foreground">
-                            Owner
-                          </Label>
-                          <p className="text-sm">
-                            {(() => {
-                              const ownerInfo = getOwnerInfo(data.metadata)
-                              if (!ownerInfo) {
-                                return 'No owner'
-                              }
-                              return (
-                                <Link
-                                  to={ownerInfo.path}
-                                  className="text-blue-600 hover:text-blue-800 hover:underline"
-                                >
-                                  {ownerInfo.kind}/{ownerInfo.name}
-                                </Link>
-                              )
-                            })()}
-                          </p>
-                        </div>
-                      )}
-                      <div>
-                        <Label className="text-xs text-muted-foreground">
-                          Ports
-                        </Label>
-                        <div className="flex flex-wrap items-center gap-1">
-                          {(data?.spec?.ports || []).map(
-                            (port, index, array) => (
-                              <span key={`${port.port}-${port.protocol}`}>
-                                <a
-                                  href={withSubPath(
-                                    `/api/v1/namespaces/${namespace}/services/${name}:${port.port}/proxy/`
-                                  )}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="font-mono text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
-                                >
-                                  {(port.name || port.protocol) &&
-                                    `${port.name || port.protocol}:`}
-                                  {port.port}
-                                  <IconExternalLink className="w-3 h-3" />
-                                </a>
-                                {index < array.length - 1 && ', '}
-                              </span>
-                            )
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <LabelsAnno
-                      labels={data.metadata?.labels || {}}
-                      annotations={data.metadata?.annotations || {}}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-            ),
-          },
-          {
-            value: 'yaml',
-            label: 'YAML',
-            content: (
-              <div className="space-y-4">
-                <YamlEditor<'services'>
-                  key={refreshKey}
-                  value={yamlContent}
-                  title="YAML Configuration"
-                  onSave={handleSaveYaml}
-                  onChange={handleYamlChange}
-                  isSaving={isSavingYaml}
-                />
-              </div>
-            ),
-          },
-          {
-            value: 'Related',
-            label: 'Related',
-            content: (
-              <RelatedResourcesTable
-                resource={'services'}
-                name={name}
-                namespace={namespace}
-              />
-            ),
-          },
-          {
-            value: 'events',
-            label: 'Events',
-            content: (
-              <EventTable
-                resource={'services'}
-                namespace={namespace}
-                name={name}
-              />
-            ),
-          },
-          {
-            value: 'history',
-            label: 'History',
-            content: (
-              <ResourceHistoryTable<'services'>
-                resourceType={'services'}
-                name={name}
-                namespace={namespace}
-                currentResource={data}
-              />
-            ),
-          },
-        ]}
-      />
+      <TabsComponent tabs={filteredTabsList} />
 
       <ResourceDeleteConfirmationDialog
         open={isDeleteDialogOpen}

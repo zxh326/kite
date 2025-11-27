@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { IconLoader, IconRefresh, IconTrash } from '@tabler/icons-react'
+import { IconLoader, IconRefresh, IconTrash, IconColumns, IconColumnsOff } from '@tabler/icons-react'
 import * as yaml from 'js-yaml'
 import { Secret } from 'kubernetes-types/core/v1'
 import { useTranslation } from 'react-i18next'
@@ -21,9 +21,10 @@ import { RelatedResourcesTable } from '@/components/related-resource-table'
 import { ResourceDeleteConfirmationDialog } from '@/components/resource-delete-confirmation-dialog'
 import { ResourceHistoryTable } from '@/components/resource-history-table'
 import { YamlEditor } from '@/components/yaml-editor'
+import { NestedResponsiveTabs } from '@/components/ui/nested-responsive-tabs'
 
-export function SecretDetail(props: { namespace: string; name: string }) {
-  const { namespace, name } = props
+export function SecretDetail(props: { name: string; namespace?: string, isNested?: bool, isReadOnly?: bool }) {
+  const { namespace, name, isNested = false, isReadOnly = false } = props
   const [yamlContent, setYamlContent] = useState('')
   const [isSavingYaml, setIsSavingYaml] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -120,6 +121,171 @@ export function SecretDetail(props: { namespace: string; name: string }) {
   const isOwnedBy = ownerInfo !== null
   const owner = ownerInfo
 
+  const tabsList = [
+    {
+      value: 'overview',
+      label: 'Overview',
+      content: (
+        <div className="space-y-4">
+          {/* Secret Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Secret Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <Label className="text-xs text-muted-foreground">
+                    Created
+                  </Label>
+                  <p className="text-sm">
+                    {formatDate(
+                      secret.metadata!.creationTimestamp!,
+                      true
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">
+                    Type
+                  </Label>
+                  <p className="text-sm">
+                    <Badge variant="outline">
+                      {secret.type || 'Opaque'}
+                    </Badge>
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">
+                    Keys
+                  </Label>
+                  <p className="text-sm">
+                    {Object.keys(secret.data || {}).length}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">
+                    Size
+                  </Label>
+                  <p className="text-sm">
+                    {Object.values(secret.data || {}).reduce(
+                      (total, value) => total + value.length,
+                      0
+                    )}{' '}
+                    bytes
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">
+                    UID
+                  </Label>
+                  <p className="text-sm font-mono">
+                    {secret.metadata!.uid}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">
+                    Resource Version
+                  </Label>
+                  <p className="text-sm font-mono">
+                    {secret.metadata!.resourceVersion}
+                  </p>
+                </div>
+                {isOwnedBy && owner && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">
+                      Owner
+                    </Label>
+                    <p className="text-sm">
+                      <Link
+                        to={`/${owner.kind.toLowerCase()}s/${secret.metadata!.namespace
+                          }/${owner.name}`}
+                        className="text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        {owner.kind}/{owner.name}
+                      </Link>
+                    </p>
+                  </div>
+                )}
+              </div>
+              <LabelsAnno
+                labels={secret.metadata!.labels || {}}
+                annotations={secret.metadata!.annotations || {}}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      ),
+    },
+    {
+      value: 'yaml',
+      label: 'YAML',
+      content: (
+        <div className="space-y-4">
+          {/* <div className="flex items-center justify-between">
+            {secret.data && Object.keys(secret.data).length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDecodedYaml(!showDecodedYaml)}
+              >
+                {showDecodedYaml ? 'Show Base64' : 'Decode Values'}
+              </Button>
+            )}
+          </div> */}
+          <YamlEditor<'secrets'>
+            key={`${refreshKey}-${showDecodedYaml}`}
+            value={getDecodedYamlContent()}
+            onChange={handleYamlChange}
+            onSave={handleSaveYaml}
+            isSaving={isSavingYaml}
+            readOnly={isReadOnly}
+            showControls={!isReadOnly}
+          />
+        </div>
+      ),
+    },
+    {
+      value: 'related',
+      label: 'Related',
+      content: (
+        <RelatedResourcesTable
+          resource="secrets"
+          name={secret.metadata!.name!}
+          namespace={secret.metadata!.namespace}
+        />
+      ),
+    },
+    {
+      value: 'events',
+      label: 'Events',
+      content: (
+        <EventTable
+          resource="secrets"
+          name={secret.metadata!.name!}
+          namespace={secret.metadata!.namespace}
+        />
+      ),
+    },
+    {
+      value: 'history',
+      label: 'History',
+      content: (
+        <ResourceHistoryTable
+          resourceType="secrets"
+          name={name}
+          namespace={namespace}
+          currentResource={secret}
+        />
+      ),
+    },
+  ]
+
+  const filteredTabsList = isNested
+    ? tabsList.filter(tab => tab.value !== 'related')
+    : tabsList
+  const TabsComponent = isNested ? NestedResponsiveTabs : ResponsiveTabs
+
   return (
     <div className="space-y-2">
       {/* Header */}
@@ -136,177 +302,42 @@ export function SecretDetail(props: { namespace: string; name: string }) {
             <IconRefresh className="w-4 h-4" />
             Refresh
           </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setIsDeleteDialogOpen(true)}
-          >
-            <IconTrash className="w-4 h-4" />
-            Delete
-          </Button>
+          {/* <Button variant="outline" size="sm" onClick={handleManualRefresh}>
+            <IconRefresh className="w-4 h-4" />
+            Decode Values
+          </Button> */}
+          {secret.data && Object.keys(secret.data).length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDecodedYaml(!showDecodedYaml)}
+            >
+              {showDecodedYaml ? (
+                <>
+                  <IconColumnsOff className="w-4 h-4" /> Show Base64
+                </>
+              ) : (
+                <>
+                  <IconColumns className="w-4 h-4" /> Decode Values
+                </>
+              )}
+            </Button>
+          )}
+
+          {!isNested && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              <IconTrash className="w-4 h-4" />
+              Delete
+            </Button>
+          )}
         </div>
       </div>
 
-      <ResponsiveTabs
-        tabs={[
-          {
-            value: 'overview',
-            label: 'Overview',
-            content: (
-              <div className="space-y-4">
-                {/* Secret Information */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Secret Information</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <Label className="text-xs text-muted-foreground">
-                          Created
-                        </Label>
-                        <p className="text-sm">
-                          {formatDate(
-                            secret.metadata!.creationTimestamp!,
-                            true
-                          )}
-                        </p>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">
-                          Type
-                        </Label>
-                        <p className="text-sm">
-                          <Badge variant="outline">
-                            {secret.type || 'Opaque'}
-                          </Badge>
-                        </p>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">
-                          Keys
-                        </Label>
-                        <p className="text-sm">
-                          {Object.keys(secret.data || {}).length}
-                        </p>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">
-                          Size
-                        </Label>
-                        <p className="text-sm">
-                          {Object.values(secret.data || {}).reduce(
-                            (total, value) => total + value.length,
-                            0
-                          )}{' '}
-                          bytes
-                        </p>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">
-                          UID
-                        </Label>
-                        <p className="text-sm font-mono">
-                          {secret.metadata!.uid}
-                        </p>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">
-                          Resource Version
-                        </Label>
-                        <p className="text-sm font-mono">
-                          {secret.metadata!.resourceVersion}
-                        </p>
-                      </div>
-                      {isOwnedBy && owner && (
-                        <div>
-                          <Label className="text-xs text-muted-foreground">
-                            Owner
-                          </Label>
-                          <p className="text-sm">
-                            <Link
-                              to={`/${owner.kind.toLowerCase()}s/${
-                                secret.metadata!.namespace
-                              }/${owner.name}`}
-                              className="text-blue-600 hover:text-blue-800 hover:underline"
-                            >
-                              {owner.kind}/{owner.name}
-                            </Link>
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    <LabelsAnno
-                      labels={secret.metadata!.labels || {}}
-                      annotations={secret.metadata!.annotations || {}}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-            ),
-          },
-          {
-            value: 'yaml',
-            label: 'YAML',
-            content: (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  {secret.data && Object.keys(secret.data).length > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowDecodedYaml(!showDecodedYaml)}
-                    >
-                      {showDecodedYaml ? 'Show Base64' : 'Decode Values'}
-                    </Button>
-                  )}
-                </div>
-                <YamlEditor<'secrets'>
-                  key={`${refreshKey}-${showDecodedYaml}`}
-                  value={getDecodedYamlContent()}
-                  onChange={handleYamlChange}
-                  onSave={handleSaveYaml}
-                  isSaving={isSavingYaml}
-                />
-              </div>
-            ),
-          },
-          {
-            value: 'related',
-            label: 'Related',
-            content: (
-              <RelatedResourcesTable
-                resource="secrets"
-                name={secret.metadata!.name!}
-                namespace={secret.metadata!.namespace}
-              />
-            ),
-          },
-          {
-            value: 'events',
-            label: 'Events',
-            content: (
-              <EventTable
-                resource="secrets"
-                name={secret.metadata!.name!}
-                namespace={secret.metadata!.namespace}
-              />
-            ),
-          },
-          {
-            value: 'history',
-            label: 'History',
-            content: (
-              <ResourceHistoryTable
-                resourceType="secrets"
-                name={name}
-                namespace={namespace}
-                currentResource={secret}
-              />
-            ),
-          },
-        ]}
-      />
+      <TabsComponent tabs={filteredTabsList} />
 
       <ResourceDeleteConfirmationDialog
         open={isDeleteDialogOpen}

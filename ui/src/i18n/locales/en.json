@@ -191,8 +191,8 @@
   },
   "login": {
     "title": "Sign In",
-    "subtitle": "Access your Kubernetes dashboard",
-    "kubernetesDashboard": "Kubernetes Dashboard",
+    "subtitle": "Access your Typesense dashboard",
+    "kubernetesDashboard": "Typesense Dashboard",
     "signIn": "Sign In",
     "username": "Username",
     "password": "Password",
@@ -206,7 +206,7 @@
     "tryAgainHint": "You can try logging in with a different account that has the required permissions.",
     "noLoginMethods": "No login methods configured",
     "configureAuth": "Please configure authentication providers in your environment",
-    "footer": "© {{year}} Kite. All rights reserved.",
+    "footer": "© {{year}} Kitesense. All rights reserved.",
     "documentation": "Documentation",
     "errors": {
       "accessDenied": "Access Denied",
@@ -217,7 +217,7 @@
       "authenticationError": "Authentication Error",
       "insufficientPermissions": "Insufficient permissions to access this application.",
       "insufficientPermissionsUser": "Access denied for user \"{{user}}\". Please contact your administrator to verify your permissions.",
-      "insufficientPermissionsDetails": "Your account does not have the required permissions to access this Kubernetes dashboard.",
+      "insufficientPermissionsDetails": "Your account does not have the required permissions to access Typesense dashboard.",
       "tokenExchangeFailed": "Failed to complete authentication with {{provider}}.",
       "tokenExchangeDetails": "There was an issue exchanging the authorization code for an access token. Please try again.",
       "userInfoFailed": "Unable to retrieve your profile information from {{provider}}.",
@@ -394,7 +394,7 @@
   },
   "initialization": {
     "title": "Initial Setup",
-    "welcome": "Welcome! Let's set up your Kite dashboard",
+    "welcome": "Welcome! Let's set up your Typesense dashboard",
     "subtitle": "Complete the following steps to get started",
     "description": "Configure your admin user and connect cluster",
     "step1": {
