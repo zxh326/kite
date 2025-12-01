@@ -4,7 +4,7 @@ go 1.24.9
 
 require (
 	github.com/blang/semver/v4 v4.0.0
-	github.com/bytedance/mockey v1.2.17
+	github.com/bytedance/mockey v1.3.1
 	github.com/gin-contrib/gzip v1.2.5
 	github.com/gin-gonic/gin v1.11.0
 	github.com/glebarez/sqlite v1.11.0
