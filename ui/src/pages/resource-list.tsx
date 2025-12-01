@@ -17,6 +17,7 @@ import { JobListPage } from './job-list-page'
 import { NamespaceListPage } from './namespace-list-page'
 import { NodeListPage } from './node-list-page'
 import { PodListPage } from './pod-list-page'
+import { PVListPage } from './pv-list-page'
 import { PVCListPage } from './pvc-list-page'
 import { SecretListPage } from './secret-list-page'
 import { ServiceListPage } from './service-list-page'
@@ -59,6 +60,8 @@ export function ResourceList() {
       return <SecretListPage />
     case 'persistentvolumeclaims':
       return <PVCListPage />
+    case 'persistentvolumes':
+      return <PVListPage />
     case 'crds':
       return <CRDListPage />
     case 'gateways':

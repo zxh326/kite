@@ -590,5 +590,18 @@
     "hints": {
       "nameImmutable": "创建后名称不可更改"
     }
+  },
+  "pvcs": {
+    "volume": "卷",
+    "storageClass": "存储类",
+    "capacity": "容量",
+    "accessModes": "访问模式"
+  },
+  "pvs": {
+    "storageClass": "存储类",
+    "capacity": "容量",
+    "accessModes": "访问模式",
+    "reclaimPolicy": "回收策略",
+    "claim": "声明"
   }
 }
