@@ -84,6 +84,7 @@ func InitDB() {
 		Role{},
 		RoleAssignment{},
 		ResourceHistory{},
+		ResourceTemplate{},
 	}
 	for _, model := range models {
 		err = DB.AutoMigrate(model)

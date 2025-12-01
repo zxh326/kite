@@ -30,7 +30,9 @@
     "desired": "期望",
     "current": "当前",
     "done": "完成",
-    "required": "此字段为必填项"
+    "required": "此字段为必填项",
+    "description": "描述",
+    "yaml": "YAML"
   },
   "globalSearch": {
     "title": "全局搜索",
@@ -561,5 +563,32 @@
     "forceDelete": "强制删除（将宽限期设置为 0）",
     "finalizerNote": "如果存在 finalizer，3 秒后如果还未被删除，将会自动清理 finalizer",
     "deleting": "删除中..."
+  },
+  "templateManagement": {
+    "title": "模板管理",
+    "description": "管理用于创建新资源的资源模板。",
+    "actions": {
+      "add": "添加模板"
+    },
+    "messages": {
+      "created": "模板创建成功",
+      "updated": "模板更新成功",
+      "deleted": "模板删除成功"
+    },
+    "errors": {
+      "required": "名称和 YAML 内容为必填项"
+    },
+    "empty": {
+      "description": "未找到模板"
+    },
+    "dialog": {
+      "createTitle": "创建模板",
+      "editTitle": "编辑模板",
+      "createDescription": "添加一个新的资源模板",
+      "updateDescription": "更新现有模板"
+    },
+    "hints": {
+      "nameImmutable": "创建后名称不可更改"
+    }
   }
 }

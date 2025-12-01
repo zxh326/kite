@@ -6,6 +6,7 @@ import { APIKeyManagement } from '@/components/settings/apikey-management'
 import { ClusterManagement } from '@/components/settings/cluster-management'
 import { OAuthProviderManagement } from '@/components/settings/oauth-provider-management'
 import { RBACManagement } from '@/components/settings/rbac-management'
+import { TemplateManagement } from '@/components/settings/template-management'
 import { UserManagement } from '@/components/settings/user-management'
 
 export function SettingsPage() {
@@ -50,6 +51,11 @@ export function SettingsPage() {
             value: 'apikeys',
             label: t('settings.tabs.apikeys', 'API Keys'),
             content: <APIKeyManagement />,
+          },
+          {
+            value: 'templates',
+            label: t('settings.tabs.templates', 'Templates'),
+            content: <TemplateManagement />,
           },
         ]}
       />

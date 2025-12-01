@@ -1,10 +1,9 @@
-import { useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { IconLoader2 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
-import { applyResource } from '@/lib/api'
-import { getTemplateByName, resourceTemplates } from '@/lib/templates'
+import { applyResource, useTemplates } from '@/lib/api'
 import { translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -34,50 +33,54 @@ export function CreateResourceDialog({
   open,
   onOpenChange,
 }: CreateResourceDialogProps) {
-  const [yaml, setYaml] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('')
   const { t } = useTranslation()
+  const { data: templates = [] } = useTemplates()
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
+  const [yamlContent, setYamlContent] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleTemplateSelect = (templateName: string) => {
+  useEffect(() => {
+    if (open) {
+      setYamlContent('')
+      setSelectedTemplateId('')
+    }
+  }, [open])
+
+  const handleTemplateChange = (templateName: string) => {
     if (templateName === 'empty') {
-      setYaml('')
-      setSelectedTemplate('')
+      setYamlContent('')
+      setSelectedTemplateId('')
       return
     }
 
-    const template = getTemplateByName(templateName)
+    const template = templates.find((t) => t.name === templateName)
     if (template) {
-      setYaml(template.yaml)
-      setSelectedTemplate(templateName)
+      setYamlContent(template.yaml)
+      setSelectedTemplateId(template.name)
     }
   }
 
-  const handleSubmit = async () => {
-    if (!yaml.trim()) {
-      toast.error('Please enter YAML content')
-      return
-    }
+  const handleApply = async () => {
+    if (!yamlContent) return
 
     setIsLoading(true)
     try {
-      const result = await applyResource(yaml)
+      await applyResource(yamlContent)
       toast.success(
-        `Resource ${result.kind}/${result.name} created successfully`
+        t('createResource.success', 'Resource created successfully')
       )
-      setYaml('')
       onOpenChange(false)
-    } catch (error) {
-      console.error('Error creating resource:', error)
-      toast.error(translateError(error, t))
+    } catch (err) {
+      console.error('Failed to apply resource', err)
+      toast.error(translateError(err, t))
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleCancel = () => {
-    setYaml('')
-    setSelectedTemplate('')
+    setYamlContent('')
+    setSelectedTemplateId('')
     onOpenChange(false)
   }
 
@@ -96,19 +99,24 @@ export function CreateResourceDialog({
           <div className="space-y-2">
             <Label htmlFor="template">Template</Label>
             <Select
-              value={selectedTemplate}
-              onValueChange={handleTemplateSelect}
+              value={selectedTemplateId || 'empty'}
+              onValueChange={handleTemplateChange}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select a template or start from scratch" />
+                <SelectValue
+                  placeholder={t(
+                    'createResource.selectTemplate',
+                    'Select a template'
+                  )}
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="empty">
-                  Empty (Start from scratch)
+                  {t('createResource.emptyTemplate', 'Empty Template')}
                 </SelectItem>
-                {resourceTemplates.map((template) => (
+                {templates.map((template) => (
                   <SelectItem key={template.name} value={template.name}>
-                    {template.name} - {template.description}
+                    {template.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -116,12 +124,13 @@ export function CreateResourceDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="yaml">YAML Configuration</Label>
-            <SimpleYamlEditor
-              value={yaml}
-              onChange={(value) => setYaml(value || '')}
-              disabled={isLoading}
-              height="400px"
-            />
+            <div className="min-h-[300px] border rounded-md">
+              <SimpleYamlEditor
+                value={yamlContent}
+                onChange={(value) => setYamlContent(value || '')}
+                height="400px"
+              />
+            </div>
           </div>
         </div>
 
@@ -129,9 +138,15 @@ export function CreateResourceDialog({
           <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isLoading || !yaml.trim()}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Apply
+          <Button onClick={handleApply} disabled={isLoading || !yamlContent}>
+            {isLoading ? (
+              <>
+                <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t('common.applying', 'Applying...')}
+              </>
+            ) : (
+              t('common.apply', 'Apply')
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

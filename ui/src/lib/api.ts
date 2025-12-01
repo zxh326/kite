@@ -14,6 +14,7 @@ import {
   RelatedResources,
   ResourceHistoryResponse,
   ResourcesTypeMap,
+  ResourceTemplate,
   ResourceType,
   ResourceTypeMap,
   ResourceUsageHistory,
@@ -797,7 +798,35 @@ export const createLogsSSEStream = (
   return eventSource
 }
 
-// Hook for streaming logs with SSE and real-time updates
+export const fetchTemplates = async (): Promise<ResourceTemplate[]> => {
+  return fetchAPI<ResourceTemplate[]>('/templates/')
+}
+
+export const createTemplate = async (
+  data: Omit<ResourceTemplate, 'ID'>
+): Promise<ResourceTemplate> => {
+  return apiClient.post<ResourceTemplate>('/admin/templates/', data)
+}
+
+export const updateTemplate = async (
+  id: number,
+  data: Partial<ResourceTemplate>
+): Promise<ResourceTemplate> => {
+  return apiClient.put<ResourceTemplate>(`/admin/templates/${id}`, data)
+}
+
+export const deleteTemplate = async (id: number): Promise<void> => {
+  await apiClient.delete(`/admin/templates/${id}`)
+}
+
+export const useTemplates = (options?: { staleTime?: number }) => {
+  return useQuery({
+    queryKey: ['templates'],
+    queryFn: fetchTemplates,
+    staleTime: options?.staleTime || 30000,
+  })
+}
+
 export const useLogsStream = (
   namespace: string,
   podName: string,
@@ -1315,8 +1344,10 @@ export interface OAuthProviderCreateRequest {
   enabled?: boolean
 }
 
-export interface OAuthProviderUpdateRequest
-  extends Omit<OAuthProviderCreateRequest, 'clientSecret'> {
+export interface OAuthProviderUpdateRequest extends Omit<
+  OAuthProviderCreateRequest,
+  'clientSecret'
+> {
   clientSecret?: string // Optional when updating
 }
 
