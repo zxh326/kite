@@ -155,6 +155,13 @@ func setupAPIRouter(r *gin.RouterGroup, cm *cluster.ClusterManager) {
 			apiKeyAPI.POST("/", handlers.CreateAPIKey)
 			apiKeyAPI.DELETE("/:id", handlers.DeleteAPIKey)
 		}
+
+		templateAPI := adminAPI.Group("/templates")
+		{
+			templateAPI.POST("/", handlers.CreateTemplate)
+			templateAPI.PUT("/:id", handlers.UpdateTemplate)
+			templateAPI.DELETE("/:id", handlers.DeleteTemplate)
+		}
 	}
 
 	// API routes group (protected)
@@ -184,6 +191,7 @@ func setupAPIRouter(r *gin.RouterGroup, cm *cluster.ClusterManager) {
 		api.POST("/resources/apply", resourceApplyHandler.ApplyResource)
 
 		api.GET("/image/tags", handlers.GetImageTags)
+		api.GET("/templates", handlers.ListTemplates)
 
 		proxyHandler := handlers.NewProxyHandler()
 		proxyHandler.RegisterRoutes(api)
@@ -212,6 +220,7 @@ func main() {
 	r.Use(middleware.CORS())
 	model.InitDB()
 	rbac.InitRBAC()
+	handlers.InitTemplates()
 	internal.LoadConfigFromEnv()
 
 	cm, err := cluster.NewClusterManager()

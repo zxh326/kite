@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import {
   ColumnDef,
   flexRender,
@@ -41,41 +42,45 @@ export function ActionTable<T>({
   actions,
 }: ActionTableProps<T>) {
   const { t } = useTranslation()
-  if (actions.length > 0) {
-    const actionColumn: ColumnDef<T> = {
-      id: 'actions',
-      header: t('common.actions'),
-      cell: ({ row }) => (
-        <div className="text-right">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
-                •••
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {actions.map((action, index) => (
-                <DropdownMenuItem
-                  key={index}
-                  disabled={action.shouldDisable?.(row.original)}
-                  onClick={() => action.onClick(row.original)}
-                  className="gap-2"
-                >
-                  {action.dynamicLabel
-                    ? action.dynamicLabel(row.original)
-                    : action.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      ),
+  const tableColumns = useMemo(() => {
+    if (actions.length > 0) {
+      const actionColumn: ColumnDef<T> = {
+        id: 'actions',
+        header: t('common.actions'),
+        cell: ({ row }) => (
+          <div className="text-right">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  •••
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {actions.map((action, index) => (
+                  <DropdownMenuItem
+                    key={index}
+                    disabled={action.shouldDisable?.(row.original)}
+                    onClick={() => action.onClick(row.original)}
+                    className="gap-2"
+                  >
+                    {action.dynamicLabel
+                      ? action.dynamicLabel(row.original)
+                      : action.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ),
+      }
+      return [...columns, actionColumn]
     }
-    columns.push(actionColumn)
-  }
+    return columns
+  }, [actions, columns, t])
+
   const table = useReactTable<T>({
     data,
-    columns,
+    columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
   })
 

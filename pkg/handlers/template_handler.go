@@ -1,16 +1,99 @@
-// Kubernetes resource templates
+package handlers
 
-export interface ResourceTemplate {
-  name: string
-  description: string
-  yaml: string
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/zxh326/kite/pkg/model"
+)
+
+type CreateTemplateRequest struct {
+	Name        string `json:"name" binding:"required"`
+	Description string `json:"description"`
+	YAML        string `json:"yaml" binding:"required"`
 }
 
-export const resourceTemplates: ResourceTemplate[] = [
-  {
-    name: 'Pod',
-    description: 'A basic Pod with a single container',
-    yaml: `apiVersion: v1
+type UpdateTemplateRequest struct {
+	Description string `json:"description"`
+	YAML        string `json:"yaml" binding:"required"`
+}
+
+func ListTemplates(c *gin.Context) {
+	var templates []model.ResourceTemplate
+	if err := model.DB.Find(&templates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, templates)
+}
+
+func CreateTemplate(c *gin.Context) {
+	var req CreateTemplateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	template := model.ResourceTemplate{
+		Name:        req.Name,
+		Description: req.Description,
+		YAML:        req.YAML,
+	}
+
+	if err := model.DB.Create(&template).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, template)
+}
+
+func UpdateTemplate(c *gin.Context) {
+	id := c.Param("id")
+	var template model.ResourceTemplate
+	if err := model.DB.First(&template, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Template not found"})
+		return
+	}
+
+	var req UpdateTemplateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	template.Description = req.Description
+	template.YAML = req.YAML
+
+	if err := model.DB.Save(&template).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, template)
+}
+
+func DeleteTemplate(c *gin.Context) {
+	id := c.Param("id")
+	if err := model.DB.Delete(&model.ResourceTemplate{}, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Template deleted"})
+}
+
+func InitTemplates() {
+	var count int64
+	model.DB.Model(&model.ResourceTemplate{}).Count(&count)
+	if count > 0 {
+		return
+	}
+
+	templates := []model.ResourceTemplate{
+		{
+			Name:        "Pod",
+			Description: "A basic Pod with a single container",
+			YAML: `apiVersion: v1
 kind: Pod
 metadata:
   name: example-pod
@@ -30,11 +113,11 @@ spec:
       limits:
         memory: "128Mi"
         cpu: "500m"`,
-  },
-  {
-    name: 'Deployment',
-    description: 'A Deployment with 3 replicas',
-    yaml: `apiVersion: apps/v1
+		},
+		{
+			Name:        "Deployment",
+			Description: "A Deployment with 3 replicas",
+			YAML: `apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: example-deployment
@@ -63,11 +146,11 @@ spec:
           limits:
             memory: "128Mi"
             cpu: "500m"`,
-  },
-  {
-    name: 'StatefulSet',
-    description: 'A StatefulSet with persistent storage',
-    yaml: `apiVersion: apps/v1
+		},
+		{
+			Name:        "StatefulSet",
+			Description: "A StatefulSet with persistent storage",
+			YAML: `apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: example-statefulset
@@ -106,11 +189,11 @@ spec:
       resources:
         requests:
           storage: 1Gi`,
-  },
-  {
-    name: 'Job',
-    description: 'A Job that runs a task to completion',
-    yaml: `apiVersion: batch/v1
+		},
+		{
+			Name:        "Job",
+			Description: "A Job that runs a task to completion",
+			YAML: `apiVersion: batch/v1
 kind: Job
 metadata:
   name: example-job
@@ -136,11 +219,11 @@ spec:
             cpu: "200m"
       restartPolicy: Never
   backoffLimit: 4`,
-  },
-  {
-    name: 'CronJob',
-    description: 'A CronJob that runs on a schedule',
-    yaml: `apiVersion: batch/v1
+		},
+		{
+			Name:        "CronJob",
+			Description: "A CronJob that runs on a schedule",
+			YAML: `apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: example-cronjob
@@ -168,11 +251,11 @@ spec:
                 memory: "64Mi"
                 cpu: "200m"
           restartPolicy: OnFailure`,
-  },
-  {
-    name: 'Service',
-    description: 'A Service to expose applications',
-    yaml: `apiVersion: v1
+		},
+		{
+			Name:        "Service",
+			Description: "A Service to expose applications",
+			YAML: `apiVersion: v1
 kind: Service
 metadata:
   name: example-service
@@ -188,11 +271,11 @@ spec:
     targetPort: 80
     protocol: TCP
   type: ClusterIP`,
-  },
-  {
-    name: 'ConfigMap',
-    description: 'A ConfigMap to store configuration data',
-    yaml: `apiVersion: v1
+		},
+		{
+			Name:        "ConfigMap",
+			Description: "A ConfigMap to store configuration data",
+			YAML: `apiVersion: v1
 kind: ConfigMap
 metadata:
   name: example-configmap
@@ -207,11 +290,11 @@ data:
       host: 0.0.0.0
     logging:
       level: info`,
-  },
-  {
-    name: 'Secret',
-    description: 'A Secret to store sensitive data',
-    yaml: `apiVersion: v1
+		},
+		{
+			Name:        "Secret",
+			Description: "A Secret to store sensitive data",
+			YAML: `apiVersion: v1
 kind: Secret
 metadata:
   name: example-secret
@@ -222,11 +305,11 @@ data:
   password: MWYyZDFlMmU2N2Rm  # base64 encoded "1f2d1e2e67df"
 stringData:
   database-url: "postgresql://user:pass@localhost:5432/mydb"`,
-  },
-  {
-    name: 'Daemonset',
-    description: 'A DaemonSet to run pods on all nodes',
-    yaml: `apiVersion: apps/v1
+		},
+		{
+			Name:        "Daemonset",
+			Description: "A DaemonSet to run pods on all nodes",
+			YAML: `apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: example-daemonset
@@ -247,11 +330,11 @@ spec:
             - -c
             - 'while true; do echo alive; sleep 60; done'
 `,
-  },
-  {
-    name: 'Ingress',
-    description: 'An Ingress to route external traffic',
-    yaml: `apiVersion: networking.k8s.io/v1
+		},
+		{
+			Name:        "Ingress",
+			Description: "An Ingress to route external traffic",
+			YAML: `apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: example-ingress
@@ -270,24 +353,19 @@ spec:
                 port:
                   number: 80
 `,
-  },
-  {
-    name: 'Namespace',
-    description: 'A Namespace for resource isolation',
-    yaml: `apiVersion: v1
+		},
+		{
+			Name:        "Namespace",
+			Description: "A Namespace for resource isolation",
+			YAML: `apiVersion: v1
 kind: Namespace
 metadata:
   name: example-namespace
 `,
-  },
-]
+		},
+	}
 
-export const getTemplateByName = (
-  name: string
-): ResourceTemplate | undefined => {
-  return resourceTemplates.find((template) => template.name === name)
-}
-
-export const getTemplateNames = (): string[] => {
-  return resourceTemplates.map((template) => template.name)
+	for _, t := range templates {
+		model.DB.Create(&t)
+	}
 }

@@ -440,3 +440,9 @@ export interface ResourceHistoryResponse {
     hasPrevPage: boolean
   }
 }
+export interface ResourceTemplate {
+  ID: number
+  name: string
+  description: string
+  yaml: string
+}
