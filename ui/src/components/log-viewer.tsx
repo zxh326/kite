@@ -15,6 +15,12 @@ import type { editor } from 'monaco-editor'
 import { useTranslation } from 'react-i18next'
 
 import { TERMINAL_THEMES, TerminalTheme } from '@/types/themes'
+import {
+  AnsiState,
+  generateAnsiCss,
+  getAnsiClassNames,
+  parseAnsi,
+} from '@/lib/ansi-parser'
 import { useLogsWebSocket } from '@/lib/api'
 import { toSimpleContainer } from '@/lib/k8s'
 import { Button } from '@/components/ui/button'
@@ -109,6 +115,8 @@ export function LogViewer({
   })
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
   const [logCount, setLogCount] = useState(0) // Track log count for re-rendering
+  const ansiStateRef = useRef<AnsiState>({})
+  const decorationIdsRef = useRef<string[]>([])
 
   const [selectPodName, setSelectPodName] = useState<string | undefined>(
     podName || pods?.[0]?.metadata?.name || undefined
@@ -183,17 +191,26 @@ export function LogViewer({
   const appendLog = useCallback(
     (log: string) => {
       setLogCount((count) => count + 1)
+
+      const { segments, finalState } = parseAnsi(log, ansiStateRef.current)
+      ansiStateRef.current = finalState
+
+      const plainText = segments.map((s) => s.text).join('')
+
       if (filterTerm) {
-        if (!log.toLocaleLowerCase().includes(filterTerm)) {
+        if (!plainText.toLocaleLowerCase().includes(filterTerm.toLowerCase())) {
           return
         }
       }
+
       if (editorRef.current) {
         const model = editorRef.current.getModel()
         if (model) {
           const lineCount = model.getLineCount()
           const lineMaxColumn = model.getLineMaxColumn(lineCount)
           const prefix = model.getValueLength() === 0 ? '' : '\n'
+
+          const textToInsert = `${prefix}${plainText}`
           model.applyEdits([
             {
               range: {
@@ -202,10 +219,54 @@ export function LogViewer({
                 startLineNumber: lineCount,
                 endLineNumber: lineCount,
               },
-              text: `${prefix}${log}`,
+              text: textToInsert,
               forceMoveMarkers: true,
             },
           ])
+
+          const newDecorations: editor.IModelDeltaDecoration[] = []
+
+          // Starting position for decorations
+          let currentLine = lineCount
+          let currentColumn = lineMaxColumn
+
+          if (prefix === '\n') {
+            currentLine++
+            currentColumn = 1
+          }
+
+          segments.forEach((segment) => {
+            const lines = segment.text.split('\n')
+            const endLine = currentLine + lines.length - 1
+            const endColumn =
+              lines.length === 1
+                ? currentColumn + lines[0].length
+                : lines[lines.length - 1].length + 1
+
+            const className = getAnsiClassNames(segment.styles)
+            if (className) {
+              newDecorations.push({
+                range: {
+                  startLineNumber: currentLine,
+                  startColumn: currentColumn,
+                  endLineNumber: endLine,
+                  endColumn: endColumn,
+                },
+                options: {
+                  inlineClassName: className,
+                },
+              })
+            }
+
+            currentLine = endLine
+            currentColumn = endColumn
+          })
+
+          if (newDecorations.length > 0) {
+            const newIds = model.deltaDecorations([], newDecorations)
+            decorationIdsRef.current.push(...newIds)
+          }
+
           const visibleRange = editorRef.current.getVisibleRanges()[0]
           if (visibleRange?.endLineNumber + 2 >= lineCount) {
             editorRef.current.revealLine(model.getLineCount())
@@ -221,6 +282,8 @@ export function LogViewer({
 
   const cleanLog = useCallback(() => {
     setLogCount(0)
+    ansiStateRef.current = {}
+    decorationIdsRef.current = []
     if (editorRef.current) {
       const model = editorRef.current.getModel()
       if (model) {
@@ -396,6 +459,7 @@ export function LogViewer({
     <Card
       className={`h-full flex flex-col py-4 gap-0 ${isFullscreen ? 'fixed inset-0 z-50 m-0 rounded-none' : ''} ${wordWrap ? 'whitespace-pre-wrap' : 'whitespace-pre'} `}
     >
+      <style>{generateAnsiCss()}</style>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
