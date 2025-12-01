@@ -48,7 +48,7 @@ const ANSI_BG_COLORS = {
   107: '#ffffff', // bright white
 } as const
 
-interface AnsiState {
+export interface AnsiState {
   color?: string
   backgroundColor?: string
   bold?: boolean
@@ -64,9 +64,12 @@ interface ParsedSegment {
 /**
  * Parse ANSI escape sequences in a string and return styled segments
  */
-export function parseAnsi(text: string): ParsedSegment[] {
+export function parseAnsi(
+  text: string,
+  initialState: AnsiState = {}
+): { segments: ParsedSegment[]; finalState: AnsiState } {
   const segments: ParsedSegment[] = []
-  let currentState: AnsiState = {}
+  let currentState: AnsiState = { ...initialState }
   let currentText = ''
 
   // Regex to match ANSI escape sequences - using Unicode escape instead of hex
@@ -112,7 +115,7 @@ export function parseAnsi(text: string): ParsedSegment[] {
     })
   }
 
-  return segments
+  return { segments, finalState: currentState }
 }
 
 /**
@@ -209,4 +212,56 @@ export function ansiStateToCss(state: AnsiState): React.CSSProperties {
  */
 export function stripAnsi(text: string): string {
   return text.replace(new RegExp('\u001b\\[[0-9;]*m', 'g'), '')
+}
+
+/**
+ * Generate CSS class names for an AnsiState
+ */
+export function getAnsiClassNames(state: AnsiState): string {
+  const classes: string[] = []
+
+  if (state.color) {
+    // Find the code for this color
+    const code = Object.entries(ANSI_COLORS).find(
+      ([, value]) => value === state.color
+    )?.[0]
+    if (code) classes.push(`ansi-fg-${code}`)
+  }
+
+  if (state.backgroundColor) {
+    const code = Object.entries(ANSI_BG_COLORS).find(
+      ([, value]) => value === state.backgroundColor
+    )?.[0]
+    if (code) classes.push(`ansi-bg-${code}`)
+  }
+
+  if (state.bold) classes.push('ansi-bold')
+  if (state.italic) classes.push('ansi-italic')
+  if (state.underline) classes.push('ansi-underline')
+
+  return classes.join(' ')
+}
+
+/**
+ * Generate CSS styles for all ANSI classes
+ */
+export function generateAnsiCss(): string {
+  let css = ''
+
+  // Foreground colors
+  Object.entries(ANSI_COLORS).forEach(([code, color]) => {
+    css += `.ansi-fg-${code} { color: ${color} !important; }\n`
+  })
+
+  // Background colors
+  Object.entries(ANSI_BG_COLORS).forEach(([code, color]) => {
+    css += `.ansi-bg-${code} { background-color: ${color} !important; }\n`
+  })
+
+  // Styles
+  css += '.ansi-bold { font-weight: bold !important; }\n'
+  css += '.ansi-italic { font-style: italic !important; }\n'
+  css += '.ansi-underline { text-decoration: underline !important; }\n'
+
+  return css
 }
