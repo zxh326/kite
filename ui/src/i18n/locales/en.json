@@ -459,6 +459,13 @@
     "capacity": "Capacity",
     "accessModes": "Access Modes"
   },
+  "pvs": {
+    "storageClass": "Storage Class",
+    "capacity": "Capacity",
+    "accessModes": "Access Modes",
+    "reclaimPolicy": "Reclaim Policy",
+    "claim": "Claim"
+  },
   "detail": {
     "buttons": {
       "refresh": "Refresh",
