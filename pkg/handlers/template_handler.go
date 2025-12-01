@@ -27,16 +27,6 @@ func ListTemplates(c *gin.Context) {
 	c.JSON(http.StatusOK, templates)
 }
 
-func GetTemplate(c *gin.Context) {
-	id := c.Param("id")
-	var template model.ResourceTemplate
-	if err := model.DB.First(&template, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Template not found"})
-		return
-	}
-	c.JSON(http.StatusOK, template)
-}
-
 func CreateTemplate(c *gin.Context) {
 	var req CreateTemplateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

@@ -171,7 +171,7 @@ export function TemplateManagement() {
         ),
       },
     ],
-    []
+    [t]
   )
 
   const actions = useMemo<Action<ResourceTemplate>[]>(() => {
@@ -195,7 +195,7 @@ export function TemplateManagement() {
         onClick: (item) => setDeletingTemplate(item),
       },
     ]
-  }, [])
+  }, [t])
 
   if (isLoading && templates.length === 0) {
     return (
@@ -247,7 +247,7 @@ export function TemplateManagement() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="!max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-4xl! max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>
               {editingTemplate
