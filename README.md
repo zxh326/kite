@@ -146,6 +146,33 @@ docker run --rm -p 8080:8080 ghcr.io/zxh326/kite:latest
 
 For troubleshooting, please refer to the [documentation](https://kite.zzde.me).
 
+## 💖 Support This Project
+
+If you find Kite helpful, please consider supporting its development! Your donations help maintain and improve this project.
+
+### Donation Methods
+
+<table>
+  <tr>
+    <td align="center">
+      <b>Alipay</b><br>
+      <img src="./docs/donate/alipay.jpeg" alt="Alipay QR Code" width="200">
+    </td>
+    <td align="center">
+      <b>WeChat Pay</b><br>
+      <img src="./docs/donate/wechat.jpeg" alt="WeChat Pay QR Code" width="200">
+    </td>
+    <td align="center">
+      <b>PayPal</b><br>
+      <a href="https://www.paypal.me/zxh326">
+        <img src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_111x69.jpg" alt="PayPal" width="150">
+      </a>
+    </td>
+  </tr>
+</table>
+
+Thank you for your support! ❤️
+
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [contributing guidelines](https://kite.zzde.me/faq.html#how-can-i-contribute-to-kite) for details on how to get involved.
