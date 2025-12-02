@@ -255,16 +255,31 @@ func (g *GenericProvider) GetUserInfo(accessToken string) (*model.User, error) {
 		user.Sub = fmt.Sprintf("%v", id)
 	} else if sub, ok := userInfo["sub"]; ok {
 		user.Sub = fmt.Sprintf("%v", sub)
+	} else if oid, ok := userInfo["oid"]; ok {
+		// Azure AD uses 'oid' (object ID) as the user identifier
+		user.Sub = fmt.Sprintf("%v", oid)
 	}
 	if username, ok := userInfo["username"]; ok {
 		user.Username = fmt.Sprintf("%v", username)
 	} else if login, ok := userInfo["login"]; ok {
 		user.Username = fmt.Sprintf("%v", login)
+	} else if userPrincipalName, ok := userInfo["userPrincipalName"]; ok {
+		// Azure AD Graph API uses 'userPrincipalName' for the user's email/UPN
+		user.Username = fmt.Sprintf("%v", userPrincipalName)
+	} else if preferredUsername, ok := userInfo["preferred_username"]; ok {
+		// OIDC uses 'preferred_username' for the user's email/UPN
+		user.Username = fmt.Sprintf("%v", preferredUsername)
+	} else if upn, ok := userInfo["upn"]; ok {
+		// Some providers use 'upn' (User Principal Name)
+		user.Username = fmt.Sprintf("%v", upn)
 	} else if email, ok := userInfo["email"]; ok {
 		user.Username = fmt.Sprintf("%v", email)
 	}
 	if name, ok := userInfo["name"]; ok {
 		user.Name = fmt.Sprintf("%v", name)
+	} else if displayName, ok := userInfo["displayName"]; ok {
+		// Azure AD Graph API uses 'displayName' instead of 'name'
+		user.Name = fmt.Sprintf("%v", displayName)
 	}
 	if avatar, ok := userInfo["avatar_url"]; ok {
 		user.AvatarURL = fmt.Sprintf("%v", avatar)
@@ -299,6 +314,9 @@ func (g *GenericProvider) GetUserInfo(accessToken string) (*model.User, error) {
 		for i, v := range groups {
 			user.OIDCGroups[i] = fmt.Sprintf("%v", v)
 		}
+		klog.V(1).Infof("Extracted %d groups/roles from %s: %v", len(groups), g.Name, user.OIDCGroups)
+	} else {
+		klog.V(1).Infof("No groups/roles found in user info from %s", g.Name)
 	}
 	return user, nil
 }
