@@ -47,11 +47,18 @@ In addition to all the [features delivered by Kite](https://github.com/zxh326/ki
 ### 🤖 **Typesense Kubernetes Operator**
 
 - ⚙️ **Lifecycle Management** - Independent TyKO configuration, management or update for each cluster
-- 📄 **Live Helm Chart values Editing** - Built-in Monaco editor with syntax highlighting and validation
+- 📄 **Live Helm Chart Values Editing** - Built-in Monaco editor with syntax highlighting and validation
 - 📊 **Real-time Metrics** - CPU, memory, and network usage charts by Prometheus and kube-state metrics
 - 📝 **Live Logs** - Stream real-time reconciliation logs for each ones of your Typesense clusters
 
 ### ⚡️ **Typesense Clusters**
+
+- 📄 **Live `TypesenseCluster` Manifest Editing** - Built-in Monaco editor with syntax highlighting and validation
+- 🔦 **Detailed Related Resource Views** - In-depth information for secrets, volumes, events, services and ingress
+- 🚦 **Real-time Quorum/Raft/Pod State** - Quorum state, nodes role in raft, node health are fetched in real-time 
+- 📊 **Real-time Statefulset/Pod Metrics** - CPU, memory, and network usage charts by Prometheus and kube-state metrics
+- 📝 **Live Logs** - Stream real-time Typesense nodes logs
+- 💻 **Web/Node Terminal** - Execute commands directly in pods/typesense nodes through the browser
 
 ### 🧩 **Templates**
 
