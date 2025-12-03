@@ -61,9 +61,12 @@ In addition to all the [features delivered by Kite](https://github.com/zxh326/ki
 - 💻 **Web/Node Terminal** - Execute commands directly in pods/typesense nodes through the browser
 
 ### 🧩 **Templates**
+- 🔦 **Ready Manifests for Common Cases** - In-depth information for the DocSearch scrapers cronjobs 
+- 🔦 **Ready Manifests per Cloud Provider** - In-depth information for the DocSearch scrapers cronjobs 
 
 ### 🕷️ **DocSearch Scrapers**
-
+- 🔦 **Detailed Resource View** - In-depth information for the DocSearch scrapers cronjobs 
+- 📊 **Real-time Metrics** - CPU, memory, and network usage charts by Prometheus and kube-state metrics
 
 <!-- 
 ### 🎯 **Modern User Experience**
