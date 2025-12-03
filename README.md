@@ -48,10 +48,14 @@ In addition to all the [features delivered by Kite](https://github.com/zxh326/ki
 
 - ⚙️ **Lifecycle Management** - Independent TyKO configuration, management or update for each cluster
 - 📄 **Live Helm Chart values Editing** - Built-in Monaco editor with syntax highlighting and validation
-- 📊 **Real-time Metrics** - CPU, memory, and network usage charts powered by Prometheus and kube-state metrics.
-- 📝 **Live Logs** - Stream pod logs in real-time and see the reconciliation steps of each ones of your Typesense clusters.
+- 📊 **Real-time Metrics** - CPU, memory, and network usage charts by Prometheus and kube-state metrics
+- 📝 **Live Logs** - Stream real-time reconciliation logs for each ones of your Typesense clusters
 
 ### ⚡️ **Typesense Clusters**
+
+### 🧩 **Templates**
+
+### 🕷️ **DocSearch Scrapers**
 
 
 <!-- 
