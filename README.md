@@ -1,10 +1,12 @@
-# Kite - Modern Kubernetes Dashboard
+# Kitesense - Typesense Management Dashboard
 
 <div align="center">
 
-<img src="./docs/assets/logo.svg" alt="Kite Logo" width="128" height="128">
+<img src="./docs/assets/kitesense-banner.png" alt="Kitesense Logo" >
 
-_A modern, intuitive Kubernetes dashboard_
+<!-- _your Typesense clusters, any cloud, anytime._ -->
+
+<br/>
 
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go)](https://golang.org)
 [![React](https://img.shields.io/badge/React-19+-61DAFB?style=flat&logo=react)](https://reactjs.org)
@@ -13,14 +15,13 @@ _A modern, intuitive Kubernetes dashboard_
 
 [**Live Demo**](https://kite-demo.zzde.me) | [**Documentation**](https://kite.zzde.me)
 <br>
-**English** | [中文](./README_zh.md)
 
 </div>
 
-Kite is a lightweight, modern Kubernetes dashboard that provides an intuitive interface for managing and monitoring your Kubernetes clusters. It offers real-time metrics, comprehensive resource management, multi-cluster support, and a beautiful user experience.
+**KiteSense** is a dedicated control center for running and manage Typesense on any Kubernetes cluster. It lets you launch and operate Typesense deployments anywhere, track their health, and coordinate multiple environments from a single place. Designed for clarity and speed, KiteSense streamlines the entire lifecycle of your search infrastructure. Your Typesense clusters, any cloud, anytime.
 
-> [!WARNING]
-> This project is currently in rapid development and testing, and the usage and API may change.
+> [!IMPORTANT]
+> KiteSense is a repurposed derivative of the original [Kite](https://github.com/zxh326/kite) project. All credit for the foundation and core design goes to the Kite maintainers.
 
 ![Dashboard Overview](docs/screenshots/overview.png)
 _Comprehensive cluster overview with real-time metrics and resource statistics_
