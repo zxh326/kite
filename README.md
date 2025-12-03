@@ -89,7 +89,7 @@ docker run --rm -p 8080:8080 akyriako78/kitesense:latest
 ### Kubernetes
 
 ```bash
-helm repo add kitesense https://akyriako.github.io/Kitesense
+helm repo add kitesense https://akyriako.github.io/kitesense
 helm repo update
 
 helm upgrade --install kitesense kitesense/kitesense -n typesense-system --create-namespace
