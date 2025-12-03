@@ -43,6 +43,17 @@ Kitesense stands on the shoulders of Kite, but is developed as its own focused, 
 ## ✨ Features
 
 In addition to all the [features delivered by Kite](https://github.com/zxh326/kite?tab=readme-ov-file#-features), Kitesense is adding the following:
+
+### 🤖 **Typesense Kubernetes Operator**
+
+- ⚙️ **Lifecycle Management** - Independent TyKO configuration, management or update for each cluster
+- 📄 **Live Helm Chart values Editing** - Built-in Monaco editor with syntax highlighting and validation
+- 📊 **Real-time Metrics** - CPU, memory, and network usage charts powered by Prometheus and kube-state metrics.
+- 📝 **Live Logs** - Stream pod logs in real-time and see the reconciliation steps of each ones of your Typesense clusters.
+
+### ⚡️ **Typesense Clusters**
+
+
 <!-- 
 ### 🎯 **Modern User Experience**
 
@@ -87,7 +98,7 @@ In addition to all the [features delivered by Kite](https://github.com/zxh326/ki
  -->
 
 
-## ⚡ Get Started
+## 🪁 Get Started
 
 Kitesense can be installed as a solo Docker container, as optional component of [TyKO](https://github.com/akyriako/typesense-operator) (Typesense Kubernetes Operator) or as independent deployment in a separate management cluster designated to manage all your Typesense clusters on local or remote Kubernetes environments.
 
