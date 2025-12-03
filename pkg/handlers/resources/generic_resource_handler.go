@@ -202,8 +202,12 @@ func (h *GenericResourceHandler[T, V]) list(c *gin.Context) (V, error) {
 	}
 
 	if err := cs.K8sClient.List(ctx, objectList, listOpts...); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return zero, err
+		if meta.IsNoMatchError(err) {
+			return objectList, nil
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return zero, err
+		}
 	}
 
 	// Sort by creation timestamp in descending order (newest first)

@@ -1,0 +1,44 @@
+# docker buildx build  --progress=plain --platform linux/arm64 -f Dockerfile.local  -t 192.168.252.252:5566/library/kite:0.7.3-arm --load .
+
+FROM docker.m.daocloud.io/library/node:20-alpine AS frontend-builder
+
+WORKDIR /app/ui
+
+RUN npm config set registry https://registry.npmmirror.com
+
+COPY ui/package.json ui/pnpm-lock.yaml ./
+
+RUN npm install -g pnpm 
+
+RUN pnpm config set registry https://registry.npmmirror.com
+
+RUN pnpm install --frozen-lockfile
+
+COPY ui/ ./
+
+RUN pnpm run build
+
+FROM docker.m.daocloud.io/library/golang:1.24-alpine AS backend-builder
+
+WORKDIR /app
+
+COPY go.mod ./
+COPY go.sum ./
+
+ENV GOPROXY https://mirrors.aliyun.com/goproxy/,direct
+RUN go mod download
+
+COPY . .
+
+COPY --from=frontend-builder /app/static ./static
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o kite .
+
+FROM gcr.nju.edu.cn/distroless/static
+
+WORKDIR /app
+
+COPY --from=backend-builder /app/kite .
+
+EXPOSE 8080
+
+CMD ["./kite"]
