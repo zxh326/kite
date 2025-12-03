@@ -13,13 +13,15 @@
 
 </div>
 
-**KiteSense** is a dedicated control center for running and manage Typesense on any Kubernetes cluster. It lets you launch and operate Typesense deployments anywhere, track their health, and coordinate multiple environments from a single place. Designed for clarity and speed, KiteSense streamlines the entire lifecycle of your search infrastructure. Your Typesense clusters, any cloud, anytime.
+**Kitesense** is a dedicated control center for running and manage Typesense on any Kubernetes cluster. It lets you launch and operate Typesense deployments anywhere, track their health, and coordinate multiple environments from a single place. Designed for clarity and speed, Kitesense streamlines the entire lifecycle of your search infrastructure. Your Typesense clusters, any cloud, anytime.
 
 > [!IMPORTANT]
-> KiteSense is a repurposed derivative of the original [Kite](https://github.com/zxh326/kite) project. All credit for the foundation and core design goes to the Kite maintainers.
+> Kitesense is a repurposed derivative of the original [Kite](https://github.com/zxh326/kite) project. All credit for the foundation and core design goes to the Kite maintainers.
 
 ![Dashboard Overview](docs/screenshots/quorum.png)
 _Analytical cluster and quorum overview with real-time monitoring of raft nodes_
+
+---
 
 ## ✨ Features
 
@@ -75,16 +77,22 @@ For detailed instructions, please refer to the [documentation](https://kite.zzde
 To run Kitesense using Docker:
 
 ```bash
-docker run --rm -p 8080:8080 akyriako78/kitesense:latest
+docker run --rm -p 8080:8080 akyriako78/Kitesense:latest
+```
+
+### Docker Compose
+
+```bash
+docker run --rm -p 8080:8080 akyriako78/Kitesense:latest
 ```
 
 ### Kubernetes
 
 ```bash
-helm repo add kitesense https://akyriako.github.io/kitesense
+helm repo add Kitesense https://akyriako.github.io/Kitesense
 helm repo update
 
-helm upgrade --install kitesense kitesense/kitesense -n typesense-system --create-namespace
+helm upgrade --install Kitesense Kitesense/Kitesense -n typesense-system --create-namespace
 ```
 
 ### Build from Source
