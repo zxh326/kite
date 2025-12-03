@@ -256,6 +256,9 @@ func (g *GenericProvider) GetUserInfo(accessToken string) (*model.User, error) {
 	} else if sub, ok := userInfo["sub"]; ok {
 		user.Sub = fmt.Sprintf("%v", sub)
 	}
+	if userid, ok := userInfo["userid"]; ok {
+		user.Sub = fmt.Sprintf("%v", userid)
+	}
 	if username, ok := userInfo["username"]; ok {
 		user.Username = fmt.Sprintf("%v", username)
 	} else if login, ok := userInfo["login"]; ok {
@@ -265,6 +268,9 @@ func (g *GenericProvider) GetUserInfo(accessToken string) (*model.User, error) {
 	}
 	if name, ok := userInfo["name"]; ok {
 		user.Name = fmt.Sprintf("%v", name)
+	}
+	if nickname, ok := userInfo["nickname"]; ok {
+		user.Name = fmt.Sprintf("%v", nickname)
 	}
 	if avatar, ok := userInfo["avatar_url"]; ok {
 		user.AvatarURL = fmt.Sprintf("%v", avatar)
