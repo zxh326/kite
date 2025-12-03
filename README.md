@@ -68,6 +68,8 @@ In addition to all the [features delivered by Kite](https://github.com/zxh326/ki
 - 🔦 **Detailed Resource View** - In-depth information for the DocSearch scrapers cronjobs 
 - 📊 **Real-time Metrics** - CPU, memory, and network usage charts by Prometheus and kube-state metrics
 
+---
+
 <!-- 
 ### 🎯 **Modern User Experience**
 
