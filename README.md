@@ -54,9 +54,9 @@ In addition to all the [features delivered by Kite](https://github.com/zxh326/ki
 ### ⚡️ **Typesense Clusters**
 
 - 📄 **Live `TypesenseCluster` Manifest Editing** - Built-in Monaco editor with syntax highlighting and validation
-- 🔦 **Detailed Related Resource Views** - In-depth information for secrets, volumes, events, services and ingress
-- 🚦 **Real-time Quorum/Raft/Pod State** - Quorum state, nodes role in raft, node health are fetched in real-time 
-- 📊 **Real-time Statefulset/Pod Metrics** - CPU, memory, and network usage charts by Prometheus and kube-state metrics
+- 🔦 **Detailed Related Resource Views** - In-depth information for secrets, volumes, services and ingress
+- 🚦 **Real-time Quorum/Raft/Pod State** - Quorum state, nodes role in raft, nodes health 
+- 📊 **Real-time Statefulset/Pod Metrics** - CPU, memory, and network usage charts 
 - 📝 **Live Logs** - Stream real-time Typesense nodes logs
 - 💻 **Web/Node Terminal** - Execute commands directly in pods/typesense nodes through the browser
 
