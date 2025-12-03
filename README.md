@@ -123,6 +123,8 @@ make run
 make dev
 ```
 
+Open now your browser and navigate to http://localhost:5173 to use Kitesense in development mode.
+
 > [!IMPORTANT]  
 > Any change on the backend Go project will require restarting with `make dev`. The hot-reloading feature applies only for frontend TypeScript changes.
 
@@ -168,6 +170,24 @@ You can add your own extensions in your Dev Container and customize it to the fu
 
 The Git extension will automatically forward your local **SSH agent**, if one is running otherwise it will use directly the git configuration of your local host. In that way you can take advantage of keeping tight control of your credentials and your SSH keys in one place, your local machine, and not spreading them individually to every new development enviroment.
 
+## 📦 Project Status
+
+- Latest version: **0.3.5**
+- Contributions welcome! See [FAQ](https://akyriako.github.io/typesense-operator-docs/docs/faq) and [Development](https://akyriako.github.io/typesense-operator-docs/docs/development)
+
+### Relationship to the Upstream
+
+Kitesense is a **hard-fork** of the open-source project [Kite](https://github.com/zxh326/kite). This means the codebase was copied at a specific point in time and then adapted, restructured, and extended to serve a different purpose: managing and deploying Typesense clusters on any Kubernetes environment.
+
+Because of the above:
+
+- Kitesense evolves independently. Development is no longer tied to the direction, roadmap, or release cycle of the original Kite project.
+- Features and behavior may diverge. While Kitesense inherited foundational components from Kite, its functionality, UI, and architecture will continue to shift toward the needs of Typesense deployment and lifecycle management.
+- Upstream updates are not automatically merged. Improvements made in Kite after the fork will not be pulled in unless explicitly adopted and manually integrated and only when they align with Kitesense’s goals.
+- Credit remains with the original authors. The core concepts and initial implementation were made possible by the Kite maintainers, whose work provided the starting point for this project.
+
+Kitesense stands on the shoulders of Kite, but is developed as its own focused, long-term solution for Typesense cluster orchestration.
+
 ## 📚 Documentation
 
 - [Getting Started](https://akyriako.github.io/typesense-operator-docs/docs/getting-started)
@@ -179,14 +199,5 @@ The Git extension will automatically forward your local **SSH agent**, if one is
 
 For troubleshooting, please refer to the [documentation](https://kite.zzde.me).
 
-## 📦 Project Status
-
-TyKO is an **independently maintained** project (not affiliated with Typesense, Inc.).
-- Latest version: **0.3.5**
-- Tested on: Kubernetes 1.33 (earliest 1.26), Typesense 29.0 (earliest 26.0)
-- Contributions welcome! See [FAQ](https://akyriako.github.io/typesense-operator-docs/docs/faq) and [Development](https://akyriako.github.io/typesense-operator-docs/docs/development)
 
 
-## 📄 License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
