@@ -70,29 +70,29 @@ _Analytical cluster and quorum overview with real-time monitoring of raft nodes_
 
 ## ⚡ Get Started
 
-For detailed instructions, please refer to the [documentation](https://kite.zzde.me/guide/installation.html).
+Kitesense can be installed as a solo Docker container, as optional component of TyKO (Typesense Kubernetes Operator) or as independent deployment in a separate management cluster designated to manage all your Typesense clusters on local or remote Kubernetes environments.
 
 ### Docker
 
 To run Kitesense using Docker:
 
 ```bash
-docker run --rm -p 8080:8080 akyriako78/Kitesense:latest
+docker run --rm -p 8080:8080 akyriako78/kitesense:latest
 ```
 
 ### Docker Compose
 
 ```bash
-docker run --rm -p 8080:8080 akyriako78/Kitesense:latest
+docker run --rm -p 8080:8080 akyriako78/kitesense:latest
 ```
 
 ### Kubernetes
 
 ```bash
-helm repo add Kitesense https://akyriako.github.io/Kitesense
+helm repo add kitesense https://akyriako.github.io/Kitesense
 helm repo update
 
-helm upgrade --install Kitesense Kitesense/Kitesense -n typesense-system --create-namespace
+helm upgrade --install kitesense kitesense/kitesense -n typesense-system --create-namespace
 ```
 
 ### Local Development
@@ -122,6 +122,9 @@ make run
 ```bash
 make dev
 ```
+
+> [!IMPORTANT]  
+> Any change on the backend Go project will require restarting with `make dev`. The hot-reloading feature applies only for frontend TypeScript changes.
 
 ### Remote Container Development
 
