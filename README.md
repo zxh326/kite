@@ -44,6 +44,8 @@ Kitesense stands on the shoulders of Kite, but is developed as its own focused, 
 
 ## ✨ Features
 
+In addition to all the [features delivered by Kite](https://github.com/zxh326/kite?tab=readme-ov-file#-features), Kitesense is adding the following:
+<!-- 
 ### 🎯 **Modern User Experience**
 
 - 🌓 **Multi-Theme Support** - Dark/light/color themes with system preference detection
@@ -84,7 +86,7 @@ Kitesense stands on the shoulders of Kite, but is developed as its own focused, 
 - 🛡️ **OAuth Integration** - Supports OAuth management in the UI
 - 🔒 **Role-Based Access Control** - Supports user permission management in the UI
 - 👥 **User Management** - Comprehensive user management and role allocation in the UI
-
+ -->
 
 
 ## ⚡ Get Started
