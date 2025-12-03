@@ -1,10 +1,8 @@
-# Kitesense - Typesense Management Dashboard
+# Kitesense
 
 <div align="center">
 
 <img src="./docs/assets/kitesense-banner.png" alt="Kitesense Logo" >
-
-<!-- _your Typesense clusters, any cloud, anytime._ -->
 
 <br/>
 
@@ -12,9 +10,6 @@
 [![React](https://img.shields.io/badge/React-19+-61DAFB?style=flat&logo=react)](https://reactjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5+-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/License-Apache-green.svg)](LICENSE)
-
-[**Live Demo**](https://kite-demo.zzde.me) | [**Documentation**](https://kite.zzde.me)
-<br>
 
 </div>
 
