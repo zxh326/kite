@@ -193,14 +193,12 @@ The Git extension will automatically forward your local **SSH agent**, if one is
 
 ## 📚 Documentation
 
-- [Getting Started](https://akyriako.github.io/typesense-operator-docs/docs/getting-started)
-- [How it works](https://akyriako.github.io/typesense-operator-docs/docs/how-it-works)
-- [Configuration & CRD Specs](https://akyriako.github.io/typesense-operator-docs/docs/crds)
-- [Monitoring & Metrics](https://akyriako.github.io/typesense-operator-docs/docs/metrics)
+- [Configuration](https://kite.zzde.me/config/) and its documentation are identical to Kite.
 
-## 🔍 Troubleshooting
+## 💬 Community & Support
 
-For troubleshooting, please refer to the [documentation](https://kite.zzde.me).
-
+Join the conversation:
+- **GitHub Discussions**: ask questions, share feedback, submit suggestions or help others
+- **Issues**: report bugs or request features
 
 
