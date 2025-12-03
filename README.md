@@ -95,29 +95,75 @@ helm repo update
 helm upgrade --install Kitesense Kitesense/Kitesense -n typesense-system --create-namespace
 ```
 
-### Build from Source
+### Local Development
 
-#### 📋 Prerequisites
+#### Clone the repository
 
-1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/zxh326/kite.git
-   cd kite
+```bash
+git clone https://github.com/akyriako/kitesense.git
+cd kitesense
    ```
 
-2. **Build the project**
+#### Build the project
 
-   ```bash
-   make deps
-   make build
-   ```
+```bash
+make deps
+make build
+```
 
-3. **Run the server**
+#### Run the static build
 
-   ```bash
-   make run
-   ```
+```bash
+make run
+```
+
+#### Run with hot reload
+
+```bash
+make dev
+```
+
+### Remote Container Development
+
+Any IDE that supports [Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers), but in this case everything is tailored for Visual Studio Code, will build a container with all the necessary prerequisites to get you started creating content immediately based on the extensions
+and features defined in **devcontainer.json**. A `typescript-node:1-20-bookworm` container will be spawned with the following extras pre-installed:
+
+* **Visual Studio Code Extensions**
+
+  - JavaScript and TypeScript Nightly
+  - React Native Tools
+  - ES7+ React/Redux/React-Native snippets, Simple React Snippets
+  - Simple React Snippets
+  - Npm Intellisense, Npm Dependency, Path Intellisense
+  - Git Graph
+  - Resource Monitor
+  - YAML
+  - Thunder Client
+  - Go
+  - NeoXP Golang Tools
+
+* **Features**
+
+  - Git
+  - Docker-in-Docker
+  - Go
+  - GolangCI Lint
+  - GoReleaser
+
+* **Post-Create Command**
+
+  - `make deps && make build`
+
+#### Add your own Extensions
+
+You can add your own extensions in your Dev Container and customize it to the fullest. By right-clicking the desired extension in the *Marketplace* and choosing the *Add to devcontainer.json* the extension will be installed and activated the next time you rebuild your Dev Container.
+
+> [!NOTE]  
+> You can afterwards rebuild your container so the changes take effect, with our without using cache, in the latter  case it will rebuild the container from scratch.
+
+#### Git Credentials
+
+The Git extension will automatically forward your local **SSH agent**, if one is running otherwise it will use directly the git configuration of your local host. In that way you can take advantage of keeping tight control of your credentials and your SSH keys in one place, your local machine, and not spreading them individually to every new development enviroment.
 
 ## 📚 Documentation
 
