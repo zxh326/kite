@@ -18,8 +18,8 @@
 > [!IMPORTANT]
 > KiteSense is a repurposed derivative of the original [Kite](https://github.com/zxh326/kite) project. All credit for the foundation and core design goes to the Kite maintainers.
 
-![Dashboard Overview](docs/screenshots/overview.png)
-_Comprehensive cluster overview with real-time metrics and resource statistics_
+![Dashboard Overview](docs/screenshots/quorum.png)
+_Analytical cluster and quorum overview with real-time monitoring of raft nodes_
 
 ## ✨ Features
 
@@ -64,52 +64,28 @@ _Comprehensive cluster overview with real-time metrics and resource statistics_
 - 🔒 **Role-Based Access Control** - Supports user permission management in the UI
 - 👥 **User Management** - Comprehensive user management and role allocation in the UI
 
----
 
-## 🚀 Quick Start
+
+## ⚡ Get Started
 
 For detailed instructions, please refer to the [documentation](https://kite.zzde.me/guide/installation.html).
 
 ### Docker
 
-To run Kite using Docker, you can use the pre-built image:
+To run Kitesense using Docker:
 
 ```bash
-docker run --rm -p 8080:8080 ghcr.io/zxh326/kite:latest
+docker run --rm -p 8080:8080 akyriako78/kitesense:latest
 ```
 
-### Deploy in Kubernetes
+### Kubernetes
 
-#### Using Helm (Recommended)
+```bash
+helm repo add kitesense https://akyriako.github.io/kitesense
+helm repo update
 
-1. **Add Helm repository**
-
-   ```bash
-   helm repo add kite https://zxh326.github.io/kite
-   helm repo update
-   ```
-
-2. **Install with default values**
-
-   ```bash
-   helm install kite kite/kite -n kube-system
-   ```
-
-#### Using kubectl
-
-1. **Apply deployment manifests**
-
-   ```bash
-   kubectl apply -f deploy/install.yaml
-   # or install it online
-   kubectl apply -f https://raw.githubusercontent.com/zxh326/kite/refs/heads/main/deploy/install.yaml
-   ```
-
-2. **Access via port-forward**
-
-   ```bash
-   kubectl port-forward -n kube-system svc/kite 8080:8080
-   ```
+helm upgrade --install kitesense kitesense/kitesense -n typesense-system --create-namespace
+```
 
 ### Build from Source
 
@@ -135,15 +111,24 @@ docker run --rm -p 8080:8080 ghcr.io/zxh326/kite:latest
    make run
    ```
 
----
+## 📚 Documentation
+
+- [Getting Started](https://akyriako.github.io/typesense-operator-docs/docs/getting-started)
+- [How it works](https://akyriako.github.io/typesense-operator-docs/docs/how-it-works)
+- [Configuration & CRD Specs](https://akyriako.github.io/typesense-operator-docs/docs/crds)
+- [Monitoring & Metrics](https://akyriako.github.io/typesense-operator-docs/docs/metrics)
 
 ## 🔍 Troubleshooting
 
 For troubleshooting, please refer to the [documentation](https://kite.zzde.me).
 
-## 🤝 Contributing
+## 📦 Project Status
 
-We welcome contributions! Please see our [contributing guidelines](https://kite.zzde.me/faq.html#how-can-i-contribute-to-kite) for details on how to get involved.
+TyKO is an **independently maintained** project (not affiliated with Typesense, Inc.).
+- Latest version: **0.3.5**
+- Tested on: Kubernetes 1.33 (earliest 1.26), Typesense 29.0 (earliest 26.0)
+- Contributions welcome! See [FAQ](https://akyriako.github.io/typesense-operator-docs/docs/faq) and [Development](https://akyriako.github.io/typesense-operator-docs/docs/development)
+
 
 ## 📄 License
 
