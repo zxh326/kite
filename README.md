@@ -21,8 +21,6 @@
 ![Dashboard Overview](docs/screenshots/quorum.png)
 _Analytical cluster and quorum overview with real-time monitoring of raft nodes_
 
----
-
 ## 📦 Project Status
 
 - Latest version: **0.3.5**
