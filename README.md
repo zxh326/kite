@@ -70,7 +70,7 @@ _Analytical cluster and quorum overview with real-time monitoring of raft nodes_
 
 ## ⚡ Get Started
 
-Kitesense can be installed as a solo Docker container, as optional component of TyKO (Typesense Kubernetes Operator) or as independent deployment in a separate management cluster designated to manage all your Typesense clusters on local or remote Kubernetes environments.
+Kitesense can be installed as a solo Docker container, as optional component of [TyKO](https://github.com/akyriako/typesense-operator) (Typesense Kubernetes Operator) or as independent deployment in a separate management cluster designated to manage all your Typesense clusters on local or remote Kubernetes environments.
 
 ### Docker
 
