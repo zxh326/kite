@@ -94,10 +94,6 @@ func InitDB() {
 		}
 	}
 
-	if err := (&ResourceHistory{}).AfterMigrate(DB); err != nil {
-		panic("failed to create resource history indexes: " + err.Error())
-	}
-
 	sqldb, err := DB.DB()
 	if err == nil {
 		sqldb.SetMaxOpenConns(common.DBMaxOpenConns)
