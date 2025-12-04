@@ -3,6 +3,7 @@ package model
 import (
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -51,7 +52,7 @@ func InitDB() {
 		}
 
 		if common.DBType == "mysql" {
-			DB, err = gorm.Open(mysql.Open(dsn), cfg)
+			DB, err = gorm.Open(mysql.Open(strings.TrimPrefix(dsn, "mysql://")), cfg)
 			if err != nil {
 				panic("failed to connect database: " + err.Error())
 			}
@@ -91,10 +92,6 @@ func InitDB() {
 		if err != nil {
 			panic("failed to migrate database: " + err.Error())
 		}
-	}
-
-	if err := (&ResourceHistory{}).AfterMigrate(DB); err != nil {
-		panic("failed to create resource history indexes: " + err.Error())
 	}
 
 	sqldb, err := DB.DB()

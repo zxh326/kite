@@ -1,14 +1,18 @@
 package model
 
-import "gorm.io/gorm"
+import (
+	"time"
+)
 
 type ResourceHistory struct {
-	Model
-	ClusterName string `json:"clusterName" gorm:"type:varchar(100);not null;index"`
+	ID          uint      `json:"id" gorm:"primarykey"`
+	CreatedAt   time.Time `json:"createdAt" gorm:"index:idx_resource_histories_lookup_with_time,priority:5,sort:desc"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+	ClusterName string    `json:"clusterName" gorm:"type:varchar(100);not null;index:idx_resource_histories_lookup_with_time,priority:1"`
 
-	ResourceType string `json:"resourceType" gorm:"type:varchar(50);not null;index"`
-	ResourceName string `json:"resourceName" gorm:"type:varchar(255);not null;index"`
-	Namespace    string `json:"namespace" gorm:"type:varchar(100);index"`
+	ResourceType string `json:"resourceType" gorm:"type:varchar(50);not null;index:idx_resource_histories_lookup_with_time,priority:2"`
+	ResourceName string `json:"resourceName" gorm:"type:varchar(255);not null;index:idx_resource_histories_lookup_with_time,priority:3"`
+	Namespace    string `json:"namespace" gorm:"type:varchar(100);index:idx_resource_histories_lookup_with_time,priority:4"`
 
 	OperationType string `json:"operationType" gorm:"type:varchar(50);not null;index"`
 
@@ -24,11 +28,4 @@ type ResourceHistory struct {
 
 func (ResourceHistory) TableName() string {
 	return "resource_histories"
-}
-
-func (ResourceHistory) AfterMigrate(tx *gorm.DB) error {
-	return tx.Exec(`
-		CREATE INDEX IF NOT EXISTS idx_resource_histories_lookup_with_time 
-		ON resource_histories (cluster_name, resource_type, resource_name, namespace, created_at DESC)
-	`).Error
 }
