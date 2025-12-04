@@ -1,6 +1,9 @@
 package model
 
-import "gorm.io/gorm"
+import (
+	"github.com/zxh326/kite/pkg/common"
+	"gorm.io/gorm"
+)
 
 type ResourceHistory struct {
 	Model
@@ -27,8 +30,33 @@ func (ResourceHistory) TableName() string {
 }
 
 func (ResourceHistory) AfterMigrate(tx *gorm.DB) error {
+	indexName := "idx_resource_histories_lookup_with_time"
+	tableName := "resource_histories"
+
+	// Check database type and use appropriate syntax
+	if common.DBType == "mysql" {
+		// For MySQL, check if index exists first
+		var count int64
+		tx.Raw(`
+			SELECT COUNT(1) 
+			FROM information_schema.statistics 
+			WHERE table_schema = DATABASE() 
+			AND table_name = ? 
+			AND index_name = ?
+		`, tableName, indexName).Scan(&count)
+
+		if count == 0 {
+			return tx.Exec(`
+				CREATE INDEX ` + indexName + ` 
+				ON ` + tableName + ` (cluster_name, resource_type, resource_name, namespace, created_at DESC)
+			`).Error
+		}
+		return nil
+	}
+
+	// For SQLite and PostgreSQL, use IF NOT EXISTS
 	return tx.Exec(`
-		CREATE INDEX IF NOT EXISTS idx_resource_histories_lookup_with_time 
-		ON resource_histories (cluster_name, resource_type, resource_name, namespace, created_at DESC)
+		CREATE INDEX IF NOT EXISTS ` + indexName + ` 
+		ON ` + tableName + ` (cluster_name, resource_type, resource_name, namespace, created_at DESC)
 	`).Error
 }
