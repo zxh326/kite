@@ -91,8 +91,12 @@ func (h *GenericResourceHandler[T, V]) recordHistory(c *gin.Context, opType stri
 		ErrorMessage:  errMsg,
 		OperatorID:    user.ID,
 	}
+	klog.V(1).Infof("Recording history: cluster=%s, resource=%s, name=%s, namespace=%s, operation=%s, user=%s (%d)",
+		cs.Name, h.name, curr.GetName(), curr.GetNamespace(), opType, user.Key(), user.ID)
 	if err := model.DB.Create(&history).Error; err != nil {
 		klog.Errorf("Failed to create resource history: %v", err)
+	} else {
+		klog.V(1).Infof("Successfully recorded history entry ID=%d", history.ID)
 	}
 }
 
