@@ -298,6 +298,17 @@ func (g *GenericProvider) GetUserInfo(accessToken string) (*model.User, error) {
 		}
 	}
 
+	// If no groups found and this looks like Azure AD/Microsoft Graph, try fetching memberOf
+	if len(groups) == 0 && strings.Contains(g.UserInfoURL, "graph.microsoft.com") {
+		klog.V(1).Infof("No groups in user info, fetching from /me/memberOf for %s", g.Name)
+		memberOfGroups, err := g.fetchAzureADGroups(accessToken)
+		if err != nil {
+			klog.Warningf("Failed to fetch groups from /me/memberOf: %v", err)
+		} else {
+			groups = memberOfGroups
+		}
+	}
+
 	if len(groups) != 0 {
 		user.OIDCGroups = make([]string, len(groups))
 		for i, v := range groups {
@@ -308,4 +319,52 @@ func (g *GenericProvider) GetUserInfo(accessToken string) (*model.User, error) {
 		klog.V(1).Infof("No groups/roles found in user info from %s", g.Name)
 	}
 	return user, nil
+}
+
+// fetchAzureADGroups fetches group memberships from Azure AD Graph API /me/memberOf endpoint
+func (g *GenericProvider) fetchAzureADGroups(accessToken string) ([]interface{}, error) {
+	memberOfURL := "https://graph.microsoft.com/v1.0/me/memberOf"
+	req, err := http.NewRequest("GET", memberOfURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Accept", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("failed to fetch memberOf: HTTP %d", resp.StatusCode)
+	}
+
+	var memberOfResp struct {
+		Value []map[string]interface{} `json:"value"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&memberOfResp); err != nil {
+		return nil, err
+	}
+
+	klog.V(1).Infof("Fetched %d group memberships from /me/memberOf", len(memberOfResp.Value))
+
+	// Extract group IDs from the response
+	groups := make([]interface{}, 0, len(memberOfResp.Value))
+	for _, item := range memberOfResp.Value {
+		// Check if this is a group (not a role or other type)
+		if itemType, ok := item["@odata.type"].(string); ok && itemType == "#microsoft.graph.group" {
+			if groupID, ok := item["id"].(string); ok {
+				groups = append(groups, groupID)
+				klog.V(2).Infof("Found group: %s (%s)", groupID, item["displayName"])
+			}
+		}
+	}
+
+	return groups, nil
 }
