@@ -798,6 +798,66 @@ export const createLogsSSEStream = (
   return eventSource
 }
 
+// Pod File Browser API
+export interface FileInfo {
+  name: string
+  isDir: boolean
+  size: number
+  modTime: string
+  mode: string
+}
+
+export const podListFiles = async (
+  namespace: string,
+  podName: string,
+  container: string,
+  path: string,
+  options?: RequestInit
+): Promise<FileInfo[]> => {
+  const params = new URLSearchParams({
+    container,
+    path,
+  })
+  return apiClient.get<FileInfo[]>(
+    `/pods/${namespace}/${podName}/files?${params.toString()}`,
+    options
+  )
+}
+
+export const podDownloadFile = (
+  namespace: string,
+  podName: string,
+  container: string,
+  path: string
+) => {
+  const params = new URLSearchParams({
+    container,
+    path,
+  })
+  const url = `${API_BASE_URL}/pods/${namespace}/${podName}/files/download?${params.toString()}`
+  window.open(url, '_blank')
+}
+
+export const podUploadFile = async (
+  namespace: string,
+  podName: string,
+  container: string,
+  path: string,
+  file: File
+): Promise<void> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  const params = new URLSearchParams({
+    container,
+    path,
+  })
+
+  await apiClient.post(
+    `/pods/${namespace}/${podName}/files/upload?${params.toString()}`,
+    formData
+  )
+}
+
 export const fetchTemplates = async (): Promise<ResourceTemplate[]> => {
   return fetchAPI<ResourceTemplate[]>('/templates/')
 }

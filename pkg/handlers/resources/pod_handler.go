@@ -4,11 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/samber/lo"
 	"github.com/zxh326/kite/pkg/cluster"
+	"github.com/zxh326/kite/pkg/kube"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -169,9 +172,195 @@ func (h *PodHandler) List(c *gin.Context) {
 func (h *PodHandler) registerCustomRoutes(group *gin.RouterGroup) {
 	// watch pods in namespace (or _all)
 	group.GET("/:namespace/watch", h.Watch)
+	group.GET("/:namespace/:name/files", h.ListFiles)
+	group.GET("/:namespace/:name/files/download", h.DownloadFile)
+	group.POST("/:namespace/:name/files/upload", h.UploadFile)
 }
 
-// writeSSE writes a single SSE event with the given name and payload
+type FileInfo struct {
+	Name    string `json:"name"`
+	IsDir   bool   `json:"isDir"`
+	Size    int64  `json:"size"`
+	ModTime string `json:"modTime"`
+	Mode    string `json:"mode"`
+}
+
+func (h *PodHandler) ListFiles(c *gin.Context) {
+	namespace := c.Param("namespace")
+	podName := c.Param("name")
+	container := c.Query("container")
+	path := c.Query("path")
+	if path == "" {
+		path = "/"
+	}
+
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+
+	// Use ls -n -a to get file details including hidden files with numeric UIDs/GIDs.
+	// Output format: permissions links uid gid size month day time/year name
+	cmd := []string{"ls", "-n", "-a", path}
+	stdout, stderr, err := cs.K8sClient.ExecCommandBuffered(c.Request.Context(), namespace, podName, container, cmd)
+	if err != nil {
+		if strings.Contains(err.Error(), "executable file not found") {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": fmt.Sprintf("File browsing is not supported for %s container (missing 'ls' command).", container),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to list files: %v, stderr: %s", err, stderr)})
+		return
+	}
+
+	files := parseLsOutput(stdout)
+	c.JSON(http.StatusOK, files)
+}
+
+func parseLsOutput(output string) []FileInfo {
+	lines := strings.Split(output, "\n")
+	files := make([]FileInfo, 0)
+	for _, line := range lines {
+		if strings.HasPrefix(line, "total") || strings.TrimSpace(line) == "" {
+			continue
+		}
+		parts := strings.Fields(line)
+		if len(parts) < 9 {
+			continue
+		}
+
+		mode := parts[0]
+		isDir := strings.HasPrefix(mode, "d")
+		size := int64(0)
+		_, _ = fmt.Sscanf(parts[4], "%d", &size)
+
+		rawDate := strings.Join(parts[5:8], " ")
+		modTime := rawDate
+
+		now := time.Now()
+
+		if t, err := time.Parse("Jan _2 15:04", rawDate); err == nil {
+			t = t.AddDate(now.Year(), 0, 0)
+			modTime = t.Format("2006-01-02 15:04:05")
+		} else if t, err := time.Parse("Jan _2 2006", rawDate); err == nil {
+			modTime = t.Format("2006-01-02 15:04:05")
+		}
+
+		name := strings.Join(parts[8:], " ")
+
+		// Skip . and ..
+		if name == "." || name == ".." {
+			continue
+		}
+
+		files = append(files, FileInfo{
+			Name:    name,
+			IsDir:   isDir,
+			Size:    size,
+			ModTime: modTime,
+			Mode:    mode,
+		})
+	}
+	return files
+}
+
+func (h *PodHandler) DownloadFile(c *gin.Context) {
+	namespace := c.Param("namespace")
+	podName := c.Param("name")
+	container := c.Query("container")
+	path := c.Query("path")
+
+	if path == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "path is required"})
+		return
+	}
+
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+
+	// Check if it is a directory
+	// We use "test -d path" to check.
+	_, _, err := cs.K8sClient.ExecCommandBuffered(c.Request.Context(), namespace, podName, container, []string{"test", "-d", path})
+	isDir := err == nil
+
+	var cmd []string
+	if isDir {
+		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.tar\"", filepath.Base(path)))
+		c.Header("Content-Type", "application/x-tar")
+		cmd = []string{"tar", "cf", "-", path}
+	} else {
+		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filepath.Base(path)))
+		c.Header("Content-Type", "application/octet-stream")
+		cmd = []string{"cat", path}
+	}
+
+	err = cs.K8sClient.ExecCommand(c.Request.Context(), kube.ExecOptions{
+		Namespace:     namespace,
+		PodName:       podName,
+		ContainerName: container,
+		Command:       cmd,
+		Stdout:        c.Writer,
+		Stderr:        nil,
+		TTY:           false,
+	})
+
+	if err != nil {
+		klog.Errorf("Failed to download file: %v", err)
+	}
+}
+
+func (h *PodHandler) UploadFile(c *gin.Context) {
+	namespace := c.Param("namespace")
+	podName := c.Param("name")
+	container := c.Query("container")
+	path := c.Query("path")
+
+	if path == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "path is required"})
+		return
+	}
+
+	file, _, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to get file from request"})
+		return
+	}
+	defer func() {
+		_ = file.Close()
+	}()
+
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+
+	_, header, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to get file header"})
+		return
+	}
+
+	destPath := path + "/" + header.Filename
+	if strings.HasSuffix(path, "/") {
+		destPath = path + header.Filename
+	}
+
+	safeDestPath := strings.ReplaceAll(destPath, "'", "'\\''")
+	cmd := []string{"sh", "-c", fmt.Sprintf("cat > '%s'", safeDestPath)}
+
+	err = cs.K8sClient.ExecCommand(c.Request.Context(), kube.ExecOptions{
+		Namespace:     namespace,
+		PodName:       podName,
+		ContainerName: container,
+		Command:       cmd,
+		Stdin:         file, // Stream file content directly
+		Stdout:        nil,
+		Stderr:        nil,
+		TTY:           false,
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to upload file: %v", err)})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "file uploaded successfully"})
+}
+
 func writeSSE(c *gin.Context, event string, payload any) error {
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
 	c.Writer.Header().Set("Cache-Control", "no-cache, no-transform")
