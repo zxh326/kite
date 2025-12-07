@@ -83,7 +83,8 @@
     "rolebindings": "角色绑定",
     "clusterroles": "集群角色",
     "clusterrolebindings": "集群角色绑定",
-    "horizontalpodautoscalers": "Pod 水平自动扩缩"
+    "horizontalpodautoscalers": "Pod 水平自动扩缩",
+    "auditlog": "审计日志"
   },
   "sidebar": {
     "groups": {

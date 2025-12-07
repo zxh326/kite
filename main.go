@@ -196,6 +196,11 @@ func setupAPIRouter(r *gin.RouterGroup, cm *cluster.ClusterManager) {
 		proxyHandler := handlers.NewProxyHandler()
 		proxyHandler.RegisterRoutes(api)
 
+		// Audit log routes (before RBAC middleware, accessible to all authenticated users)
+		auditHandler := handlers.NewAuditHandler()
+		api.GET("/audit/logs", auditHandler.ListAuditLogs)
+		api.GET("/audit/stats", auditHandler.GetAuditStats)
+
 		api.Use(middleware.RBACMiddleware())
 		resources.RegisterRoutes(api)
 	}
