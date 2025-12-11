@@ -217,13 +217,13 @@ func (h *PodHandler) ListFiles(c *gin.Context) {
 	cmd := []string{"ls", "-lah", "--full-time", path}
 	stdout, stderr, err := cs.K8sClient.ExecCommandBuffered(c.Request.Context(), namespace, podName, container, cmd)
 	if err != nil {
-		if strings.Contains(err.Error(), "executable file not found") {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": fmt.Sprintf("File browsing is not supported for %s container (missing 'ls' command).", container),
+		if strings.Contains(err.Error(), "not found") || strings.Contains(stderr, "not found") {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Sprintf("File browsing is not supported for %s container (missing 'ls' command)", container),
 			})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to list files: %v, stderr: %s", err, stderr)})
+		c.JSON(http.StatusOK, nil)
 		return
 	}
 
@@ -297,7 +297,6 @@ func (h *PodHandler) PreviewFile(c *gin.Context) {
 	cmd := []string{"cat", path}
 
 	contentType := mime.TypeByExtension(filepath.Ext(path))
-	fmt.Println(contentType)
 	if contentType == "" {
 		contentType = "text/plain; charset=utf-8"
 	}
@@ -391,13 +390,8 @@ func (h *PodHandler) UploadFile(c *gin.Context) {
 		return
 	}
 
-	destPath := path + "/" + header.Filename
-	if strings.HasSuffix(path, "/") {
-		destPath = path + header.Filename
-	}
-
-	safeDestPath := strings.ReplaceAll(destPath, "'", "'\\''")
-	cmd := []string{"sh", "-c", fmt.Sprintf("cat > '%s'", safeDestPath)}
+	destPath := filepath.Join(path, header.Filename)
+	cmd := []string{"tee", destPath}
 
 	err = cs.K8sClient.ExecCommand(c.Request.Context(), kube.ExecOptions{
 		Namespace:     namespace,

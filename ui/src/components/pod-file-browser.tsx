@@ -167,7 +167,7 @@ export function PodFileBrowser({
             onChange={(e) => setCurrentPath(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                setCurrentPath(currentPath)
+                handleNavigate(currentPath)
               }
             }}
             className="font-mono"
