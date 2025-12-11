@@ -52,7 +52,15 @@ func InitDB() {
 		}
 
 		if common.DBType == "mysql" {
-			DB, err = gorm.Open(mysql.Open(strings.TrimPrefix(dsn, "mysql://")), cfg)
+			mysqlDSN := strings.TrimPrefix(dsn, "mysql://")
+			if !strings.Contains(mysqlDSN, "parseTime=") {
+				separator := "?"
+				if strings.Contains(mysqlDSN, "?") {
+					separator = "&"
+				}
+				mysqlDSN = mysqlDSN + separator + "parseTime=true"
+			}
+			DB, err = gorm.Open(mysql.Open(mysqlDSN), cfg)
 			if err != nil {
 				panic("failed to connect database: " + err.Error())
 			}
