@@ -292,6 +292,22 @@ export function ResourceTable<T>({
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onRowSelectionChange: setRowSelection,
+    getRowId: (row) => {
+      const metadata = (
+        row as {
+          metadata?: { name?: string; namespace?: string; uid?: string }
+        }
+      )?.metadata
+      if (!metadata?.name) {
+        return `row-${Math.random()}`
+      }
+      return (
+        metadata.uid ||
+        (metadata.namespace
+          ? `${metadata.namespace}/${metadata.name}`
+          : metadata.name)
+      )
+    },
     state: {
       sorting,
       columnFilters,
