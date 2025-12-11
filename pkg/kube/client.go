@@ -119,9 +119,9 @@ func NewClient(config *rest.Config) (*K8sClient, error) {
 	}, nil
 }
 
-func (k *K8sClient) Stop(name string) {
+func (c *K8sClient) Stop(name string) {
 	klog.Infof("Stopping K8s client for %s", name)
-	k.cancel()
+	c.cancel()
 }
 
 // GetScheme returns the runtime scheme used by the client

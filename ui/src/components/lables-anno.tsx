@@ -40,7 +40,7 @@ export function LabelsAnno(props: {
         {Object.keys(annotations || {}).length > 0 && (
           <div>
             <Label className="text-xs text-muted-foreground">Annotations</Label>
-            <div className="flex flex-wrap gap-1 mt-2 max-h-32 overflow-y-auto">
+            <div className="flex flex-wrap gap-1 mt-2 max-h-32 overflow-x-hidden">
               {Object.entries(annotations || {}).map(([key, value]) => (
                 <Badge
                   key={key}

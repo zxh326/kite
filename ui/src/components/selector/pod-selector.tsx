@@ -93,7 +93,8 @@ export function PodSelector({
                     <span className="font-medium">{pod.metadata?.name}</span>
                     {pod.metadata?.creationTimestamp && (
                       <span className="text-xs text-muted-foreground">
-                        {getAge(pod.metadata?.creationTimestamp || '')}
+                        Age: {getAge(pod.metadata?.creationTimestamp || '')},
+                        Node: {pod.spec?.nodeName}
                       </span>
                     )}
                   </div>

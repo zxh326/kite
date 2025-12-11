@@ -45,8 +45,12 @@ class ApiClient {
     const fullUrl = withSubPath(this.baseUrl + url)
 
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
+    }
+
+    // Only set default Content-Type to application/json if not already set and body is not FormData
+    if (!headers['Content-Type'] && !(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json'
     }
 
     // Add cluster header if available
@@ -106,18 +110,28 @@ class ApiClient {
     data?: unknown,
     options?: RequestInit
   ): Promise<T> {
+    const isFormData = data instanceof FormData
     return this.makeRequest<T>(url, {
       ...options,
       method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
+      body: isFormData
+        ? (data as BodyInit)
+        : data
+          ? JSON.stringify(data)
+          : undefined,
     })
   }
 
   async put<T>(url: string, data?: unknown, options?: RequestInit): Promise<T> {
+    const isFormData = data instanceof FormData
     return this.makeRequest<T>(url, {
       ...options,
       method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
+      body: isFormData
+        ? (data as BodyInit)
+        : data
+          ? JSON.stringify(data)
+          : undefined,
     })
   }
 
@@ -130,10 +144,15 @@ class ApiClient {
     data?: unknown,
     options?: RequestInit
   ): Promise<T> {
+    const isFormData = data instanceof FormData
     return this.makeRequest<T>(url, {
       ...options,
       method: 'PATCH',
-      body: data ? JSON.stringify(data) : undefined,
+      body: isFormData
+        ? (data as BodyInit)
+        : data
+          ? JSON.stringify(data)
+          : undefined,
     })
   }
 }

@@ -225,9 +225,7 @@ export function SecretDetail(props: { namespace: string; name: string }) {
                           </Label>
                           <p className="text-sm">
                             <Link
-                              to={`/${owner.kind.toLowerCase()}s/${
-                                secret.metadata!.namespace
-                              }/${owner.name}`}
+                              to={owner.path}
                               className="text-blue-600 hover:text-blue-800 hover:underline"
                             >
                               {owner.kind}/{owner.name}

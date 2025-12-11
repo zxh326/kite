@@ -26,6 +26,7 @@ import { ErrorMessage } from '@/components/error-message'
 import { EventTable } from '@/components/event-table'
 import { LabelsAnno } from '@/components/lables-anno'
 import { LogViewer } from '@/components/log-viewer'
+import { PodFileBrowser } from '@/components/pod-file-browser'
 import { PodMonitoring } from '@/components/pod-monitoring'
 import { PodStatusIcon } from '@/components/pod-status-icon'
 import { RelatedResourcesTable } from '@/components/related-resource-table'
@@ -437,6 +438,18 @@ export function PodDetail(props: { namespace: string; name: string }) {
                   initContainers={pod.spec?.initContainers}
                 />
               </div>
+            ),
+          },
+          {
+            value: 'files',
+            label: 'Files',
+            content: (
+              <PodFileBrowser
+                namespace={namespace}
+                podName={name}
+                containers={pod.spec?.containers}
+                initContainers={pod.spec?.initContainers}
+              />
             ),
           },
           {
