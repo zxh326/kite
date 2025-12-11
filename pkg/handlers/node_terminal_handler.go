@@ -92,13 +92,7 @@ func (h *NodeTerminalHandler) HandleNodeTerminalWebSocket(c *gin.Context) {
 }
 
 func (h *NodeTerminalHandler) createNodeAgent(ctx context.Context, cs *cluster.ClientSet, nodeName string) (string, error) {
-	truncateNodeName := nodeName
-	if len(nodeName)+len(common.NodeTerminalPodName)+5 > 63 {
-		maxLength := 63 - len(common.NodeTerminalPodName) - 5
-		truncateNodeName = nodeName[:maxLength]
-	}
-	podName := fmt.Sprintf("%s-%s-%s", common.NodeTerminalPodName, truncateNodeName, utils.RandomString(5))
-
+	podName := utils.GenerateNodeAgentName(nodeName)
 	// Define the kite node agent pod spec
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{

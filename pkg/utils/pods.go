@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"fmt"
+
+	"github.com/zxh326/kite/pkg/common"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -42,4 +45,13 @@ func IsPodErrorOrSuccess(pod *corev1.Pod) bool {
 		return true
 	}
 	return false
+}
+
+func GenerateNodeAgentName(nodeName string) string {
+	truncateNodeName := nodeName
+	if len(nodeName)+len(common.NodeTerminalPodName)+7 > 63 {
+		maxLength := 63 - len(common.NodeTerminalPodName) - 7
+		truncateNodeName = nodeName[:maxLength]
+	}
+	return fmt.Sprintf("%s-%s-%s", common.NodeTerminalPodName, truncateNodeName, RandomString(5))
 }
