@@ -3,15 +3,20 @@ package resources
 import (
 	"encoding/json"
 	"fmt"
+	"mime"
 	"net/http"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/samber/lo"
 	"github.com/zxh326/kite/pkg/cluster"
+	"github.com/zxh326/kite/pkg/common"
 	"github.com/zxh326/kite/pkg/kube"
+	"github.com/zxh326/kite/pkg/model"
+	"github.com/zxh326/kite/pkg/rbac"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -172,17 +177,32 @@ func (h *PodHandler) List(c *gin.Context) {
 func (h *PodHandler) registerCustomRoutes(group *gin.RouterGroup) {
 	// watch pods in namespace (or _all)
 	group.GET("/:namespace/watch", h.Watch)
-	group.GET("/:namespace/:name/files", h.ListFiles)
-	group.GET("/:namespace/:name/files/download", h.DownloadFile)
-	group.POST("/:namespace/:name/files/upload", h.UploadFile)
+	filesGroup := group.Group("/:namespace/:name/files")
+	filesGroup.Use(func(c *gin.Context) {
+		user := c.MustGet("user").(model.User)
+		cs := c.MustGet("cluster").(*cluster.ClientSet)
+		namespace := c.Param("namespace")
+		if !rbac.CanAccess(user, "pods", string(common.VerbExec), cs.Name, namespace) {
+			c.JSON(http.StatusForbidden, gin.H{"error": rbac.NoAccess(user.Key(), string(common.VerbExec), "pods", namespace, cs.Name)})
+			c.Abort()
+			return
+		}
+		c.Next()
+	})
+	filesGroup.GET("", h.ListFiles)
+	filesGroup.GET("/preview", h.PreviewFile)
+	filesGroup.GET("/download", h.DownloadFile)
+	filesGroup.PUT("/upload", h.UploadFile)
 }
 
 type FileInfo struct {
 	Name    string `json:"name"`
 	IsDir   bool   `json:"isDir"`
-	Size    int64  `json:"size"`
+	Size    string `json:"size"`
 	ModTime string `json:"modTime"`
 	Mode    string `json:"mode"`
+	UID     string `json:"uid,omitempty"`
+	GID     string `json:"gid,omitempty"`
 }
 
 func (h *PodHandler) ListFiles(c *gin.Context) {
@@ -193,12 +213,8 @@ func (h *PodHandler) ListFiles(c *gin.Context) {
 	if path == "" {
 		path = "/"
 	}
-
 	cs := c.MustGet("cluster").(*cluster.ClientSet)
-
-	// Use ls -n -a to get file details including hidden files with numeric UIDs/GIDs.
-	// Output format: permissions links uid gid size month day time/year name
-	cmd := []string{"ls", "-n", "-a", path}
+	cmd := []string{"ls", "-lah", "--full-time", path}
 	stdout, stderr, err := cs.K8sClient.ExecCommandBuffered(c.Request.Context(), namespace, podName, container, cmd)
 	if err != nil {
 		if strings.Contains(err.Error(), "executable file not found") {
@@ -229,37 +245,78 @@ func parseLsOutput(output string) []FileInfo {
 
 		mode := parts[0]
 		isDir := strings.HasPrefix(mode, "d")
-		size := int64(0)
-		_, _ = fmt.Sscanf(parts[4], "%d", &size)
 
-		rawDate := strings.Join(parts[5:8], " ")
+		uid := parts[2]
+		gid := parts[3]
+		size := parts[4]
+
+		rawDate := strings.Join(parts[5:7], " ")
 		modTime := rawDate
-
-		now := time.Now()
-
-		if t, err := time.Parse("Jan _2 15:04", rawDate); err == nil {
-			t = t.AddDate(now.Year(), 0, 0)
-			modTime = t.Format("2006-01-02 15:04:05")
-		} else if t, err := time.Parse("Jan _2 2006", rawDate); err == nil {
-			modTime = t.Format("2006-01-02 15:04:05")
-		}
-
 		name := strings.Join(parts[8:], " ")
-
 		// Skip . and ..
 		if name == "." || name == ".." {
 			continue
 		}
-
 		files = append(files, FileInfo{
 			Name:    name,
 			IsDir:   isDir,
 			Size:    size,
 			ModTime: modTime,
 			Mode:    mode,
+			UID:     uid,
+			GID:     gid,
 		})
 	}
+	sort.Slice(files, func(i, j int) bool {
+		// Directories first
+		if files[i].IsDir && !files[j].IsDir {
+			return true
+		}
+		if !files[i].IsDir && files[j].IsDir {
+			return false
+		}
+		return strings.ToLower(files[i].Name) < strings.ToLower(files[j].Name)
+	})
 	return files
+}
+
+func (h *PodHandler) PreviewFile(c *gin.Context) {
+	namespace := c.Param("namespace")
+	podName := c.Param("name")
+	container := c.Query("container")
+	path := c.Query("path")
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	if path == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "path is required"})
+		return
+	}
+	if strings.Contains(path, "->") {
+		path = strings.TrimSpace(strings.SplitN(path, "->", 2)[0])
+	}
+
+	cmd := []string{"cat", path}
+
+	contentType := mime.TypeByExtension(filepath.Ext(path))
+	fmt.Println(contentType)
+	if contentType == "" {
+		contentType = "text/plain; charset=utf-8"
+	}
+	c.Header("Content-Type", contentType)
+	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=\"%s\"", filepath.Base(path)))
+
+	err := cs.K8sClient.ExecCommand(c.Request.Context(), kube.ExecOptions{
+		Namespace:     namespace,
+		PodName:       podName,
+		ContainerName: container,
+		Command:       cmd,
+		Stdout:        c.Writer,
+		Stderr:        nil,
+		TTY:           false,
+	})
+
+	if err != nil {
+		klog.Errorf("Failed to preview file: %v", err)
+	}
 }
 
 func (h *PodHandler) DownloadFile(c *gin.Context) {
@@ -268,15 +325,15 @@ func (h *PodHandler) DownloadFile(c *gin.Context) {
 	container := c.Query("container")
 	path := c.Query("path")
 
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+
 	if path == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "path is required"})
 		return
 	}
-
-	cs := c.MustGet("cluster").(*cluster.ClientSet)
-
-	// Check if it is a directory
-	// We use "test -d path" to check.
+	if strings.Contains(path, "->") {
+		path = strings.TrimSpace(strings.SplitN(path, "->", 2)[0])
+	}
 	_, _, err := cs.K8sClient.ExecCommandBuffered(c.Request.Context(), namespace, podName, container, []string{"test", "-d", path})
 	isDir := err == nil
 
@@ -311,26 +368,26 @@ func (h *PodHandler) UploadFile(c *gin.Context) {
 	podName := c.Param("name")
 	container := c.Query("container")
 	path := c.Query("path")
-
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
 	if path == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "path is required"})
 		return
 	}
 
-	file, _, err := c.Request.FormFile("file")
+	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to get file from request"})
 		return
 	}
 	defer func() {
-		_ = file.Close()
+		if err := file.Close(); err != nil {
+			klog.Errorf("failed to close uploaded file: %v", err)
+		}
 	}()
 
-	cs := c.MustGet("cluster").(*cluster.ClientSet)
-
-	_, header, err := c.Request.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to get file header"})
+	filename := filepath.Base(header.Filename)
+	if filename == "." || filename == ".." || strings.Contains(filename, "/") || strings.Contains(filename, "\\") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid filename"})
 		return
 	}
 

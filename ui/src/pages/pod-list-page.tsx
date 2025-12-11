@@ -6,8 +6,13 @@ import { Link } from 'react-router-dom'
 
 import { PodWithMetrics } from '@/types/api'
 import { getPodStatus } from '@/lib/k8s'
-import { formatDate } from '@/lib/utils'
+import { formatDate, getAge } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { MetricCell } from '@/components/metrics-cell'
 import { PodStatusIcon } from '@/components/pod-status-icon'
 import { ResourceTable } from '@/components/resource-table'
@@ -120,7 +125,14 @@ export function PodListPage() {
         cell: ({ getValue }) => {
           const dateStr = formatDate(getValue() || '')
           return (
-            <span className="text-muted-foreground text-sm">{dateStr}</span>
+            <Tooltip>
+              <TooltipTrigger>
+                <span className="text-muted-foreground text-sm">
+                  {getAge(getValue() || '')}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>{dateStr}</TooltipContent>
+            </Tooltip>
           )
         },
       }),

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   IconArrowUp,
   IconDownload,
+  IconEye,
   IconFile,
   IconFolder,
   IconHome,
@@ -10,25 +11,20 @@ import {
   IconUpload,
 } from '@tabler/icons-react'
 import { Container } from 'kubernetes-types/core/v1'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import {
-  FileInfo,
   podDownloadFile,
-  podListFiles,
+  podPreviewFile,
   podUploadFile,
+  usePodFiles,
 } from '@/lib/api'
-import { formatBytes } from '@/lib/utils'
+import { toSimpleContainer } from '@/lib/k8s'
+import { translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -37,6 +33,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+
+import { ErrorMessage } from './error-message'
+import { ContainerSelector } from './selector/container-selector'
 
 interface PodFileBrowserProps {
   namespace: string
@@ -48,92 +47,28 @@ interface PodFileBrowserProps {
 export function PodFileBrowser({
   namespace,
   podName,
-  containers = [],
+  containers: _containers = [],
   initContainers = [],
 }: PodFileBrowserProps) {
-  const allContainers = [
-    ...containers.map((c) => ({ ...c, type: 'container' })),
-    ...initContainers.map((c) => ({ ...c, type: 'init-container' })),
-  ]
+  const containers = useMemo(() => {
+    return toSimpleContainer(initContainers, _containers)
+  }, [_containers, initContainers])
 
   const [selectedContainer, setSelectedContainer] = useState<string>(
-    allContainers[0]?.name || ''
+    containers[0]?.name || ''
   )
   const [currentPath, setCurrentPath] = useState<string>('/')
-  const [files, setFiles] = useState<FileInfo[]>([])
-  const [isLoading, setIsLoading] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
-  const [fileCache, setFileCache] = useState<Record<string, FileInfo[]>>({})
+  const { t } = useTranslation()
 
-  const abortControllerRef = useRef<AbortController | null>(null)
-
-  const fetchFiles = useCallback(
-    async (path: string, force = false) => {
-      if (!selectedContainer) return
-
-      const cacheKey = `${selectedContainer}:${path}`
-
-      // Check cache first
-      if (!force && fileCache[cacheKey]) {
-        setFiles(fileCache[cacheKey])
-        return
-      }
-
-      // Cancel previous request
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-      const abortController = new AbortController()
-      abortControllerRef.current = abortController
-
-      setIsLoading(true)
-      try {
-        const data = await podListFiles(
-          namespace,
-          podName,
-          selectedContainer,
-          path,
-          {
-            signal: abortController.signal,
-          }
-        )
-        // Sort: directories first, then files
-        data.sort((a, b) => {
-          if (a.isDir === b.isDir) {
-            return a.name.localeCompare(b.name)
-          }
-          return a.isDir ? -1 : 1
-        })
-        setFiles(data)
-        setFileCache((prev) => ({ ...prev, [cacheKey]: data }))
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') return
-        const message =
-          error instanceof Error ? error.message : 'Failed to list files'
-        toast.error(message)
-        setFiles([])
-        console.error(error)
-      } finally {
-        if (abortControllerRef.current === abortController) {
-          setIsLoading(false)
-          abortControllerRef.current = null
-        }
-      }
-    },
-    [selectedContainer, fileCache, namespace, podName]
-  )
-
-  useEffect(() => {
-    fetchFiles(currentPath)
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-    }
-  }, [fetchFiles, currentPath])
+  const {
+    data: files,
+    isLoading,
+    refetch,
+    error,
+  } = usePodFiles(namespace, podName, selectedContainer, currentPath)
 
   const handleNavigate = (path: string) => {
-    // Normalize path
     if (!path.startsWith('/')) {
       path = '/' + path
     }
@@ -160,10 +95,15 @@ export function PodFileBrowser({
     podDownloadFile(namespace, podName, selectedContainer, filePath)
   }
 
+  const handlePreview = (fileName: string) => {
+    const filePath =
+      currentPath === '/' ? `/${fileName}` : `${currentPath}/${fileName}`
+    podPreviewFile(namespace, podName, selectedContainer, filePath)
+  }
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-
     setIsUploading(true)
     try {
       await podUploadFile(
@@ -173,42 +113,40 @@ export function PodFileBrowser({
         currentPath,
         file
       )
+      refetch()
       toast.success(`Uploaded ${file.name} successfully`)
-      fetchFiles(currentPath, true)
     } catch (error) {
-      toast.error('Failed to upload file')
-      console.error(error)
+      toast.error(translateError(error, t))
     } finally {
       setIsUploading(false)
-      // Reset input
       e.target.value = ''
     }
+  }
+
+  if (error) {
+    return (
+      <ErrorMessage
+        resourceName={'pod files'}
+        error={error}
+        refetch={refetch}
+      />
+    )
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <div className="w-[200px]">
-          <Select
-            value={selectedContainer}
-            onValueChange={setSelectedContainer}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select container" />
-            </SelectTrigger>
-            <SelectContent>
-              {allContainers.map((c) => (
-                <SelectItem key={c.name} value={c.name}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <ContainerSelector
+          containers={containers}
+          selectedContainer={selectedContainer}
+          showAllOption={false}
+          onContainerChange={(value) => setSelectedContainer(value!)}
+        />
         <div className="flex-1 flex items-center gap-2">
           <Button
             variant="outline"
             size="icon"
+            aria-label="Go to parent directory"
             onClick={handleGoUp}
             disabled={currentPath === '/'}
           >
@@ -217,6 +155,7 @@ export function PodFileBrowser({
           <Button
             variant="outline"
             size="icon"
+            aria-label="Go to home directory"
             onClick={() => handleNavigate('/')}
             disabled={currentPath === '/'}
           >
@@ -224,18 +163,20 @@ export function PodFileBrowser({
           </Button>
           <Input
             value={currentPath}
+            aria-label="Current path"
             onChange={(e) => setCurrentPath(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                fetchFiles(currentPath)
+                setCurrentPath(currentPath)
               }
             }}
             className="font-mono"
           />
           <Button
+            aria-label="Refresh file list"
             variant="outline"
             size="icon"
-            onClick={() => fetchFiles(currentPath, true)}
+            onClick={() => refetch()}
           >
             <IconRefresh className="w-4 h-4" />
           </Button>
@@ -264,37 +205,38 @@ export function PodFileBrowser({
         </div>
       </div>
 
-      <div className="border rounded-md">
+      <div className="border rounded-md min-w-full max-h-[calc(100dvh-250px)] overflow-y-auto overscroll-y-contain">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[50px]"></TableHead>
               <TableHead>Name</TableHead>
+              <TableHead className="w-[100px]">UID</TableHead>
+              <TableHead className="w-[100px]">GID</TableHead>
               <TableHead className="w-[100px]">Size</TableHead>
               <TableHead className="w-[150px]">Mode</TableHead>
               <TableHead className="w-[200px]">Modified</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
+              <TableHead className="w-[120px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={8} className="h-24 text-center">
                   <div className="flex items-center justify-center gap-2">
                     <IconLoader className="animate-spin" />
                     <span>Loading files...</span>
                   </div>
                 </TableCell>
               </TableRow>
-            ) : files.length === 0 ? (
+            ) : (files ?? []).length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={8} className="h-24 text-center">
                   No files found
                 </TableCell>
               </TableRow>
             ) : (
               files &&
-              Array.isArray(files) &&
               files.map((file) => (
                 <TableRow key={file.name}>
                   <TableCell>
@@ -306,18 +248,26 @@ export function PodFileBrowser({
                   </TableCell>
                   <TableCell>
                     {file.isDir ? (
-                      <button
-                        className="font-medium hover:underline text-left"
+                      <Button
+                        variant="link"
+                        className="text-foreground font-medium hover:underline text-left p-0 h-auto"
                         onClick={() => handleEnterDirectory(file.name)}
+                        aria-label={`Enter directory ${file.name}`}
                       >
                         {file.name}
-                      </button>
+                      </Button>
                     ) : (
                       <span>{file.name}</span>
                     )}
                   </TableCell>
                   <TableCell className="font-mono text-xs">
-                    {file.isDir ? '-' : formatBytes(file.size)}
+                    {file.uid}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {file.gid}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {file.size}
                   </TableCell>
                   <TableCell className="font-mono text-xs">
                     {file.mode}
@@ -326,13 +276,36 @@ export function PodFileBrowser({
                     {file.modTime}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDownload(file.name)}
-                    >
-                      <IconDownload className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      {!file.isDir && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Preview file"
+                          aria-label="Preview file"
+                          onClick={() => handlePreview(file.name)}
+                        >
+                          <IconEye className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title={
+                          file.isDir
+                            ? 'Download directory as .tar archive'
+                            : 'Download file'
+                        }
+                        aria-label={
+                          file.isDir
+                            ? 'Download directory as .tar archive'
+                            : 'Download file'
+                        }
+                        onClick={() => handleDownload(file.name)}
+                      >
+                        <IconDownload className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

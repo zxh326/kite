@@ -802,9 +802,11 @@ export const createLogsSSEStream = (
 export interface FileInfo {
   name: string
   isDir: boolean
-  size: number
+  size: string
   modTime: string
   mode: string
+  uid: string
+  gid: string
 }
 
 export const podListFiles = async (
@@ -838,6 +840,20 @@ export const podDownloadFile = (
   window.open(url, '_blank')
 }
 
+export const podPreviewFile = (
+  namespace: string,
+  podName: string,
+  container: string,
+  path: string
+) => {
+  const params = new URLSearchParams({
+    container,
+    path,
+  })
+  const url = `${API_BASE_URL}/pods/${namespace}/${podName}/files/preview?${params.toString()}`
+  window.open(url, '_blank')
+}
+
 export const podUploadFile = async (
   namespace: string,
   podName: string,
@@ -852,7 +868,7 @@ export const podUploadFile = async (
     path,
   })
 
-  await apiClient.post(
+  await apiClient.put(
     `/pods/${namespace}/${podName}/files/upload?${params.toString()}`,
     formData
   )
@@ -1618,4 +1634,19 @@ export const deleteAPIKey = async (
   id: number
 ): Promise<{ message: string }> => {
   return await apiClient.delete<{ message: string }>(`/admin/apikeys/${id}`)
+}
+
+export const usePodFiles = (
+  namespace: string,
+  podName: string,
+  container: string,
+  path: string,
+  options?: { enabled?: boolean }
+) => {
+  return useQuery({
+    queryKey: ['pod-files', namespace, podName, container, path],
+    queryFn: () => podListFiles(namespace, podName, container, path),
+    enabled: options?.enabled !== false,
+    staleTime: 10000, // 10 seconds cache
+  })
 }
