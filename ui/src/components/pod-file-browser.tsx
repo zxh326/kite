@@ -123,16 +123,6 @@ export function PodFileBrowser({
     }
   }
 
-  if (error) {
-    return (
-      <ErrorMessage
-        resourceName={'pod files'}
-        error={error}
-        refetch={refetch}
-      />
-    )
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
@@ -205,114 +195,122 @@ export function PodFileBrowser({
         </div>
       </div>
 
-      <div className="border rounded-md min-w-full max-h-[calc(100dvh-250px)] overflow-y-auto overscroll-y-contain">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[50px]"></TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead className="w-[100px]">UID</TableHead>
-              <TableHead className="w-[100px]">GID</TableHead>
-              <TableHead className="w-[100px]">Size</TableHead>
-              <TableHead className="w-[150px]">Mode</TableHead>
-              <TableHead className="w-[200px]">Modified</TableHead>
-              <TableHead className="w-[120px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
+      {error ? (
+        <ErrorMessage
+          resourceName={'pod files'}
+          error={error}
+          refetch={refetch}
+        />
+      ) : (
+        <div className="border rounded-md min-w-full max-h-[calc(100dvh-250px)] overflow-y-auto overscroll-y-contain scrollbar-hide">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <IconLoader className="animate-spin" />
-                    <span>Loading files...</span>
-                  </div>
-                </TableCell>
+                <TableHead className="w-[50px]"></TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead className="w-[100px]">UID</TableHead>
+                <TableHead className="w-[100px]">GID</TableHead>
+                <TableHead className="w-[100px]">Size</TableHead>
+                <TableHead className="w-[150px]">Mode</TableHead>
+                <TableHead className="w-[200px]">Modified</TableHead>
+                <TableHead className="w-[120px]">Actions</TableHead>
               </TableRow>
-            ) : (files ?? []).length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
-                  No files found
-                </TableCell>
-              </TableRow>
-            ) : (
-              files &&
-              files.map((file) => (
-                <TableRow key={file.name}>
-                  <TableCell>
-                    {file.isDir ? (
-                      <IconFolder className="w-4 h-4 text-blue-500" />
-                    ) : (
-                      <IconFile className="w-4 h-4 text-gray-500" />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {file.isDir ? (
-                      <Button
-                        variant="link"
-                        className="text-foreground font-medium hover:underline text-left p-0 h-auto"
-                        onClick={() => handleEnterDirectory(file.name)}
-                        aria-label={`Enter directory ${file.name}`}
-                      >
-                        {file.name}
-                      </Button>
-                    ) : (
-                      <span>{file.name}</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {file.uid}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {file.gid}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {file.size}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {file.mode}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {file.modTime}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      {!file.isDir && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title="Preview file"
-                          aria-label="Preview file"
-                          onClick={() => handlePreview(file.name)}
-                        >
-                          <IconEye className="w-4 h-4" />
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        title={
-                          file.isDir
-                            ? 'Download directory as .tar archive'
-                            : 'Download file'
-                        }
-                        aria-label={
-                          file.isDir
-                            ? 'Download directory as .tar archive'
-                            : 'Download file'
-                        }
-                        onClick={() => handleDownload(file.name)}
-                      >
-                        <IconDownload className="w-4 h-4" />
-                      </Button>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="h-24 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <IconLoader className="animate-spin" />
+                      <span>Loading files...</span>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ) : (files ?? []).length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="h-24 text-center">
+                    No files found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                files &&
+                files.map((file) => (
+                  <TableRow key={file.name}>
+                    <TableCell>
+                      {file.isDir ? (
+                        <IconFolder className="w-4 h-4 text-blue-500" />
+                      ) : (
+                        <IconFile className="w-4 h-4 text-gray-500" />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {file.isDir ? (
+                        <Button
+                          variant="link"
+                          className="text-foreground font-medium hover:underline text-left p-0 h-auto"
+                          onClick={() => handleEnterDirectory(file.name)}
+                          aria-label={`Enter directory ${file.name}`}
+                        >
+                          {file.name}
+                        </Button>
+                      ) : (
+                        <span>{file.name}</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {file.uid}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {file.gid}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {file.size}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {file.mode}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {file.modTime}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {!file.isDir && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Preview file"
+                            aria-label="Preview file"
+                            onClick={() => handlePreview(file.name)}
+                          >
+                            <IconEye className="w-4 h-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title={
+                            file.isDir
+                              ? 'Download directory as .tar archive'
+                              : 'Download file'
+                          }
+                          aria-label={
+                            file.isDir
+                              ? 'Download directory as .tar archive'
+                              : 'Download file'
+                          }
+                          onClick={() => handleDownload(file.name)}
+                        >
+                          <IconDownload className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   )
 }

@@ -395,14 +395,14 @@ export function toSimpleContainer(
   containers?: Container[]
 ): SimpleContainer {
   return [
+    ...(containers || []).map((container) => ({
+      name: container.name,
+      image: container.image || '',
+    })),
     ...(initContainers || []).map((container) => ({
       name: container.name,
       image: container.image || '',
       init: true,
-    })),
-    ...(containers || []).map((container) => ({
-      name: container.name,
-      image: container.image || '',
     })),
   ]
 }
