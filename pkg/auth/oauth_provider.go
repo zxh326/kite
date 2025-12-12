@@ -13,6 +13,12 @@ import (
 	"k8s.io/klog/v2"
 )
 
+const (
+	// Microsoft Graph API endpoints
+	graphAPIBaseURL   = "https://graph.microsoft.com/v1.0"
+	graphAPIMemberOf  = graphAPIBaseURL + "/me/memberOf"
+)
+
 // OAuthProvider defines the interface for OAuth providers
 type OAuthProvider interface {
 	GetAuthURL(state string) string
@@ -314,7 +320,7 @@ func (g *GenericProvider) GetUserInfo(accessToken string) (*model.User, error) {
 		for i, v := range groups {
 			user.OIDCGroups[i] = fmt.Sprintf("%v", v)
 		}
-		klog.V(1).Infof("Extracted %d groups/roles from %s: %v", len(groups), g.Name, user.OIDCGroups)
+		klog.V(1).Infof("Extracted %d groups/roles from %s", len(groups), g.Name)
 	} else {
 		klog.V(1).Infof("No groups/roles found in user info from %s", g.Name)
 	}
@@ -322,49 +328,63 @@ func (g *GenericProvider) GetUserInfo(accessToken string) (*model.User, error) {
 }
 
 // fetchAzureADGroups fetches group memberships from Azure AD Graph API /me/memberOf endpoint
+// Handles pagination to retrieve all groups (Azure AD returns max 100 per page)
 func (g *GenericProvider) fetchAzureADGroups(accessToken string) ([]interface{}, error) {
-	memberOfURL := "https://graph.microsoft.com/v1.0/me/memberOf"
-	req, err := http.NewRequest("GET", memberOfURL, nil)
-	if err != nil {
-		return nil, err
-	}
+	client := &http.Client{Timeout: 30 * time.Second}
+	groups := make([]interface{}, 0)
+	nextLink := graphAPIMemberOf
+	totalFetched := 0
 
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	req.Header.Set("Accept", "application/json")
+	// Follow pagination links until all groups are retrieved
+	for nextLink != "" {
+		req, err := http.NewRequest("GET", nextLink, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
 
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
+		req.Header.Set("Authorization", "Bearer "+accessToken)
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch memberOf: %w", err)
+		}
+
+		if resp.StatusCode != 200 {
+			_ = resp.Body.Close()
+			return nil, fmt.Errorf("failed to fetch memberOf: HTTP %d", resp.StatusCode)
+		}
+
+		var memberOfResp struct {
+			Value    []map[string]interface{} `json:"value"`
+			NextLink string                   `json:"@odata.nextLink,omitempty"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&memberOfResp); err != nil {
+			_ = resp.Body.Close()
+			return nil, fmt.Errorf("failed to decode memberOf response: %w", err)
+		}
 		_ = resp.Body.Close()
-	}()
 
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("failed to fetch memberOf: HTTP %d", resp.StatusCode)
-	}
-
-	var memberOfResp struct {
-		Value []map[string]interface{} `json:"value"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&memberOfResp); err != nil {
-		return nil, err
-	}
-
-	klog.V(1).Infof("Fetched %d group memberships from /me/memberOf", len(memberOfResp.Value))
-
-	// Extract group IDs from the response
-	groups := make([]interface{}, 0, len(memberOfResp.Value))
-	for _, item := range memberOfResp.Value {
-		// Check if this is a group (not a role or other type)
-		if itemType, ok := item["@odata.type"].(string); ok && itemType == "#microsoft.graph.group" {
-			if groupID, ok := item["id"].(string); ok {
-				groups = append(groups, groupID)
-				klog.V(2).Infof("Found group: %s (%s)", groupID, item["displayName"])
+		// Extract group IDs from the current page
+		// Note: Only extracting groups, not directory roles. Directory roles have @odata.type of
+		// "#microsoft.graph.directoryRole" and require different handling.
+		for _, item := range memberOfResp.Value {
+			if itemType, ok := item["@odata.type"].(string); ok && itemType == "#microsoft.graph.group" {
+				if groupID, ok := item["id"].(string); ok {
+					groups = append(groups, groupID)
+					klog.V(2).Infof("Found group: %s (%s)", groupID, item["displayName"])
+				}
 			}
+		}
+
+		totalFetched += len(memberOfResp.Value)
+		nextLink = memberOfResp.NextLink
+
+		if nextLink != "" {
+			klog.V(2).Infof("Fetching next page of groups (total so far: %d)", len(groups))
 		}
 	}
 
+	klog.V(1).Infof("Fetched %d groups from /me/memberOf across %d total memberships", len(groups), totalFetched)
 	return groups, nil
 }
