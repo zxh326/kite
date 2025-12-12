@@ -4,6 +4,7 @@ import App from './App'
 import { InitCheckRoute } from './components/init-check-route'
 import { ProtectedRoute } from './components/protected-route'
 import { getSubPath } from './lib/subpath'
+import { AuditLogPage } from './pages/audit-log'
 import { CRListPage } from './pages/cr-list-page'
 import { InitializationPage } from './pages/initialization'
 import { LoginPage } from './pages/login'
@@ -49,6 +50,10 @@ export const router = createBrowserRouter(
         {
           path: 'settings',
           element: <SettingsPage />,
+        },
+        {
+          path: 'audit-log',
+          element: <AuditLogPage />,
         },
         {
           path: 'crds/:crd',

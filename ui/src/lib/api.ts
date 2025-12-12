@@ -1559,3 +1559,32 @@ export const deleteAPIKey = async (
 ): Promise<{ message: string }> => {
   return await apiClient.delete<{ message: string }>(`/admin/apikeys/${id}`)
 }
+
+// Audit Log API
+export interface AuditLogResponse {
+  data: ResourceHistoryResponse['data']
+  pagination: {
+    page: number
+    pageSize: number
+    total: number
+    totalPages: number
+  }
+}
+
+export interface AuditStats {
+  total: number
+  successRate: number
+  last24Hours: number
+  byOperationType: Array<{ operationType: string; count: number }>
+  byResourceType: Array<{ resourceType: string; count: number }>
+}
+
+export const fetchAuditLogs = async (
+  params: URLSearchParams
+): Promise<AuditLogResponse> => {
+  return fetchAPI<AuditLogResponse>(`/audit/logs?${params.toString()}`)
+}
+
+export const fetchAuditStats = async (): Promise<AuditStats> => {
+  return fetchAPI<AuditStats>('/audit/stats')
+}

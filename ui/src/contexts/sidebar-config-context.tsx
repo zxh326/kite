@@ -13,6 +13,7 @@ import {
   IconBell,
   IconBox,
   IconBoxMultiple,
+  IconClipboardList,
   IconClockHour4,
   IconCode,
   IconDatabase,
@@ -71,6 +72,7 @@ const iconMap = {
   IconBell,
   IconCode,
   IconArrowsHorizontal,
+  IconClipboardList,
 }
 
 const getIconName = (iconComponent: React.ComponentType): string => {
@@ -195,6 +197,7 @@ const defaultMenus: DefaultMenus = {
     { titleKey: 'nav.nodes', url: '/nodes', icon: IconServer2 },
     { titleKey: 'nav.events', url: '/events', icon: IconBell },
     { titleKey: 'nav.crds', url: '/crds', icon: IconCode },
+    { titleKey: 'nav.auditlog', url: '/audit-log', icon: IconClipboardList },
   ],
 }
 
