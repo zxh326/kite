@@ -91,7 +91,7 @@ func (h *AuditHandler) ListAuditLogs(c *gin.Context) {
 	// Get total count
 	var total int64
 	if err := query.Model(&model.ResourceHistory{}).Count(&total).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count audit logs: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve audit log statistics"})
 		return
 	}
 
@@ -99,14 +99,17 @@ func (h *AuditHandler) ListAuditLogs(c *gin.Context) {
 	history := []model.ResourceHistory{}
 	offset := (page - 1) * pageSize
 	if err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&history).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch audit logs: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve audit logs"})
 		return
 	}
 
 	// Calculate total pages
-	totalPages := int(total) / pageSize
-	if int(total)%pageSize != 0 {
-		totalPages++
+	totalPages := 0
+	if total > 0 {
+		totalPages = int(total) / pageSize
+		if int(total)%pageSize != 0 {
+			totalPages++
+		}
 	}
 
 	response := AuditLogResponse{
