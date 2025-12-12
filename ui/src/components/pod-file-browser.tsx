@@ -202,7 +202,7 @@ export function PodFileBrowser({
           refetch={refetch}
         />
       ) : (
-        <div className="border rounded-md min-w-full max-h-[calc(100dvh-250px)] overflow-y-auto overscroll-y-contain">
+        <div className="border rounded-md min-w-full max-h-[calc(100dvh-250px)] overflow-y-auto overscroll-y-contain scrollbar-hide">
           <Table>
             <TableHeader>
               <TableRow>

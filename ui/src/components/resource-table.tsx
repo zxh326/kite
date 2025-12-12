@@ -501,20 +501,20 @@ export function ResourceTable<T>({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold capitalize">{resourceName}</h1>
-          {!clusterScope &&
-            selectedNamespace &&
-            selectedNamespace !== '_all' && (
-              <div className="text-muted-foreground flex items-center mt-1">
-                <span>Namespace:</span>
-                <Badge variant="outline" className="ml-2 ">
-                  {selectedNamespace}
-                </Badge>
-              </div>
-            )}
+          {!clusterScope && selectedNamespace && (
+            <div className="text-muted-foreground flex items-center mt-1">
+              <span>Namespace:</span>
+              <Badge variant="outline" className="ml-2 ">
+                {selectedNamespace === '_all'
+                  ? 'All Namespaces'
+                  : selectedNamespace}
+              </Badge>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -682,7 +682,7 @@ export function ResourceTable<T>({
           }`}
         >
           {renderEmptyState() || (
-            <div className="relative max-h-[calc(100vh-190px)] overflow-auto scrollbar-hide">
+            <div className="relative max-h-[calc(100vh-210px)] overflow-auto scrollbar-hide">
               <Table>
                 <TableHeader className="bg-muted">
                   {table.getHeaderGroups().map((headerGroup) => (
@@ -736,7 +736,7 @@ export function ResourceTable<T>({
 
       {/* Pagination with memoized calculations */}
       {data && (data as T[]).length > 0 && (
-        <div className="flex items-center justify-between px-2">
+        <div className="flex items-center justify-between px-2 py-1">
           <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
             {hasActiveFilters ? (
               <>
