@@ -35,6 +35,9 @@ func (u *User) Key() string {
 	if u.Name != "" {
 		return u.Name
 	}
+	if u.Sub != "" {
+		return u.Sub
+	}
 	return fmt.Sprintf("%d", u.ID)
 }
 
