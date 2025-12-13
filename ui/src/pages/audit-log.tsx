@@ -156,7 +156,9 @@ export function AuditLogPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {stats.byOperationType[0]?.operationType || 'N/A'}
+                {stats.byOperationType && stats.byOperationType.length > 0
+                  ? stats.byOperationType[0].operationType
+                  : 'N/A'}
               </div>
             </CardContent>
           </Card>
