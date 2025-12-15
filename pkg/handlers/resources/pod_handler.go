@@ -3,12 +3,20 @@ package resources
 import (
 	"encoding/json"
 	"fmt"
+	"mime"
 	"net/http"
+	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/samber/lo"
 	"github.com/zxh326/kite/pkg/cluster"
+	"github.com/zxh326/kite/pkg/common"
+	"github.com/zxh326/kite/pkg/kube"
+	"github.com/zxh326/kite/pkg/model"
+	"github.com/zxh326/kite/pkg/rbac"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -169,9 +177,241 @@ func (h *PodHandler) List(c *gin.Context) {
 func (h *PodHandler) registerCustomRoutes(group *gin.RouterGroup) {
 	// watch pods in namespace (or _all)
 	group.GET("/:namespace/watch", h.Watch)
+	filesGroup := group.Group("/:namespace/:name/files")
+	filesGroup.Use(func(c *gin.Context) {
+		user := c.MustGet("user").(model.User)
+		cs := c.MustGet("cluster").(*cluster.ClientSet)
+		namespace := c.Param("namespace")
+		if !rbac.CanAccess(user, "pods", string(common.VerbExec), cs.Name, namespace) {
+			c.JSON(http.StatusForbidden, gin.H{"error": rbac.NoAccess(user.Key(), string(common.VerbExec), "pods", namespace, cs.Name)})
+			c.Abort()
+			return
+		}
+		c.Next()
+	})
+	filesGroup.GET("", h.ListFiles)
+	filesGroup.GET("/preview", h.PreviewFile)
+	filesGroup.GET("/download", h.DownloadFile)
+	filesGroup.PUT("/upload", h.UploadFile)
 }
 
-// writeSSE writes a single SSE event with the given name and payload
+type FileInfo struct {
+	Name    string `json:"name"`
+	IsDir   bool   `json:"isDir"`
+	Size    string `json:"size"`
+	ModTime string `json:"modTime"`
+	Mode    string `json:"mode"`
+	UID     string `json:"uid,omitempty"`
+	GID     string `json:"gid,omitempty"`
+}
+
+func (h *PodHandler) ListFiles(c *gin.Context) {
+	namespace := c.Param("namespace")
+	podName := c.Param("name")
+	container := c.Query("container")
+	path := c.Query("path")
+	if path == "" {
+		path = "/"
+	}
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	cmd := []string{"ls", "-lah", "--full-time", path}
+	stdout, stderr, err := cs.K8sClient.ExecCommandBuffered(c.Request.Context(), namespace, podName, container, cmd)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") || strings.Contains(stderr, "not found") {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Sprintf("File browsing is not supported for %s container (missing 'ls' command)", container),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, nil)
+		return
+	}
+
+	files := parseLsOutput(stdout)
+	c.JSON(http.StatusOK, files)
+}
+
+func parseLsOutput(output string) []FileInfo {
+	lines := strings.Split(output, "\n")
+	files := make([]FileInfo, 0)
+	for _, line := range lines {
+		if strings.HasPrefix(line, "total") || strings.TrimSpace(line) == "" {
+			continue
+		}
+		parts := strings.Fields(line)
+		if len(parts) < 9 {
+			continue
+		}
+
+		mode := parts[0]
+		isDir := strings.HasPrefix(mode, "d")
+
+		uid := parts[2]
+		gid := parts[3]
+		size := parts[4]
+
+		rawDate := strings.Join(parts[5:7], " ")
+		modTime := rawDate
+		name := strings.Join(parts[8:], " ")
+		// Skip . and ..
+		if name == "." || name == ".." {
+			continue
+		}
+		files = append(files, FileInfo{
+			Name:    name,
+			IsDir:   isDir,
+			Size:    size,
+			ModTime: modTime,
+			Mode:    mode,
+			UID:     uid,
+			GID:     gid,
+		})
+	}
+	sort.Slice(files, func(i, j int) bool {
+		// Directories first
+		if files[i].IsDir && !files[j].IsDir {
+			return true
+		}
+		if !files[i].IsDir && files[j].IsDir {
+			return false
+		}
+		return strings.ToLower(files[i].Name) < strings.ToLower(files[j].Name)
+	})
+	return files
+}
+
+func (h *PodHandler) PreviewFile(c *gin.Context) {
+	namespace := c.Param("namespace")
+	podName := c.Param("name")
+	container := c.Query("container")
+	path := c.Query("path")
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	if path == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "path is required"})
+		return
+	}
+	if strings.Contains(path, "->") {
+		path = strings.TrimSpace(strings.SplitN(path, "->", 2)[0])
+	}
+
+	cmd := []string{"cat", path}
+
+	contentType := mime.TypeByExtension(filepath.Ext(path))
+	if contentType == "" {
+		contentType = "text/plain; charset=utf-8"
+	}
+	c.Header("Content-Type", contentType)
+	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=\"%s\"", filepath.Base(path)))
+
+	err := cs.K8sClient.ExecCommand(c.Request.Context(), kube.ExecOptions{
+		Namespace:     namespace,
+		PodName:       podName,
+		ContainerName: container,
+		Command:       cmd,
+		Stdout:        c.Writer,
+		Stderr:        nil,
+		TTY:           false,
+	})
+
+	if err != nil {
+		klog.Errorf("Failed to preview file: %v", err)
+	}
+}
+
+func (h *PodHandler) DownloadFile(c *gin.Context) {
+	namespace := c.Param("namespace")
+	podName := c.Param("name")
+	container := c.Query("container")
+	path := c.Query("path")
+
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+
+	if path == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "path is required"})
+		return
+	}
+	if strings.Contains(path, "->") {
+		path = strings.TrimSpace(strings.SplitN(path, "->", 2)[0])
+	}
+	_, _, err := cs.K8sClient.ExecCommandBuffered(c.Request.Context(), namespace, podName, container, []string{"test", "-d", path})
+	isDir := err == nil
+
+	var cmd []string
+	if isDir {
+		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.tar\"", filepath.Base(path)))
+		c.Header("Content-Type", "application/x-tar")
+		cmd = []string{"tar", "cf", "-", path}
+	} else {
+		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filepath.Base(path)))
+		c.Header("Content-Type", "application/octet-stream")
+		cmd = []string{"cat", path}
+	}
+
+	err = cs.K8sClient.ExecCommand(c.Request.Context(), kube.ExecOptions{
+		Namespace:     namespace,
+		PodName:       podName,
+		ContainerName: container,
+		Command:       cmd,
+		Stdout:        c.Writer,
+		Stderr:        nil,
+		TTY:           false,
+	})
+
+	if err != nil {
+		klog.Errorf("Failed to download file: %v", err)
+	}
+}
+
+func (h *PodHandler) UploadFile(c *gin.Context) {
+	namespace := c.Param("namespace")
+	podName := c.Param("name")
+	container := c.Query("container")
+	path := c.Query("path")
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	if path == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "path is required"})
+		return
+	}
+
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to get file from request"})
+		return
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			klog.Errorf("failed to close uploaded file: %v", err)
+		}
+	}()
+
+	filename := filepath.Base(header.Filename)
+	if filename == "." || filename == ".." || strings.Contains(filename, "/") || strings.Contains(filename, "\\") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid filename"})
+		return
+	}
+
+	destPath := filepath.Join(path, header.Filename)
+	cmd := []string{"tee", destPath}
+
+	err = cs.K8sClient.ExecCommand(c.Request.Context(), kube.ExecOptions{
+		Namespace:     namespace,
+		PodName:       podName,
+		ContainerName: container,
+		Command:       cmd,
+		Stdin:         file, // Stream file content directly
+		Stdout:        nil,
+		Stderr:        nil,
+		TTY:           false,
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to upload file: %v", err)})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "file uploaded successfully"})
+}
+
 func writeSSE(c *gin.Context, event string, payload any) error {
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
 	c.Writer.Header().Set("Cache-Control", "no-cache, no-transform")

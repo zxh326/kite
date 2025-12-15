@@ -18,7 +18,7 @@ type User struct {
 	AvatarURL   string      `json:"avatar_url,omitempty" gorm:"type:varchar(500)"`
 	Provider    string      `json:"provider,omitempty" gorm:"type:varchar(50);default:password"`
 	OIDCGroups  SliceString `json:"oidc_groups,omitempty" gorm:"type:text"`
-	LastLoginAt time.Time   `json:"lastLoginAt,omitzero" gorm:"type:timestamp"`
+	LastLoginAt *time.Time  `json:"lastLoginAt,omitempty" gorm:"type:timestamp"`
 	Enabled     bool        `json:"enabled" gorm:"type:boolean;default:true"`
 	Sub         string      `json:"sub,omitempty" gorm:"type:varchar(255);index"`
 
@@ -34,6 +34,9 @@ func (u *User) Key() string {
 	}
 	if u.Name != "" {
 		return u.Name
+	}
+	if u.Sub != "" {
+		return u.Sub
 	}
 	return fmt.Sprintf("%d", u.ID)
 }
@@ -77,7 +80,8 @@ func FindWithSubOrUpsertUser(user *User) error {
 		return errors.New("user sub is empty")
 	}
 	var existingUser User
-	user.LastLoginAt = time.Now()
+	now := time.Now()
+	user.LastLoginAt = &now
 	if err := DB.Where("sub = ?", user.Sub).First(&existingUser).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return DB.Create(user).Error
@@ -114,7 +118,8 @@ func ListUsers(limit int, offset int) (users []User, total int64, err error) {
 }
 
 func LoginUser(u *User) error {
-	u.LastLoginAt = time.Now()
+	now := time.Now()
+	u.LastLoginAt = &now
 	return DB.Save(u).Error
 }
 

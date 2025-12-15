@@ -28,3 +28,21 @@ func TestGetImageRegistryAndRepo(t *testing.T) {
 		}
 	}
 }
+
+func TestGenerateNodeAgentName(t *testing.T) {
+	testcase := []struct {
+		nodeName string
+	}{
+		{"node1"},
+		{"shortname"},
+		{"a-very-long-node-name-that-exceeds-the-maximum-length-allowed-for-kubernetes-names"},
+		{"node-with-63-characters-abcdefghijklmnopqrstuvwxyz-123456789101"},
+	}
+
+	for _, tc := range testcase {
+		podName := GenerateNodeAgentName(tc.nodeName)
+		if len(podName) > 63 {
+			t.Errorf("GenerateNodeAgentName(%q) = %q, length %d exceeds 63", tc.nodeName, podName, len(podName))
+		}
+	}
+}

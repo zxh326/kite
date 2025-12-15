@@ -2,6 +2,7 @@ import { Deployment } from 'kubernetes-types/apps/v1'
 import { Container, Pod, Service } from 'kubernetes-types/core/v1'
 import { ObjectMeta } from 'kubernetes-types/meta/v1'
 
+import { clusterScopeResources, ResourceType } from '@/types/api'
 import { DeploymentStatusType, PodStatus, SimpleContainer } from '@/types/k8s'
 
 import { getAge } from './utils'
@@ -322,10 +323,13 @@ export function getOwnerInfo(metadata?: ObjectMeta) {
 
   const resourcePath = ownerRef.kind.toLowerCase() + 's'
   if (isStandardK8sResource(ownerRef.kind)) {
+    const clusterScope = clusterScopeResources.includes(
+      resourcePath as ResourceType
+    )
     return {
       kind: ownerRef.kind,
       name: ownerRef.name,
-      path: `/${resourcePath}/${metadata.namespace}/${ownerRef.name}`,
+      path: `/${resourcePath}${clusterScope ? '' : `/${metadata.namespace}`}/${ownerRef.name}`,
       controller: ownerRef.controller || false,
     }
   } else {
@@ -391,14 +395,14 @@ export function toSimpleContainer(
   containers?: Container[]
 ): SimpleContainer {
   return [
+    ...(containers || []).map((container) => ({
+      name: container.name,
+      image: container.image || '',
+    })),
     ...(initContainers || []).map((container) => ({
       name: container.name,
       image: container.image || '',
       init: true,
-    })),
-    ...(containers || []).map((container) => ({
-      name: container.name,
-      image: container.image || '',
     })),
   ]
 }

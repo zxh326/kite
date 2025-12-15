@@ -292,6 +292,22 @@ export function ResourceTable<T>({
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onRowSelectionChange: setRowSelection,
+    getRowId: (row) => {
+      const metadata = (
+        row as {
+          metadata?: { name?: string; namespace?: string; uid?: string }
+        }
+      )?.metadata
+      if (!metadata?.name) {
+        return `row-${Math.random()}`
+      }
+      return (
+        metadata.uid ||
+        (metadata.namespace
+          ? `${metadata.namespace}/${metadata.name}`
+          : metadata.name)
+      )
+    },
     state: {
       sorting,
       columnFilters,
@@ -485,20 +501,20 @@ export function ResourceTable<T>({
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-3">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold capitalize">{resourceName}</h1>
-          {!clusterScope &&
-            selectedNamespace &&
-            selectedNamespace !== '_all' && (
-              <div className="text-muted-foreground flex items-center mt-1">
-                <span>Namespace:</span>
-                <Badge variant="outline" className="ml-2 ">
-                  {selectedNamespace}
-                </Badge>
-              </div>
-            )}
+          {!clusterScope && selectedNamespace && (
+            <div className="text-muted-foreground flex items-center mt-1">
+              <span>Namespace:</span>
+              <Badge variant="outline" className="ml-2 ">
+                {selectedNamespace === '_all'
+                  ? 'All Namespaces'
+                  : selectedNamespace}
+              </Badge>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -657,66 +673,70 @@ export function ResourceTable<T>({
       </div>
 
       {/* Table card */}
-      <div className="overflow-hidden rounded-lg border">
+      <div className="rounded-lg border overflow-hidden">
         <div
-          className={`rounded-md transition-opacity duration-200 ${
+          className={`transition-opacity duration-200 ${
             isLoading && data && (data as T[]).length > 0
               ? 'opacity-75'
               : 'opacity-100'
           }`}
         >
           {renderEmptyState() || (
-            <Table>
-              <TableHeader className="bg-muted sticky top-0 z-10">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header, index) => (
-                      <TableHead
-                        key={header.id}
-                        className={index <= 1 ? 'text-left' : 'text-center'}
-                      >
-                        {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                          <Button
-                            variant="ghost"
-                            onClick={header.column.getToggleSortingHandler()}
-                            className={
-                              header.column.getIsSorted() ? 'text-primary' : ''
-                            }
-                          >
-                            {flexRender(
+            <div className="relative max-h-[calc(100vh-210px)] overflow-auto scrollbar-hide">
+              <Table>
+                <TableHeader className="bg-muted">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header, index) => (
+                        <TableHead
+                          key={header.id}
+                          className={index <= 1 ? 'text-left' : 'text-center'}
+                        >
+                          {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                            <Button
+                              variant="ghost"
+                              onClick={header.column.getToggleSortingHandler()}
+                              className={
+                                header.column.getIsSorted()
+                                  ? 'text-primary'
+                                  : ''
+                              }
+                            >
+                              {flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                              {header.column.getIsSorted() && (
+                                <span className="ml-2">
+                                  {header.column.getIsSorted() === 'asc'
+                                    ? '↑'
+                                    : '↓'}
+                                </span>
+                              )}
+                            </Button>
+                          ) : (
+                            flexRender(
                               header.column.columnDef.header,
                               header.getContext()
-                            )}
-                            {header.column.getIsSorted() && (
-                              <span className="ml-2">
-                                {header.column.getIsSorted() === 'asc'
-                                  ? '↑'
-                                  : '↓'}
-                              </span>
-                            )}
-                          </Button>
-                        ) : (
-                          flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )
-                        )}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody className="**:data-[slot=table-cell]:first:w-0">
-                {renderRows()}
-              </TableBody>
-            </Table>
+                            )
+                          )}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+                <TableBody className="**:data-[slot=table-cell]:first:w-0">
+                  {renderRows()}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </div>
       </div>
 
       {/* Pagination with memoized calculations */}
       {data && (data as T[]).length > 0 && (
-        <div className="flex items-center justify-between px-4">
+        <div className="flex items-center justify-between px-2 py-1">
           <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
             {hasActiveFilters ? (
               <>

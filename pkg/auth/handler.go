@@ -171,9 +171,12 @@ func (h *AuthHandler) Callback(c *gin.Context) {
 		c.Redirect(http.StatusFound, base+"/login?error=user_upsert_failed&reason=user_upsert_failed&provider="+provider)
 		return
 	}
+	klog.V(1).Infof("OAuth Callback - User details: Username=%s, Name=%s, Sub=%s, Email=%s, OIDCGroups=%v",
+		user.Username, user.Name, user.Sub, user.Username, user.OIDCGroups)
 	role := rbac.GetUserRoles(*user)
 	if len(role) == 0 {
-		klog.Warningf("OAuth Callback - Access denied for user: %s (provider: %s)", user.Key(), provider)
+		klog.Warningf("OAuth Callback - Access denied for user: %s (provider: %s), Username: %s, Name: %s, Sub: %s, OIDCGroups: %v",
+			user.Key(), provider, user.Username, user.Name, user.Sub, user.OIDCGroups)
 		c.Redirect(http.StatusFound, base+"/login?error=insufficient_permissions&reason=insufficient_permissions&user="+user.Key()+"&provider="+provider)
 		return
 	}

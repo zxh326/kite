@@ -88,7 +88,7 @@ export function MetricCell({
         >
           {formatValue(metricValue)}
           {showPercentage && metricLimit && metricValue > 0 && (
-            <span className="text-[10px] opacity-70">
+            <span className="hidden 2xl:inline text-[10px] opacity-70">
               ({percentage.toFixed(0)}%)
             </span>
           )}
