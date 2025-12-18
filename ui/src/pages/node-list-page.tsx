@@ -224,6 +224,17 @@ export function NodeListPage() {
           )
         },
       }),
+      columnHelper.accessor('status.nodeInfo.kernelVersion', {
+        header: 'Kernel Version',
+        cell: ({ getValue }) => {
+          const kernelversion = getValue()
+          return kernelversion ? (
+            <span className="text-sm">{kernelversion}</span>
+          ) : (
+            <span className="text-muted-foreground">N/A</span>
+          )
+        },
+      }),
       columnHelper.accessor('metadata.creationTimestamp', {
         header: t('common.created'),
         cell: ({ getValue }) => {
@@ -264,6 +275,7 @@ export function NodeListPage() {
       clusterScope={true}
       searchQueryFilter={nodeSearchFilter}
       showCreateButton={false}
+      defaultHiddenColumns={['status_nodeInfo_kernelVersion']}
     />
   )
 }
