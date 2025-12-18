@@ -112,7 +112,7 @@ export function ResourceTable<T>({
   >(() => {
     const currentCluster = localStorage.getItem('current-cluster')
     const storageKey = `${currentCluster}-${resourceName}-columnVisibility`
-    const savedVisibility = sessionStorage.getItem(storageKey)
+    const savedVisibility = localStorage.getItem(storageKey)
     if (savedVisibility) {
       return JSON.parse(savedVisibility)
     }
@@ -195,7 +195,7 @@ export function ResourceTable<T>({
   useEffect(() => {
     const currentCluster = localStorage.getItem('current-cluster')
     const storageKey = `${currentCluster}-${resourceName}-columnVisibility`
-    sessionStorage.setItem(storageKey, JSON.stringify(columnVisibility))
+    localStorage.setItem(storageKey, JSON.stringify(columnVisibility))
   }, [columnVisibility, resourceName])
 
   // Update sessionStorage when page size changes
