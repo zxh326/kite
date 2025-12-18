@@ -235,6 +235,17 @@ export function NodeListPage() {
           )
         },
       }),
+      columnHelper.accessor('status.nodeInfo.osImage', {
+        header: 'OS Image',
+        cell: ({ getValue }) => {
+          const osImage = getValue()
+          return osImage ? (
+            <span className="text-sm">{osImage}</span>
+          ) : (
+            <span className="text-muted-foreground">N/A</span>
+          )
+        },
+      }),
       columnHelper.accessor('metadata.creationTimestamp', {
         header: t('common.created'),
         cell: ({ getValue }) => {
@@ -275,7 +286,7 @@ export function NodeListPage() {
       clusterScope={true}
       searchQueryFilter={nodeSearchFilter}
       showCreateButton={false}
-      defaultHiddenColumns={['status_nodeInfo_kernelVersion']}
+      defaultHiddenColumns={['status_nodeInfo_kernelVersion', 'status_nodeInfo_osImage']}
     />
   )
 }
