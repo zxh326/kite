@@ -20,6 +20,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Settings2,
   Trash2,
   XCircle,
 } from 'lucide-react'
@@ -39,6 +40,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -72,6 +81,7 @@ export interface ResourceTableProps<T> {
   showCreateButton?: boolean // If true, show create button
   onCreateClick?: () => void // Callback for create button click
   extraToolbars?: React.ReactNode[] // Additional toolbar components
+  defaultHiddenColumns?: string[] // Columns to hide by default
 }
 
 export function ResourceTable<T>({
@@ -83,6 +93,7 @@ export function ResourceTable<T>({
   showCreateButton = false,
   onCreateClick,
   extraToolbars = [],
+  defaultHiddenColumns = [],
 }: ResourceTableProps<T>) {
   const { t } = useTranslation()
   const [sorting, setSorting] = useState<SortingState>([])
@@ -95,6 +106,24 @@ export function ResourceTable<T>({
     const storageKey = `${currentCluster}-${resourceName}-searchQuery`
     return sessionStorage.getItem(storageKey) || ''
   })
+
+  const [columnVisibility, setColumnVisibility] = useState<
+    Record<string, boolean>
+  >(() => {
+    const currentCluster = localStorage.getItem('current-cluster')
+    const storageKey = `${currentCluster}-${resourceName}-columnVisibility`
+    const savedVisibility = localStorage.getItem(storageKey)
+    if (savedVisibility) {
+      return JSON.parse(savedVisibility)
+    }
+    // Set default hidden columns if no saved state
+    const initialVisibility: Record<string, boolean> = {}
+    defaultHiddenColumns.forEach((colId) => {
+      initialVisibility[colId] = false
+    })
+    return initialVisibility
+  })
+
   const [pagination, setPagination] = useState<PaginationState>(() => {
     const currentCluster = localStorage.getItem('current-cluster')
     const storageKey = `${currentCluster}-${resourceName}-pageSize`
@@ -161,6 +190,13 @@ export function ResourceTable<T>({
       sessionStorage.removeItem(storageKey)
     }
   }, [searchQuery, resourceName])
+
+  // Update sessionStorage when column visibility changes
+  useEffect(() => {
+    const currentCluster = localStorage.getItem('current-cluster')
+    const storageKey = `${currentCluster}-${resourceName}-columnVisibility`
+    localStorage.setItem(storageKey, JSON.stringify(columnVisibility))
+  }, [columnVisibility, resourceName])
 
   // Update sessionStorage when page size changes
   useEffect(() => {
@@ -292,6 +328,7 @@ export function ResourceTable<T>({
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onRowSelectionChange: setRowSelection,
+    onColumnVisibilityChange: setColumnVisibility,
     getRowId: (row) => {
       const metadata = (
         row as {
@@ -314,6 +351,7 @@ export function ResourceTable<T>({
       globalFilter: searchQuery,
       pagination,
       rowSelection,
+      columnVisibility,
     },
     onPaginationChange: setPagination,
     // Let TanStack Table handle pagination automatically based on filtered data
@@ -669,6 +707,39 @@ export function ResourceTable<T>({
               New
             </Button>
           )}
+
+          {/* Toggle columns Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-9 w-9">
+                <Settings2 className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {table
+                .getAllLeafColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  const header = column.columnDef.header
+                  const headerText =
+                    typeof header === 'string' ? header : column.id
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {headerText}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
