@@ -23,6 +23,9 @@ var discoveryLabels = []client.MatchingLabels{
 	{
 		"app.kubernetes.io/part-of": "kube-prometheus-stack",
 	},
+	{
+		"app.kubernetes.io/name": "vmsingle",
+	},
 }
 
 func discoveryPrometheusURL(kc *kube.K8sClient) string {
