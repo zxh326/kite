@@ -286,7 +286,10 @@ export function NodeListPage() {
       clusterScope={true}
       searchQueryFilter={nodeSearchFilter}
       showCreateButton={false}
-      defaultHiddenColumns={['status_nodeInfo_kernelVersion', 'status_nodeInfo_osImage']}
+      defaultHiddenColumns={[
+        'status_nodeInfo_kernelVersion',
+        'status_nodeInfo_osImage',
+      ]}
     />
   )
 }
