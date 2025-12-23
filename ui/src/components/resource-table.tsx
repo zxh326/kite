@@ -97,7 +97,12 @@ export function ResourceTable<T>({
 }: ResourceTableProps<T>) {
   const { t } = useTranslation()
   const [sorting, setSorting] = useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(() => {
+    const currentCluster = localStorage.getItem('current-cluster')
+    const storageKey = `${currentCluster}-${resourceName}-columnFilters`
+    const savedFilters = sessionStorage.getItem(storageKey)
+    return savedFilters ? JSON.parse(savedFilters) : []
+  })
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -204,6 +209,17 @@ export function ResourceTable<T>({
     const storageKey = `${currentCluster}-${resourceName}-pageSize`
     sessionStorage.setItem(storageKey, pagination.pageSize.toString())
   }, [pagination.pageSize, resourceName])
+
+  // Update sessionStorage when column filters changes
+  useEffect(() => {
+    const currentCluster = localStorage.getItem('current-cluster')
+    const storageKey = `${currentCluster}-${resourceName}-columnFilters`
+    if (columnFilters.length > 0) {
+      sessionStorage.setItem(storageKey, JSON.stringify(columnFilters))
+    } else {
+      sessionStorage.removeItem(storageKey)
+    }
+  }, [columnFilters, resourceName])
 
   // Reset pagination when filters change
   useEffect(() => {
