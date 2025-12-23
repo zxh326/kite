@@ -3,6 +3,7 @@ package prometheus
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -57,12 +58,13 @@ type PodCurrentMetrics struct {
 	Memory    float64 `json:"memory"` // Memory in MB
 }
 
-func NewClient(prometheusURL string) (*Client, error) {
+func NewClientWithRoundTripper(prometheusURL string, rt http.RoundTripper) (*Client, error) {
 	if prometheusURL == "" {
 		return nil, fmt.Errorf("prometheus URL cannot be empty")
 	}
 	client, err := api.NewClient(api.Config{
-		Address: prometheusURL,
+		Address:      prometheusURL,
+		RoundTripper: rt,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error creating prometheus client: %w", err)
