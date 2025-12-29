@@ -40,7 +40,7 @@ on:
       - "Dockerfile*"
 
 env:
-  GO_VERSION: "1.24"
+  GO_VERSION: "1.25"
   NODE_VERSION: "24"
 
 jobs:
@@ -73,6 +73,10 @@ jobs:
         run: make deps
       - name: Build
         run: make build
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.7
       - name: lint
         run: make pre-commit
       - name: Test
