@@ -119,9 +119,8 @@ lint: golangci-lint ## Run linters
 	@echo "Frontend linting..."
 	cd $(UI_DIR) && pnpm run lint
 
-golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
-$(GOLANGCI_LINT): $(LOCALBIN)
-	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint,v2.1.6)
+golangci-lint: ## Download golangci-lint locally if necessary.
+	test -f $(GOLANGCI_LINT) || curl -sSfL https://golangci-lint.run/install.sh | sh -s v2.7.2
 
 format: ## Format code
 	@echo "✨ Formatting code..."
@@ -142,15 +141,3 @@ docs-dev: ## Start documentation server in development mode
 docs-build: ## Build documentation
 	@echo "📚 Building documentation..."
 	cd docs && pnpm run docs:build
-
-define go-install-tool
-@[ -f "$(1)-$(3)" ] || { \
-set -e; \
-package=$(2)@$(3) ;\
-echo "Downloading $${package}" ;\
-rm -f $(1) || true ;\
-GOBIN=$(LOCALBIN) go install $${package} ;\
-mv $(1) $(1)-$(3) ;\
-} ;\
-ln -sf $(1)-$(3) $(1)
-endef
