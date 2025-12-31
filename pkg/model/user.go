@@ -22,8 +22,9 @@ type User struct {
 	Enabled     bool        `json:"enabled" gorm:"type:boolean;default:true"`
 	Sub         string      `json:"sub,omitempty" gorm:"type:varchar(255);index"`
 
-	APIKey SecretString  `json:"apiKey,omitempty" gorm:"type:text"`
-	Roles  []common.Role `json:"roles,omitempty" gorm:"-"`
+	APIKey       SecretString  `json:"apiKey,omitempty" gorm:"type:text"`
+	RefreshToken SecretString  `json:"-" gorm:"type:text"` // OAuth refresh token stored in DB instead of JWT cookie
+	Roles        []common.Role `json:"roles,omitempty" gorm:"-"`
 
 	SidebarPreference string `json:"sidebar_preference,omitempty" gorm:"type:text"`
 }
@@ -151,6 +152,20 @@ func ResetPasswordByID(id uint, plainPassword string) error {
 // SetUserEnabled sets enabled flag for a user
 func SetUserEnabled(id uint, enabled bool) error {
 	return DB.Model(&User{}).Where("id = ?", id).Update("enabled", enabled).Error
+}
+
+// UpdateUserRefreshToken stores the OAuth refresh token for a user
+func UpdateUserRefreshToken(userID uint, refreshToken string) error {
+	return DB.Model(&User{}).Where("id = ?", userID).Update("refresh_token", SecretString(refreshToken)).Error
+}
+
+// GetUserRefreshToken retrieves the stored OAuth refresh token for a user
+func GetUserRefreshToken(userID uint) (string, error) {
+	var user User
+	if err := DB.Select("refresh_token").Where("id = ?", userID).First(&user).Error; err != nil {
+		return "", err
+	}
+	return string(user.RefreshToken), nil
 }
 
 func CheckPassword(hashedPassword, plainPassword string) bool {

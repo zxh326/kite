@@ -76,11 +76,19 @@ func (om *OAuthManager) GenerateJWT(user *model.User, refreshToken string) (stri
 	now := time.Now()
 	expirationTime := now.Add(common.JWTExpirationSeconds * time.Second)
 
+	// Store refresh token in database instead of JWT to avoid cookie size limits
+	// Some OAuth providers (like Casdoor) return JWT-format refresh tokens that are very long
+	if refreshToken != "" {
+		if err := model.UpdateUserRefreshToken(user.ID, refreshToken); err != nil {
+			klog.Warningf("Failed to store refresh token for user %d: %v", user.ID, err)
+		}
+	}
+
 	claims := Claims{
-		UserID:       user.ID,
-		Username:     user.Username,
-		Provider:     user.Provider,
-		RefreshToken: refreshToken,
+		UserID:   user.ID,
+		Username: user.Username,
+		Provider: user.Provider,
+		// RefreshToken is no longer stored in JWT to keep cookie size small
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(now),
@@ -139,14 +147,27 @@ func (om *OAuthManager) RefreshJWT(c *gin.Context, tokenString string) (string, 
 		return tokenString, nil
 	}
 
+	// Get refresh token from database instead of JWT claims
+	// This avoids cookie size limits caused by long JWT-format refresh tokens
+	storedRefreshToken, err := model.GetUserRefreshToken(claims.UserID)
+	if err != nil {
+		klog.V(1).Infof("No stored refresh token for user %d: %v", claims.UserID, err)
+	}
+
+	// Also check legacy JWT claims for backward compatibility
+	refreshToken := storedRefreshToken
+	if refreshToken == "" {
+		refreshToken = claims.RefreshToken
+	}
+
 	// If we have a refresh token, try to refresh the OAuth token
-	if claims.RefreshToken != "" {
+	if refreshToken != "" {
 		provider, err := om.GetProvider(c, claims.Provider)
 		if err != nil {
 			return "", err
 		}
 
-		tokenResp, err := provider.RefreshToken(claims.RefreshToken)
+		tokenResp, err := provider.RefreshToken(refreshToken)
 		if err != nil {
 			return "", err
 		}
@@ -160,7 +181,7 @@ func (om *OAuthManager) RefreshJWT(c *gin.Context, tokenString string) (string, 
 		// Generate new JWT with refreshed token
 		newRefreshToken := tokenResp.RefreshToken
 		if newRefreshToken == "" {
-			newRefreshToken = claims.RefreshToken // Keep the old refresh token if no new one provided
+			newRefreshToken = refreshToken // Keep the old refresh token if no new one provided
 		}
 
 		return om.GenerateJWT(user, newRefreshToken)
