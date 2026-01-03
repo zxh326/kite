@@ -836,7 +836,9 @@ export const podDownloadFile = (
     container,
     path,
   })
-  const url = `${API_BASE_URL}/pods/${namespace}/${podName}/files/download?${params.toString()}`
+  const url = withSubPath(
+    `${API_BASE_URL}/pods/${namespace}/${podName}/files/download?${params.toString()}`
+  )
   window.open(url, '_blank')
 }
 
@@ -850,7 +852,9 @@ export const podPreviewFile = (
     container,
     path,
   })
-  const url = `${API_BASE_URL}/pods/${namespace}/${podName}/files/preview?${params.toString()}`
+  const url = withSubPath(
+    `${API_BASE_URL}/pods/${namespace}/${podName}/files/preview?${params.toString()}`
+  )
   window.open(url, '_blank')
 }
 
