@@ -23,8 +23,8 @@ type RoleAssignment struct {
 
 	RoleID uint `json:"roleId" gorm:"index;not null;constraint:OnDelete:CASCADE"`
 
-	SubjectType string `json:"subjectType" gorm:"type:varchar(20);not null"`
-	Subject     string `json:"subject" gorm:"type:varchar(255);not null"`
+	SubjectType string `json:"subjectType" gorm:"type:varchar(20);not null;index:idx_role_assignments_subject"`
+	Subject     string `json:"subject" gorm:"type:varchar(255);not null;index:idx_role_assignments_subject"`
 }
 
 // Convenience constants for SubjectType

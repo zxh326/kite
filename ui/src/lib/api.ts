@@ -1530,9 +1530,28 @@ export const unassignRole = async (
 
 export const fetchUserList = async (
   page = 1,
-  size = 20
+  size = 20,
+  search = '',
+  sortBy = '',
+  sortOrder = '',
+  role = ''
 ): Promise<FetchUserListResponse> => {
-  const params = new URLSearchParams({ page: String(page), size: String(size) })
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+  })
+  if (search) {
+    params.set('search', search)
+  }
+  if (sortBy) {
+    params.set('sortBy', sortBy)
+  }
+  if (sortOrder) {
+    params.set('sortOrder', sortOrder)
+  }
+  if (role) {
+    params.set('role', role)
+  }
   return fetchAPI<FetchUserListResponse>(`/admin/users/?${params.toString()}`)
 }
 
@@ -1565,10 +1584,17 @@ export const setUserEnabled = async (id: number, enabled: boolean) => {
   })
 }
 
-export const useUserList = (page = 1, size = 20) => {
-  return useQuery({
-    queryKey: ['user-list', page, size],
-    queryFn: () => fetchUserList(page, size),
+export const useUserList = (
+  page = 1,
+  size = 20,
+  search = '',
+  sortBy = '',
+  sortOrder = '',
+  role = ''
+) => {
+  return useQuery<FetchUserListResponse, Error>({
+    queryKey: ['user-list', page, size, search, sortBy, sortOrder, role],
+    queryFn: () => fetchUserList(page, size, search, sortBy, sortOrder, role),
     staleTime: 20000,
   })
 }

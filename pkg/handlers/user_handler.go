@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zxh326/kite/pkg/model"
@@ -78,6 +79,13 @@ func CreatePasswordUser(c *gin.Context) {
 func ListUsers(c *gin.Context) {
 	page := 1
 	size := 20
+	search := strings.TrimSpace(c.Query("search"))
+	role := strings.TrimSpace(c.Query("role"))
+	sortBy := strings.TrimSpace(c.Query("sortBy"))
+	sortOrder := strings.ToLower(strings.TrimSpace(c.Query("sortOrder")))
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "desc"
+	}
 	if p := c.Query("page"); p != "" {
 		_, _ = fmt.Sscanf(p, "%d", &page)
 		if page <= 0 {
@@ -92,7 +100,14 @@ func ListUsers(c *gin.Context) {
 	}
 	offset := (page - 1) * size
 
-	users, total, err := model.ListUsers(size, offset)
+	users, total, err := model.ListUsers(
+		size,
+		offset,
+		search,
+		sortBy,
+		sortOrder,
+		role,
+	)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "failed to list users"})
 		return
