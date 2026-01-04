@@ -15,8 +15,8 @@ import (
 
 const (
 	// Microsoft Graph API endpoints
-	graphAPIBaseURL   = "https://graph.microsoft.com/v1.0"
-	graphAPIMemberOf  = graphAPIBaseURL + "/me/memberOf"
+	graphAPIBaseURL  = "https://graph.microsoft.com/v1.0"
+	graphAPIMemberOf = graphAPIBaseURL + "/me/memberOf"
 )
 
 // OAuthProvider defines the interface for OAuth providers

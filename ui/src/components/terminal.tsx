@@ -61,15 +61,6 @@ export function Terminal({
   initContainers = [],
   type = 'pod',
 }: TerminalProps) {
-  console.log('Terminal render', {
-    namespace,
-    podName,
-    nodeName,
-    type,
-    pods,
-    _containers,
-    initContainers,
-  })
   const containers = useMemo(() => {
     return toSimpleContainer(initContainers, _containers)
   }, [_containers, initContainers])
@@ -320,6 +311,14 @@ export function Terminal({
       setNetworkSpeed({ upload: 0, download: 0 })
       if (speedUpdateTimerRef.current)
         clearInterval(speedUpdateTimerRef.current)
+      if (fitAddonRef.current) {
+        const { cols, rows } = fitAddonRef.current.proposeDimensions()!
+        if (cols && rows) {
+          const message = JSON.stringify({ type: 'resize', cols, rows })
+          websocket.send(message)
+          updateNetworkStats(new Blob([message]).size, true)
+        }
+      }
       speedUpdateTimerRef.current = setInterval(() => {
         const now = Date.now()
         const stats = networkStatsRef.current
@@ -421,7 +420,6 @@ export function Terminal({
         updateNetworkStats(new Blob([message]).size, true)
       }
     }
-    setTimeout(() => handleTerminalResize(), 100)
 
     let resizeObserver: ResizeObserver | null = null
     if (fitAddonRef.current && terminal.element) {

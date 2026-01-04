@@ -3,6 +3,9 @@ package cluster
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/zxh326/kite/pkg/kube"
@@ -75,7 +78,17 @@ func newClientSet(name string, k8sConfig *rest.Config, prometheusURL string) (*C
 		}
 	}
 	if prometheusURL != "" {
-		cs.PromClient, err = prometheus.NewClient(prometheusURL)
+		var rt = http.DefaultTransport
+		var err error
+		if isClusterLocalURL(prometheusURL) {
+			rt, err = createK8sProxyTransport(k8sConfig, prometheusURL)
+			if err != nil {
+				klog.Warningf("Failed to create k8s proxy transport for cluster %s: %v, using direct connection", name, err)
+			} else {
+				klog.Infof("Using k8s API proxy for Prometheus in cluster %s", name)
+			}
+		}
+		cs.PromClient, err = prometheus.NewClientWithRoundTripper(prometheusURL, rt)
 		if err != nil {
 			klog.Warningf("Failed to create Prometheus client for cluster %s, some features may not work as expected, err: %v", name, err)
 		}
@@ -88,6 +101,63 @@ func newClientSet(name string, k8sConfig *rest.Config, prometheusURL string) (*C
 	}
 	klog.Infof("Loaded K8s client for cluster: %s, version: %s", name, cs.Version)
 	return cs, nil
+}
+
+func isClusterLocalURL(urlStr string) bool {
+	return strings.Contains(urlStr, ".svc.cluster.local") || strings.Contains(urlStr, ".svc:")
+}
+
+func createK8sProxyTransport(k8sConfig *rest.Config, prometheusURL string) (*k8sProxyTransport, error) {
+	parsedURL, err := url.Parse(prometheusURL)
+	if err != nil {
+		return nil, err
+	}
+
+	parts := strings.Split(parsedURL.Host, ".")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("invalid cluster local URL format")
+	}
+	svcName := parts[0]
+	namespace := parts[1]
+
+	transport, err := rest.TransportFor(k8sConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	transportWrapper := &k8sProxyTransport{
+		transport:    transport,
+		apiServerURL: k8sConfig.Host,
+		namespace:    namespace,
+		svcName:      svcName,
+		scheme:       parsedURL.Scheme,
+	}
+	transportWrapper.port = parsedURL.Port()
+
+	return transportWrapper, nil
+}
+
+type k8sProxyTransport struct {
+	transport    http.RoundTripper
+	apiServerURL string
+	namespace    string
+	svcName      string
+	scheme       string
+	port         string
+}
+
+func (t *k8sProxyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	proxyURL, err := url.Parse(t.apiServerURL)
+	if err != nil {
+		return nil, err
+	}
+	req.URL.Scheme = proxyURL.Scheme
+	req.URL.Host = proxyURL.Host
+
+	servicePath := fmt.Sprintf("/api/v1/namespaces/%s/services/%s:%s/proxy", t.namespace, t.svcName, t.port)
+	req.URL.Path = servicePath + req.URL.Path
+
+	return t.transport.RoundTrip(req)
 }
 
 func (cm *ClusterManager) GetClientSet(clusterName string) (*ClientSet, error) {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zxh326/kite/pkg/cluster"
 	"github.com/zxh326/kite/pkg/common"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
@@ -14,6 +15,9 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	metricsv1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	gatewayapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -156,7 +160,44 @@ func RegisterSearchFunc(resourceType string, searchFunc func(c *gin.Context, que
 func GetResource(c *gin.Context, resource, namespace, name string) (interface{}, error) {
 	handler, exists := handlers[resource]
 	if !exists {
-		return nil, fmt.Errorf("resource handler for %s not found", resource)
+		cs := c.MustGet("cluster").(*cluster.ClientSet)
+		ctx := c.Request.Context()
+		var crd apiextensionsv1.CustomResourceDefinition
+		if err := cs.K8sClient.Get(ctx, types.NamespacedName{Name: resource}, &crd); err != nil {
+			return nil, fmt.Errorf("resource handler for %s not found", resource)
+		}
+
+		gvr := schema.GroupVersionResource{
+			Group: crd.Spec.Group,
+		}
+		for _, v := range crd.Spec.Versions {
+			if v.Served {
+				gvr.Version = v.Name
+				break
+			}
+		}
+
+		cr := &unstructured.Unstructured{}
+		cr.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   gvr.Group,
+			Version: gvr.Version,
+			Kind:    crd.Spec.Names.Kind,
+		})
+
+		var namespacedName types.NamespacedName
+		if crd.Spec.Scope == apiextensionsv1.NamespaceScoped {
+			if namespace == "" {
+				return nil, fmt.Errorf("namespace is required for namespaced custom resources")
+			}
+			namespacedName = types.NamespacedName{Namespace: namespace, Name: name}
+		} else {
+			namespacedName = types.NamespacedName{Name: name}
+		}
+
+		if err := cs.K8sClient.Get(ctx, namespacedName, cr); err != nil {
+			return nil, err
+		}
+		return cr, nil
 	}
 	return handler.GetResource(c, namespace, name)
 }

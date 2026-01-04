@@ -803,6 +803,7 @@ export function LogViewer({
             hideCursorInOverviewRuler: true,
             overviewRulerBorder: false,
             automaticLayout: true,
+            colorDecorators: false,
           }}
           loading={
             <div className="flex items-center justify-center h-full">

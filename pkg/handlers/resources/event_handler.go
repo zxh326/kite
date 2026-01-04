@@ -44,7 +44,6 @@ func (h *EventHandler) ListResourceEvents(c *gin.Context) {
 	obj := target.(metav1.Object)
 	events, err := cs.K8sClient.ClientSet.CoreV1().Events(obj.GetNamespace()).List(c.Request.Context(), metav1.ListOptions{
 		FieldSelector: "involvedObject.kind=" + objType.GetKind() +
-			",involvedObject.apiVersion=" + objType.GetAPIVersion() +
 			",involvedObject.name=" + name,
 	})
 
