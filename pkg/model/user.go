@@ -124,7 +124,8 @@ func ListUsers(limit int, offset int, search string, sortBy string, sortOrder st
 			likeQuery,
 		)
 	}
-	err = query.Distinct("users.id").Count(&total).Error
+	countQuery := query.Select("users.id").Distinct("users.id")
+	err = DB.Table("(?) as sub", countQuery).Count(&total).Error
 	if err != nil {
 		return nil, 0, err
 	}

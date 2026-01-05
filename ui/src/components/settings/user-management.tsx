@@ -449,15 +449,7 @@ export function UserManagement() {
 
   useEffect(() => {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }))
-  }, [searchQuery])
-
-  useEffect(() => {
-    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
-  }, [roleFilter])
-
-  useEffect(() => {
-    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
-  }, [sorting])
+  }, [searchQuery, roleFilter, sorting])
 
   const emptyState = (() => {
     if (isLoading && !data) {
