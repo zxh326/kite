@@ -671,11 +671,16 @@ export function ResourceTable<T>({
                       </SelectItem>
                       {Array.from(uniqueValues.keys())
                         .sort()
-                        .map((value) => value ? (
-                          <SelectItem key={String(value)} value={String(value)}>
-                            {String(value)} ({uniqueValues.get(value)})
-                          </SelectItem>
-                        ) : null)}
+                        .map((value) =>
+                          value ? (
+                            <SelectItem
+                              key={String(value)}
+                              value={String(value)}
+                            >
+                              {String(value)} ({uniqueValues.get(value)})
+                            </SelectItem>
+                          ) : null
+                        )}
                     </SelectContent>
                   </Select>
                 )

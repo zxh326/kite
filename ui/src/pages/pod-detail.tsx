@@ -1,27 +1,38 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  IconAdjustments,
   IconExternalLink,
   IconLoader,
   IconRefresh,
   IconTrash,
 } from '@tabler/icons-react'
 import * as yaml from 'js-yaml'
-import { Pod } from 'kubernetes-types/core/v1'
+import { Container, Pod } from 'kubernetes-types/core/v1'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
-import { updateResource, useResource } from '@/lib/api'
+import { resizePod, updateResource, useResource } from '@/lib/api'
 import { getOwnerInfo, getPodErrorMessage, getPodStatus } from '@/lib/k8s'
 import { withSubPath } from '@/lib/subpath'
 import { formatDate, translateError } from '@/lib/utils'
+import { useCluster } from '@/hooks/use-cluster'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { ContainerTable } from '@/components/container-table'
 import { DescribeDialog } from '@/components/describe-dialog'
+import { ResourceEditor } from '@/components/editors/resource-editor'
 import { ErrorMessage } from '@/components/error-message'
 import { EventTable } from '@/components/event-table'
 import { LabelsAnno } from '@/components/lables-anno'
@@ -31,6 +42,7 @@ import { PodMonitoring } from '@/components/pod-monitoring'
 import { PodStatusIcon } from '@/components/pod-status-icon'
 import { RelatedResourcesTable } from '@/components/related-resource-table'
 import { ResourceDeleteConfirmationDialog } from '@/components/resource-delete-confirmation-dialog'
+import { ContainerSelector } from '@/components/selector/container-selector'
 import { Terminal } from '@/components/terminal'
 import { VolumeTable } from '@/components/volume-table'
 import { YamlEditor } from '@/components/yaml-editor'
@@ -41,8 +53,13 @@ export function PodDetail(props: { namespace: string; name: string }) {
   const [isSavingYaml, setIsSavingYaml] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isResizeDialogOpen, setIsResizeDialogOpen] = useState(false)
+  const [selectedContainerName, setSelectedContainerName] = useState<string>()
+  const [resizeContainer, setResizeContainer] = useState<Container | null>(null)
+  const [isResizing, setIsResizing] = useState(false)
 
   const { t } = useTranslation()
+  const { clusters, currentCluster } = useCluster()
 
   const {
     data: pod,
@@ -58,6 +75,28 @@ export function PodDetail(props: { namespace: string; name: string }) {
     }
   }, [pod])
 
+  useEffect(() => {
+    if (!pod || !pod?.spec?.containers?.length) {
+      setSelectedContainerName(undefined)
+      setResizeContainer(null)
+      return
+    }
+    setSelectedContainerName((prev) => prev || pod.spec?.containers[0].name)
+  }, [pod])
+
+  useEffect(() => {
+    if (!pod || !selectedContainerName) {
+      setResizeContainer(null)
+      return
+    }
+    const container = pod.spec?.containers.find(
+      (item) => item.name === selectedContainerName
+    )
+    setResizeContainer(
+      container ? (JSON.parse(JSON.stringify(container)) as Container) : null
+    )
+  }, [pod, selectedContainerName])
+
   const handleSaveYaml = async (content: Pod) => {
     setIsSavingYaml(true)
     try {
@@ -69,6 +108,32 @@ export function PodDetail(props: { namespace: string; name: string }) {
       toast.error(translateError(error, t))
     } finally {
       setIsSavingYaml(false)
+    }
+  }
+
+  const handleResizeSave = async () => {
+    if (!resizeContainer) {
+      return
+    }
+    setIsResizing(true)
+    try {
+      await resizePod(namespace, name, {
+        spec: {
+          containers: [
+            {
+              name: resizeContainer.name,
+              resources: resizeContainer.resources,
+            },
+          ],
+        },
+      })
+      toast.success(t('pods.resizeResourcesSuccess'))
+      await handleRefresh()
+      setIsResizeDialogOpen(false)
+    } catch (error) {
+      toast.error(translateError(error, t))
+    } finally {
+      setIsResizing(false)
     }
   }
 
@@ -85,6 +150,17 @@ export function PodDetail(props: { namespace: string; name: string }) {
   const podStatus = useMemo(() => {
     return getPodStatus(pod)
   }, [pod])
+
+  const clusterVersion = useMemo(
+    () => clusters.find((cluster) => cluster.name === currentCluster)?.version,
+    [clusters, currentCluster]
+  )
+  const resizeSupported = useMemo(
+    () => isVersionAtLeast(clusterVersion, '1.35.0'),
+    [clusterVersion]
+  )
+  const resizeAvailable =
+    resizeSupported && (pod?.spec?.containers?.length ?? 0) > 0
 
   if (isLoading) {
     return (
@@ -131,6 +207,16 @@ export function PodDetail(props: { namespace: string; name: string }) {
             namespace={namespace}
             name={name}
           />
+          {resizeAvailable && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsResizeDialogOpen(true)}
+            >
+              <IconAdjustments className="w-4 h-4" />
+              {t('pods.resizeResources')}
+            </Button>
+          )}
           <Button
             variant="destructive"
             size="sm"
@@ -515,6 +601,89 @@ export function PodDetail(props: { namespace: string; name: string }) {
         resourceType="pods"
         namespace={namespace}
       />
+      <Dialog open={isResizeDialogOpen} onOpenChange={setIsResizeDialogOpen}>
+        <DialogContent className="!max-w-3xl max-h-[90vh] overflow-y-auto sm:!max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{t('pods.resizeResourcesTitle')}</DialogTitle>
+            <DialogDescription>
+              {t('pods.resizeResourcesDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t('pods.container')}</Label>
+              <ContainerSelector
+                containers={(pod?.spec?.containers || []).map((item) => ({
+                  name: item.name,
+                  image: item.image || '',
+                  init: false,
+                }))}
+                selectedContainer={selectedContainerName}
+                onContainerChange={setSelectedContainerName}
+                showAllOption={false}
+                placeholder={t('pods.selectContainer')}
+              />
+            </div>
+            {resizeContainer ? (
+              <ResourceEditor
+                container={resizeContainer}
+                onUpdate={(updates) =>
+                  setResizeContainer((prev) =>
+                    prev ? { ...prev, ...updates } : prev
+                  )
+                }
+              />
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                {t('pods.selectContainer')}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsResizeDialogOpen(false)}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleResizeSave}
+              disabled={!resizeContainer || isResizing}
+            >
+              {t('common.save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
+}
+
+const isVersionAtLeast = (version: string | undefined, target: string) => {
+  const parsed = parseVersion(version)
+  const targetParsed = parseVersion(target)
+  if (!parsed || !targetParsed) {
+    return false
+  }
+  for (let i = 0; i < 3; i += 1) {
+    if (parsed[i] > targetParsed[i]) {
+      return true
+    }
+    if (parsed[i] < targetParsed[i]) {
+      return false
+    }
+  }
+  return true
+}
+
+const parseVersion = (version: string | undefined) => {
+  if (!version) {
+    return null
+  }
+  const cleaned = version.trim().replace(/^v/, '')
+  const match = cleaned.match(/^(\d+)\.(\d+)\.(\d+)/)
+  if (!match) {
+    return null
+  }
+  return [Number(match[1]), Number(match[2]), Number(match[3])]
 }

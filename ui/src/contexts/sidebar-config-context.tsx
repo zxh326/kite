@@ -92,7 +92,9 @@ interface SidebarConfigContextType {
   resetConfig: () => void
   getIconComponent: (
     iconName: string
-  ) => React.ForwardRefExoticComponent<IconProps & React.RefAttributes<Icon>> | React.ElementType;
+  ) =>
+    | React.ForwardRefExoticComponent<IconProps & React.RefAttributes<Icon>>
+    | React.ElementType
   createCustomGroup: (groupName: string) => void
   addCRDToGroup: (groupId: string, crdName: string, kind: string) => void
   removeCRDToGroup: (groupId: string, crdName: string) => void
