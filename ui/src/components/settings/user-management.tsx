@@ -1,16 +1,23 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import * as Avatar from '@radix-ui/react-avatar'
 import {
   IconEdit,
   IconLock,
   IconLockOpen,
   IconPlus,
+  IconSearch,
   IconShieldCheck,
   IconTrash,
   IconUser,
 } from '@tabler/icons-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ColumnDef } from '@tanstack/react-table'
+import {
+  ColumnDef,
+  getCoreRowModel,
+  PaginationState,
+  SortingState,
+  useReactTable,
+} from '@tanstack/react-table'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -21,6 +28,7 @@ import {
   resetUserPassword,
   setUserEnabled,
   updateUser,
+  useRoleList,
   useUserList,
 } from '@/lib/api'
 import { formatDate } from '@/lib/utils'
@@ -33,18 +41,58 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog'
+import { ResourceTableView } from '@/components/resource-table-view'
 
-import { Action, ActionTable } from '../action-table'
+import { Action } from '../action-table'
 import { Badge } from '../ui/badge'
 import UserRoleAssignment from './user-role-assignment'
 
 export function UserManagement() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 20,
+  })
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
+  const { data: roles = [] } = useRoleList()
 
-  const { data, isLoading, error } = useUserList(1, 20)
+  const sortParams = useMemo(() => {
+    if (sorting.length === 0) {
+      return { sortBy: '', sortOrder: '' }
+    }
+    const [primary] = sorting
+    return {
+      sortBy: primary.id,
+      sortOrder: primary.desc ? 'desc' : 'asc',
+    }
+  }, [sorting])
+
+  const { data, isLoading, error } = useUserList(
+    pagination.pageIndex + 1,
+    pagination.pageSize,
+    searchQuery,
+    sortParams.sortBy,
+    sortParams.sortOrder,
+    roleFilter
+  )
 
   const getStatusBadge = useCallback(
     (user: UserItem) => {
@@ -137,6 +185,7 @@ export function UserManagement() {
       {
         id: 'id',
         header: 'ID',
+        enableSorting: true,
         accessorFn: (row) => row.id,
         cell: ({ getValue }) => (
           <div className="text-sm text-muted-foreground">
@@ -147,6 +196,7 @@ export function UserManagement() {
       {
         id: 'username',
         header: t('username', 'Username'),
+        enableSorting: false,
         accessorFn: (row) => row.username,
         cell: ({ row }) => (
           <div>
@@ -193,6 +243,7 @@ export function UserManagement() {
       {
         id: 'status',
         header: t('userManagement.table.status', 'Status'),
+        enableSorting: false,
         cell: ({ row: { original: user } }) => (
           <div className="flex items-center gap-3">{getStatusBadge(user)}</div>
         ),
@@ -201,6 +252,7 @@ export function UserManagement() {
         id: 'provider',
         header: t('userManagement.table.provider', 'Provider'),
         accessorFn: (row) => row.provider || '-',
+        enableSorting: false,
         cell: ({ getValue }) => (
           <div className="code">{String(getValue() || '-')}</div>
         ),
@@ -208,6 +260,7 @@ export function UserManagement() {
       {
         id: 'createdAt',
         header: t('userManagement.table.createdAt', 'Created At'),
+        enableSorting: true,
         accessorFn: (row) => row.createdAt,
         cell: ({ getValue }) => (
           <div className="text-sm text-muted-foreground">
@@ -218,6 +271,8 @@ export function UserManagement() {
       {
         id: 'lastLoginAt',
         header: t('userManagement.table.lastLoginAt', 'Last Login'),
+        enableSorting: true,
+        accessorFn: (row) => row.lastLoginAt ?? '',
         cell: ({
           row: {
             original: { lastLoginAt },
@@ -232,6 +287,7 @@ export function UserManagement() {
         id: 'roles',
         header: t('userManagement.table.roles', 'Roles'),
         accessorFn: (row) => row.roles?.map((r) => r.name).join(', '),
+        enableSorting: false,
         cell: ({ getValue }) => (
           <div className="text-sm text-muted-foreground">
             {String(getValue() || '-')}
@@ -241,6 +297,54 @@ export function UserManagement() {
     ],
     [getStatusBadge, t]
   )
+
+  const tableColumns = useMemo<ColumnDef<UserItem>[]>(() => {
+    const actionColumn: ColumnDef<UserItem> = {
+      id: 'actions',
+      header: t('common.actions', 'Actions'),
+      cell: ({ row }) => (
+        <div className="text-right">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                •••
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {actions.map((action, index) => (
+                <DropdownMenuItem
+                  key={index}
+                  disabled={action.shouldDisable?.(row.original)}
+                  onClick={() => action.onClick(row.original)}
+                  className="gap-2"
+                >
+                  {action.dynamicLabel
+                    ? action.dynamicLabel(row.original)
+                    : action.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+    }
+    return [...columns, actionColumn]
+  }, [actions, columns, t])
+
+  const table = useReactTable({
+    data: data?.users ?? [],
+    columns: tableColumns,
+    getCoreRowModel: getCoreRowModel(),
+    state: {
+      pagination,
+      sorting,
+    },
+    onPaginationChange: setPagination,
+    onSortingChange: setSorting,
+    manualPagination: true,
+    manualSorting: true,
+    pageCount: Math.ceil((data?.total ?? 0) / pagination.pageSize) || 0,
+  })
   const [newUser, setNewUser] = useState({
     username: '',
     name: '',
@@ -343,28 +447,48 @@ export function UserManagement() {
     })
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-muted-foreground">
-          {t('common.loading', 'Loading...')}
-        </div>
-      </div>
-    )
-  }
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+  }, [searchQuery, roleFilter, sorting])
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-destructive">
-          {t('userManagement.errors.loadFailed', 'Failed to load users')}
+  const emptyState = (() => {
+    if (isLoading && !data) {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-muted-foreground">
+            {t('common.loading', 'Loading...')}
+          </div>
         </div>
-      </div>
-    )
-  }
+      )
+    }
+    if (error) {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-destructive">
+            {t('userManagement.errors.loadFailed', 'Failed to load users')}
+          </div>
+        </div>
+      )
+    }
+    if (data && data.users.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground">
+          <IconUser className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p>{t('userManagement.empty.title', 'No users')}</p>
+          <p className="text-sm mt-1">
+            {t('userManagement.empty.description', 'No users found')}
+          </p>
+        </div>
+      )
+    }
+    return null
+  })()
+
+  const totalRowCount = data?.total ?? 0
+  const filteredRowCount = data?.users.length ?? 0
 
   return (
-    <div className="space-y-6">
+    <div>
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -374,28 +498,64 @@ export function UserManagement() {
                 {t('userManagement.title', 'User Management')}
               </CardTitle>
             </div>
-            <Button onClick={() => setShowAddDialog(true)} className="gap-2">
-              <IconPlus className="h-4 w-4" />
-              {t('userManagement.actions.add', 'Add Password User')}
-            </Button>
+            <div className="flex items-center gap-3">
+              <Select
+                value={roleFilter || 'all'}
+                onValueChange={(value) =>
+                  setRoleFilter(value === 'all' ? '' : value)
+                }
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue
+                    placeholder={t('userManagement.filters.role', 'All roles')}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t('userManagement.filters.allRoles', 'All roles')}
+                  </SelectItem>
+                  {roles.map((role) => (
+                    <SelectItem key={role.id} value={role.name}>
+                      {role.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="relative">
+                <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder={t(
+                    'userManagement.actions.search',
+                    'Search users...'
+                  )}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 w-64"
+                />
+              </div>
+              <Button onClick={() => setShowAddDialog(true)} className="gap-2">
+                <IconPlus className="h-4 w-4" />
+                {t('userManagement.actions.add', 'Add Password User')}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          <ActionTable
-            data={data?.users || []}
-            columns={columns}
-            actions={actions}
+          <ResourceTableView
+            table={table}
+            columnCount={tableColumns.length}
+            isLoading={isLoading}
+            data={data?.users}
+            allPageSize={totalRowCount}
+            emptyState={emptyState}
+            hasActiveFilters={Boolean(searchQuery) || Boolean(roleFilter)}
+            filteredRowCount={filteredRowCount}
+            totalRowCount={totalRowCount}
+            searchQuery={searchQuery}
+            pagination={pagination}
+            setPagination={setPagination}
+            maxBodyHeightClassName="max-h-[600px]"
           />
-
-          {(!data || data.users.length === 0) && (
-            <div className="text-center py-8 text-muted-foreground">
-              <IconUser className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>{t('userManagement.empty.title', 'No users')}</p>
-              <p className="text-sm mt-1">
-                {t('userManagement.empty.description', 'No users found')}
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
 

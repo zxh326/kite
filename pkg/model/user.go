@@ -14,11 +14,11 @@ type User struct {
 	Model
 	Username    string      `json:"username" gorm:"type:varchar(50);uniqueIndex;not null"`
 	Password    string      `json:"-" gorm:"type:varchar(255)"`
-	Name        string      `json:"name,omitempty" gorm:"type:varchar(100)"`
+	Name        string      `json:"name,omitempty" gorm:"type:varchar(100);index"`
 	AvatarURL   string      `json:"avatar_url,omitempty" gorm:"type:varchar(500)"`
-	Provider    string      `json:"provider,omitempty" gorm:"type:varchar(50);default:password"`
+	Provider    string      `json:"provider,omitempty" gorm:"type:varchar(50);default:password;index"`
 	OIDCGroups  SliceString `json:"oidc_groups,omitempty" gorm:"type:text"`
-	LastLoginAt *time.Time  `json:"lastLoginAt,omitempty" gorm:"type:timestamp"`
+	LastLoginAt *time.Time  `json:"lastLoginAt,omitempty" gorm:"type:timestamp;index"`
 	Enabled     bool        `json:"enabled" gorm:"type:boolean;default:true"`
 	Sub         string      `json:"sub,omitempty" gorm:"type:varchar(255);index"`
 
@@ -105,16 +105,60 @@ func GetUserByUsername(username string) (*User, error) {
 }
 
 // ListUsers returns users with pagination. If limit is 0, defaults to 20.
-func ListUsers(limit int, offset int) (users []User, total int64, err error) {
+func ListUsers(limit int, offset int, search string, sortBy string, sortOrder string, role string) (users []User, total int64, err error) {
 	if limit <= 0 {
 		limit = 20
 	}
-	err = DB.Model(&User{}).Count(&total).Error
-	if err != nil {
-		return
+	query := DB.Model(&User{}).Where("users.provider != ?", common.APIKeyProvider)
+	if role != "" {
+		query = query.Joins(
+			"JOIN role_assignments ra ON ra.subject = users.username AND ra.subject_type = ?",
+			SubjectTypeUser,
+		).Joins("JOIN roles r ON r.id = ra.role_id").Where("r.name = ?", role)
 	}
-	err = DB.Order("id desc").Where("provider != ?", common.APIKeyProvider).Limit(limit).Offset(offset).Find(&users).Error
-	return
+	if search != "" {
+		likeQuery := "%" + search + "%"
+		query = query.Where(
+			"users.username LIKE ? OR users.name LIKE ?",
+			likeQuery,
+			likeQuery,
+		)
+	}
+	countQuery := query.Select("users.id").Distinct("users.id")
+	err = DB.Table("(?) as sub", countQuery).Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "desc"
+	}
+	allowedSorts := map[string]string{
+		"id":          "users.id",
+		"createdAt":   "users.created_at",
+		"lastLoginAt": "users.last_login_at",
+	}
+	sortColumn, ok := allowedSorts[sortBy]
+	if !ok {
+		sortColumn = "users.id"
+	}
+	orderExpr := fmt.Sprintf("%s %s", sortColumn, sortOrder)
+	if sortColumn == "users.last_login_at" {
+		orderExpr = fmt.Sprintf("users.last_login_at IS NULL, users.last_login_at %s", sortOrder)
+	}
+	idsQuery := query.
+		Select("users.id").
+		Distinct("users.id").
+		Order(orderExpr).
+		Limit(limit).
+		Offset(offset)
+	err = DB.
+		Where("id IN (?)", idsQuery).
+		Order(orderExpr).
+		Find(&users).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	return users, total, nil
 }
 
 func LoginUser(u *User) error {
