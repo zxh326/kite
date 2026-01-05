@@ -215,7 +215,9 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
           const title = item.titleKey
             ? t(item.titleKey, { defaultValue: item.titleKey })
             : item.id
-          const Icon = getIconComponent(item.icon) as ComponentType<{ className?: string | undefined; }>
+          const Icon = getIconComponent(item.icon) as ComponentType<{
+            className?: string | undefined
+          }>
           const searchTerms = [title, groupLabel, item.url, item.titleKey]
             .filter(Boolean)
             .join(' ')

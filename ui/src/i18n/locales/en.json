@@ -108,7 +108,13 @@
     "node": "Node",
     "containerDetails": "Container Details",
     "logs": "Logs",
-    "terminal": "Terminal"
+    "terminal": "Terminal",
+    "resizeResources": "Resize Resources",
+    "resizeResourcesTitle": "Resize Pod Resources",
+    "resizeResourcesDescription": "Adjust container CPU and memory requests/limits in-place.",
+    "resizeResourcesSuccess": "Pod resource resize submitted",
+    "container": "Container",
+    "selectContainer": "Select a container"
   },
   "deployments": {
     "title": "Deployments",

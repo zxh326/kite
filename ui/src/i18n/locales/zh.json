@@ -126,7 +126,13 @@
     "node": "节点",
     "containerDetails": "容器详情",
     "logs": "日志",
-    "terminal": "终端"
+    "terminal": "终端",
+    "resizeResources": "调整资源",
+    "resizeResourcesTitle": "调整 Pod 资源",
+    "resizeResourcesDescription": "原地调整容器 CPU 和内存的请求与限制。",
+    "resizeResourcesSuccess": "Pod 资源调整已提交",
+    "container": "容器",
+    "selectContainer": "选择容器"
   },
   "deployments": {
     "title": "部署",

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Pod } from 'kubernetes-types/core/v1'
 
 import {
   APIKey,
@@ -228,6 +229,15 @@ export const updateResource = async <T extends ResourceType>(
 ): Promise<void> => {
   const endpoint = `/${resource}/${namespace || '_all'}/${name}`
   await apiClient.put(`${endpoint}`, body)
+}
+
+export const resizePod = async (
+  namespace: string,
+  name: string,
+  body: Partial<Pod>
+): Promise<void> => {
+  const endpoint = `/pods/${namespace || '_all'}/${name}/resize`
+  await apiClient.patch(`${endpoint}`, body)
 }
 
 type DeepPartial<T> = T extends object
