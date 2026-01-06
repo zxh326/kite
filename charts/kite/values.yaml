@@ -13,6 +13,18 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag:
 
+# This will set the deployment strategy. More information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+#
+# IMPORTANT: If persistence is enabled and using SQLite with a
+# ReadWriteOnce PersistentVolumeClaim, you MUST set this to "Recreate".
+# Using "RollingUpdate" will cause pod conflicts during upgrades because multiple
+# pods cannot mount the same RWO volume simultaneously.
+deploymentStrategy:
+  type: RollingUpdate
+  # rollingUpdate:
+  #   maxSurge: 25%
+  #   maxUnavailable: 25%
+
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
 # This is to override the chart name.
