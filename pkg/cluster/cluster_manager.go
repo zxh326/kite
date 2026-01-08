@@ -133,6 +133,13 @@ func createK8sProxyTransport(k8sConfig *rest.Config, prometheusURL string) (*k8s
 		scheme:       parsedURL.Scheme,
 	}
 	transportWrapper.port = parsedURL.Port()
+	if transportWrapper.port == "" {
+		if parsedURL.Scheme == "https" {
+			transportWrapper.port = "443"
+		} else {
+			transportWrapper.port = "80"
+		}
+	}
 
 	return transportWrapper, nil
 }
