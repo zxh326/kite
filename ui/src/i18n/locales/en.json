@@ -447,6 +447,7 @@
     "update": "Update",
     "delete": "Delete",
     "apply": "Apply",
+    "patch": "Patch",
     "success": "Success",
     "failed": "Failed",
     "previousVsModified": "Previous vs Modified",
