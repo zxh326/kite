@@ -110,6 +110,7 @@ func setupAPIRouter(r *gin.RouterGroup, cm *cluster.ClusterManager) {
 	adminAPI.POST("/clusters/import", cm.ImportClustersFromKubeconfig)
 	adminAPI.Use(authHandler.RequireAuth(), authHandler.RequireAdmin())
 	{
+		adminAPI.GET("/audit-logs", handlers.ListAuditLogs)
 		oauthProviderAPI := adminAPI.Group("/oauth-providers")
 		{
 			oauthProviderAPI.GET("/", authHandler.ListOAuthProviders)

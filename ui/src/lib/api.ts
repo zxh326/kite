@@ -6,6 +6,7 @@ import { Pod } from 'kubernetes-types/core/v1'
 
 import {
   APIKey,
+  AuditLogResponse,
   Cluster,
   FetchUserListResponse,
   ImageTagInfo,
@@ -1605,6 +1606,85 @@ export const useUserList = (
   return useQuery<FetchUserListResponse, Error>({
     queryKey: ['user-list', page, size, search, sortBy, sortOrder, role],
     queryFn: () => fetchUserList(page, size, search, sortBy, sortOrder, role),
+    staleTime: 20000,
+  })
+}
+
+export const fetchAuditLogs = async (
+  page = 1,
+  size = 20,
+  operatorId?: number,
+  search?: string,
+  operation?: string,
+  cluster?: string,
+  resourceType?: string,
+  resourceName?: string,
+  namespace?: string
+): Promise<AuditLogResponse> => {
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+  })
+  if (operatorId) {
+    params.set('operatorId', String(operatorId))
+  }
+  if (search) {
+    params.set('search', search)
+  }
+  if (operation) {
+    params.set('operation', operation)
+  }
+  if (cluster) {
+    params.set('cluster', cluster)
+  }
+  if (resourceType) {
+    params.set('resourceType', resourceType)
+  }
+  if (resourceName) {
+    params.set('resourceName', resourceName)
+  }
+  if (namespace) {
+    params.set('namespace', namespace)
+  }
+  return fetchAPI<AuditLogResponse>(`/admin/audit-logs?${params.toString()}`)
+}
+
+export const useAuditLogs = (
+  page = 1,
+  size = 20,
+  operatorId?: number,
+  search?: string,
+  operation?: string,
+  cluster?: string,
+  resourceType?: string,
+  resourceName?: string,
+  namespace?: string
+) => {
+  return useQuery<AuditLogResponse, Error>({
+    queryKey: [
+      'audit-logs',
+      page,
+      size,
+      operatorId,
+      search,
+      operation,
+      cluster,
+      resourceType,
+      resourceName,
+      namespace,
+    ],
+    queryFn: () =>
+      fetchAuditLogs(
+        page,
+        size,
+        operatorId,
+        search,
+        operation,
+        cluster,
+        resourceType,
+        resourceName,
+        namespace
+      ),
     staleTime: 20000,
   })
 }

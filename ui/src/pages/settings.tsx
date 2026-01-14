@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { usePageTitle } from '@/hooks/use-page-title'
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { APIKeyManagement } from '@/components/settings/apikey-management'
+import { AuditLog } from '@/components/settings/audit-log'
 import { ClusterManagement } from '@/components/settings/cluster-management'
 import { OAuthProviderManagement } from '@/components/settings/oauth-provider-management'
 import { RBACManagement } from '@/components/settings/rbac-management'
@@ -56,6 +57,11 @@ export function SettingsPage() {
             value: 'templates',
             label: t('settings.tabs.templates', 'Templates'),
             content: <TemplateManagement />,
+          },
+          {
+            value: 'audit',
+            label: t('settings.tabs.audit', 'Audit'),
+            content: <AuditLog />,
           },
         ]}
       />
