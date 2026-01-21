@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ColumnDef,
   ColumnFiltersState,
-  flexRender,
   getCoreRowModel,
   getFacetedRowModel,
   getFacetedUniqueValues,
@@ -58,17 +57,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 
 import { ConnectionIndicator } from './connection-indicator'
 import { ErrorMessage } from './error-message'
+import { ResourceTableView } from './resource-table-view'
 import { NamespaceSelector } from './selector/namespace-selector'
 
 export interface ResourceTableProps<T> {
@@ -520,39 +512,7 @@ export function ResourceTable<T>({
     return null
   }
 
-  // Only render visible rows in the viewport for better performance
-  const renderRows = () => {
-    // Get the current rows from the pagination model
-    const rows = table.getRowModel().rows
-
-    if (rows.length === 0) {
-      return (
-        <TableRow>
-          <TableCell
-            colSpan={enhancedColumns.length}
-            className="h-24 text-center"
-          >
-            No results.
-          </TableCell>
-        </TableRow>
-      )
-    }
-
-    return rows.map((row) => (
-      <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-        {row.getVisibleCells().map((cell, index) => (
-          <TableCell
-            key={cell.id}
-            className={`align-middle ${index <= 1 ? 'text-left' : 'text-center'}`}
-          >
-            {cell.column.columnDef.cell
-              ? flexRender(cell.column.columnDef.cell, cell.getContext())
-              : String(cell.getValue() || '-')}
-          </TableCell>
-        ))}
-      </TableRow>
-    ))
-  }
+  const emptyState = renderEmptyState()
 
   return (
     <div className="flex flex-col gap-3">
@@ -671,11 +631,16 @@ export function ResourceTable<T>({
                       </SelectItem>
                       {Array.from(uniqueValues.keys())
                         .sort()
-                        .map((value) => (
-                          <SelectItem key={String(value)} value={String(value)}>
-                            {String(value)} ({uniqueValues.get(value)})
-                          </SelectItem>
-                        ))}
+                        .map((value) =>
+                          value ? (
+                            <SelectItem
+                              key={String(value)}
+                              value={String(value)}
+                            >
+                              {String(value)} ({uniqueValues.get(value)})
+                            </SelectItem>
+                          ) : null
+                        )}
                     </SelectContent>
                   </Select>
                 )
@@ -759,137 +724,19 @@ export function ResourceTable<T>({
         </div>
       </div>
 
-      {/* Table card */}
-      <div className="rounded-lg border overflow-hidden">
-        <div
-          className={`transition-opacity duration-200 ${
-            isLoading && data && (data as T[]).length > 0
-              ? 'opacity-75'
-              : 'opacity-100'
-          }`}
-        >
-          {renderEmptyState() || (
-            <div className="relative max-h-[calc(100vh-210px)] overflow-auto scrollbar-hide">
-              <Table>
-                <TableHeader className="bg-muted">
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header, index) => (
-                        <TableHead
-                          key={header.id}
-                          className={index <= 1 ? 'text-left' : 'text-center'}
-                        >
-                          {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                            <Button
-                              variant="ghost"
-                              onClick={header.column.getToggleSortingHandler()}
-                              className={
-                                header.column.getIsSorted()
-                                  ? 'text-primary'
-                                  : ''
-                              }
-                            >
-                              {flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                              {header.column.getIsSorted() && (
-                                <span className="ml-2">
-                                  {header.column.getIsSorted() === 'asc'
-                                    ? '↑'
-                                    : '↓'}
-                                </span>
-                              )}
-                            </Button>
-                          ) : (
-                            flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )
-                          )}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody className="**:data-[slot=table-cell]:first:w-0">
-                  {renderRows()}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Pagination with memoized calculations */}
-      {data && (data as T[]).length > 0 && (
-        <div className="flex items-center justify-between px-2 py-1">
-          <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-            {hasActiveFilters ? (
-              <>
-                Showing {filteredRowCount} of {totalRowCount} row(s)
-                {searchQuery && (
-                  <span className="ml-1">(filtered by "{searchQuery}")</span>
-                )}
-              </>
-            ) : (
-              `${totalRowCount} row(s) total.`
-            )}
-          </div>
-          <div className="flex w-full items-center gap-4 lg:w-fit">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Rows per page:
-              </span>
-              <Select
-                value={pagination.pageSize.toString()}
-                onValueChange={(value) => {
-                  setPagination((prev) => ({
-                    ...prev,
-                    pageSize: Number(value),
-                    pageIndex: 0,
-                  }))
-                }}
-              >
-                <SelectTrigger size="sm" className="w-20" id="rows-per-page">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[10, 20, 50, 100].map((pageSize) => (
-                    <SelectItem key={pageSize} value={`${pageSize}`}>
-                      {pageSize}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value={`${data.length}`}>All</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex w-fit items-center justify-center text-sm font-medium">
-              Page {pagination.pageIndex + 1} of {table.getPageCount() || 1}
-            </div>
-            <div className="ml-auto flex items-center gap-2 lg:ml-0">
-              <Button
-                variant="outline"
-                className="size-8"
-                size="icon"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <span className="sr-only">Go to previous page</span>←
-              </Button>
-              <Button
-                variant="outline"
-                className="size-8"
-                size="icon"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                <span className="sr-only">Go to next page</span>→
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ResourceTableView
+        table={table}
+        columnCount={enhancedColumns.length}
+        isLoading={isLoading}
+        data={data as T[] | undefined}
+        emptyState={emptyState}
+        hasActiveFilters={hasActiveFilters}
+        filteredRowCount={filteredRowCount}
+        totalRowCount={totalRowCount}
+        searchQuery={searchQuery}
+        pagination={pagination}
+        setPagination={setPagination}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

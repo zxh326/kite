@@ -13,6 +13,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"k8s.io/klog/v2"
 )
 
 var (
@@ -29,12 +30,15 @@ type Model struct {
 
 func InitDB() {
 	dsn := common.DBDSN
-
+	level := logger.Silent
+	if klog.V(2).Enabled() {
+		level = logger.Info
+	}
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
 		logger.Config{
 			SlowThreshold: time.Second,
-			LogLevel:      logger.Silent,
+			LogLevel:      level,
 			Colorful:      false,
 		},
 	)

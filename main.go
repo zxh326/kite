@@ -110,6 +110,7 @@ func setupAPIRouter(r *gin.RouterGroup, cm *cluster.ClusterManager) {
 	adminAPI.POST("/clusters/import", cm.ImportClustersFromKubeconfig)
 	adminAPI.Use(authHandler.RequireAuth(), authHandler.RequireAdmin())
 	{
+		adminAPI.GET("/audit-logs", handlers.ListAuditLogs)
 		oauthProviderAPI := adminAPI.Group("/oauth-providers")
 		{
 			oauthProviderAPI.GET("/", authHandler.ListOAuthProviders)
@@ -208,7 +209,11 @@ func main() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
 	common.LoadEnvs()
-	gin.SetMode(gin.ReleaseMode)
+	if klog.V(1).Enabled() {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
 	r := gin.New()
 	r.Use(middleware.Metrics())
 	if !common.DisableGZIP {

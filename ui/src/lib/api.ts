@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Pod } from 'kubernetes-types/core/v1'
 
 import {
   APIKey,
+  AuditLogResponse,
   Cluster,
   FetchUserListResponse,
   ImageTagInfo,
@@ -228,6 +230,15 @@ export const updateResource = async <T extends ResourceType>(
 ): Promise<void> => {
   const endpoint = `/${resource}/${namespace || '_all'}/${name}`
   await apiClient.put(`${endpoint}`, body)
+}
+
+export const resizePod = async (
+  namespace: string,
+  name: string,
+  body: Partial<Pod>
+): Promise<void> => {
+  const endpoint = `/pods/${namespace || '_all'}/${name}/resize`
+  await apiClient.patch(`${endpoint}`, body)
 }
 
 type DeepPartial<T> = T extends object
@@ -1530,9 +1541,28 @@ export const unassignRole = async (
 
 export const fetchUserList = async (
   page = 1,
-  size = 20
+  size = 20,
+  search = '',
+  sortBy = '',
+  sortOrder = '',
+  role = ''
 ): Promise<FetchUserListResponse> => {
-  const params = new URLSearchParams({ page: String(page), size: String(size) })
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+  })
+  if (search) {
+    params.set('search', search)
+  }
+  if (sortBy) {
+    params.set('sortBy', sortBy)
+  }
+  if (sortOrder) {
+    params.set('sortOrder', sortOrder)
+  }
+  if (role) {
+    params.set('role', role)
+  }
   return fetchAPI<FetchUserListResponse>(`/admin/users/?${params.toString()}`)
 }
 
@@ -1565,10 +1595,96 @@ export const setUserEnabled = async (id: number, enabled: boolean) => {
   })
 }
 
-export const useUserList = (page = 1, size = 20) => {
-  return useQuery({
-    queryKey: ['user-list', page, size],
-    queryFn: () => fetchUserList(page, size),
+export const useUserList = (
+  page = 1,
+  size = 20,
+  search = '',
+  sortBy = '',
+  sortOrder = '',
+  role = ''
+) => {
+  return useQuery<FetchUserListResponse, Error>({
+    queryKey: ['user-list', page, size, search, sortBy, sortOrder, role],
+    queryFn: () => fetchUserList(page, size, search, sortBy, sortOrder, role),
+    staleTime: 20000,
+  })
+}
+
+export const fetchAuditLogs = async (
+  page = 1,
+  size = 20,
+  operatorId?: number,
+  search?: string,
+  operation?: string,
+  cluster?: string,
+  resourceType?: string,
+  resourceName?: string,
+  namespace?: string
+): Promise<AuditLogResponse> => {
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+  })
+  if (operatorId) {
+    params.set('operatorId', String(operatorId))
+  }
+  if (search) {
+    params.set('search', search)
+  }
+  if (operation) {
+    params.set('operation', operation)
+  }
+  if (cluster) {
+    params.set('cluster', cluster)
+  }
+  if (resourceType) {
+    params.set('resourceType', resourceType)
+  }
+  if (resourceName) {
+    params.set('resourceName', resourceName)
+  }
+  if (namespace) {
+    params.set('namespace', namespace)
+  }
+  return fetchAPI<AuditLogResponse>(`/admin/audit-logs?${params.toString()}`)
+}
+
+export const useAuditLogs = (
+  page = 1,
+  size = 20,
+  operatorId?: number,
+  search?: string,
+  operation?: string,
+  cluster?: string,
+  resourceType?: string,
+  resourceName?: string,
+  namespace?: string
+) => {
+  return useQuery<AuditLogResponse, Error>({
+    queryKey: [
+      'audit-logs',
+      page,
+      size,
+      operatorId,
+      search,
+      operation,
+      cluster,
+      resourceType,
+      resourceName,
+      namespace,
+    ],
+    queryFn: () =>
+      fetchAuditLogs(
+        page,
+        size,
+        operatorId,
+        search,
+        operation,
+        cluster,
+        resourceType,
+        resourceName,
+        namespace
+      ),
     staleTime: 20000,
   })
 }

@@ -2,6 +2,7 @@ package resources
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"mime"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	semver "github.com/blang/semver/v4"
 	"github.com/gin-gonic/gin"
 	"github.com/samber/lo"
 	"github.com/zxh326/kite/pkg/cluster"
@@ -19,6 +21,8 @@ import (
 	"github.com/zxh326/kite/pkg/rbac"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/klog/v2"
 	metricsv1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
@@ -173,10 +177,84 @@ func (h *PodHandler) List(c *gin.Context) {
 	c.JSON(200, result)
 }
 
+func (h *PodHandler) Resize(c *gin.Context) {
+	cs := c.MustGet("cluster").(*cluster.ClientSet)
+	if !isPodResizeSupported(cs.Version) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "pod resize requires kubernetes >= 1.35.0"})
+		return
+	}
+
+	patchBytes, err := c.GetRawData()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read patch data"})
+		return
+	}
+
+	name := c.Param("name")
+	namespace := c.Param("namespace")
+	oldPod := &corev1.Pod{}
+	namespacedName := types.NamespacedName{Name: name}
+	if namespace != "" && namespace != "_all" {
+		namespacedName.Namespace = namespace
+	}
+	if err := cs.K8sClient.Get(c.Request.Context(), namespacedName, oldPod); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var updatedPod *corev1.Pod
+
+	originalBytes, err := json.Marshal(oldPod)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	patchedBytes, err := strategicpatch.StrategicMergePatch(originalBytes, patchBytes, &corev1.Pod{})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	updatedPod = &corev1.Pod{}
+	if err := json.Unmarshal(patchedBytes, updatedPod); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	resizedPod, err := cs.K8sClient.ClientSet.CoreV1().Pods(updatedPod.Namespace).UpdateResize(
+		c.Request.Context(),
+		updatedPod.Name,
+		updatedPod,
+		metav1.UpdateOptions{},
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, resizedPod)
+}
+
+func isPodResizeSupported(version string) bool {
+	parsed, err := parseKubeSemver(version)
+	if err != nil {
+		return false
+	}
+	return parsed.GTE(semver.MustParse("1.35.0"))
+}
+
+func parseKubeSemver(version string) (semver.Version, error) {
+	trimmed := strings.TrimSpace(version)
+	trimmed = strings.TrimPrefix(trimmed, "v")
+	if trimmed == "" {
+		return semver.Version{}, errors.New("empty version")
+	}
+	return semver.Parse(trimmed)
+}
+
 // registerCustomRoutes adds pod-specific extra routes (SSE watch)
 func (h *PodHandler) registerCustomRoutes(group *gin.RouterGroup) {
 	// watch pods in namespace (or _all)
 	group.GET("/:namespace/watch", h.Watch)
+	group.PATCH("/:namespace/:name/resize", h.Resize)
 	filesGroup := group.Group("/:namespace/:name/files")
 	filesGroup.Use(func(c *gin.Context) {
 		user := c.MustGet("user").(model.User)

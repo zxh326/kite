@@ -440,6 +440,13 @@ export interface ResourceHistoryResponse {
     hasPrevPage: boolean
   }
 }
+
+export interface AuditLogResponse {
+  data: ResourceHistory[]
+  total: number
+  page: number
+  size: number
+}
 export interface ResourceTemplate {
   ID: number
   name: string

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ComponentType, useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { useSidebarConfig } from '@/contexts/sidebar-config-context'
 import {
@@ -215,7 +215,9 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
           const title = item.titleKey
             ? t(item.titleKey, { defaultValue: item.titleKey })
             : item.id
-          const Icon = getIconComponent(item.icon)
+          const Icon = getIconComponent(item.icon) as ComponentType<{
+            className?: string | undefined
+          }>
           const searchTerms = [title, groupLabel, item.url, item.titleKey]
             .filter(Boolean)
             .join(' ')
