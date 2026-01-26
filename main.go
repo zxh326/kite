@@ -47,7 +47,10 @@ func setupStatic(r *gin.Engine) {
 	if err != nil {
 		panic(err)
 	}
-	r.StaticFS(base+"/assets", http.FS(assertsFS))
+	// Apply cache control middleware for static assets
+	assetsGroup := r.Group(base + "/assets")
+	assetsGroup.Use(middleware.StaticCache())
+	assetsGroup.StaticFS("/", http.FS(assertsFS))
 	r.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path
 		if len(path) >= len(base)+5 && path[len(base):len(base)+5] == "/api/" {
