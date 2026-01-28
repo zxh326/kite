@@ -13,8 +13,9 @@ import {
 interface Column<T> {
   header: string
   accessor: (item: T) => unknown
-  cell: (value: unknown) => React.ReactNode
+  cell: (value: unknown, item?: T) => React.ReactNode
   align?: 'left' | 'center' | 'right'
+  sortable?: boolean
 }
 
 interface SimpleTableProps<T> {
@@ -29,6 +30,8 @@ interface SimpleTableProps<T> {
     onPageChange?: (page: number) => void
   }
 }
+
+type SortDirection = 'asc' | 'desc' | null
 
 export function SimpleTable<T>({
   data,
@@ -45,6 +48,9 @@ export function SimpleTable<T>({
   const setCurrentPage = isControlled
     ? pagination!.onPageChange!
     : setUncontrolledPage
+  
+  const [sortColumn, setSortColumn] = useState<number | null>(null)
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null)
 
   const paginationConfig = useMemo(
     () => ({
@@ -55,21 +61,53 @@ export function SimpleTable<T>({
     [pagination]
   )
 
+  const sortedData = useMemo(() => {
+    if (sortColumn === null || sortDirection === null) {
+      return data
+    }
+
+    const column = columns[sortColumn]
+    if (!column || !column.sortable) {
+      return data
+    }
+
+    const sorted = [...data].sort((a, b) => {
+      const aValue = column.accessor(a)
+      const bValue = column.accessor(b)
+
+      if (aValue == null && bValue == null) return 0
+      if (aValue == null) return 1
+      if (bValue == null) return -1
+
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue
+      }
+
+      const aStr = String(aValue).toLowerCase()
+      const bStr = String(bValue).toLowerCase()
+      if (aStr < bStr) return sortDirection === 'asc' ? -1 : 1
+      if (aStr > bStr) return sortDirection === 'asc' ? 1 : -1
+      return 0
+    })
+
+    return sorted
+  }, [data, sortColumn, sortDirection, columns])
+
   const { paginatedData, totalPages, startIndex, endIndex } = useMemo(() => {
     if (!paginationConfig.enabled) {
       return {
-        paginatedData: data,
+        paginatedData: sortedData,
         totalPages: 1,
         startIndex: 1,
-        endIndex: data.length,
+        endIndex: sortedData.length,
       }
     }
 
     const { pageSize } = paginationConfig
-    const totalPages = Math.ceil(data.length / pageSize)
+    const totalPages = Math.ceil(sortedData.length / pageSize)
     const startIndex = (currentPage - 1) * pageSize
-    const endIndex = Math.min(startIndex + pageSize, data.length)
-    const paginatedData = data.slice(startIndex, endIndex)
+    const endIndex = Math.min(startIndex + pageSize, sortedData.length)
+    const paginatedData = sortedData.slice(startIndex, endIndex)
 
     return {
       paginatedData,
@@ -77,7 +115,7 @@ export function SimpleTable<T>({
       startIndex: startIndex + 1,
       endIndex,
     }
-  }, [data, currentPage, paginationConfig])
+  }, [sortedData, currentPage, paginationConfig])
 
   const handlePreviousPage = () => {
     if (isControlled) {
@@ -98,25 +136,66 @@ export function SimpleTable<T>({
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
   }
+
+  const handleSort = (columnIndex: number) => {
+    const column = columns[columnIndex]
+    if (!column || !column.sortable) {
+      return
+    }
+
+    if (sortColumn === columnIndex) {
+      if (sortDirection === 'asc') {
+        setSortDirection('desc')
+        setCurrentPage(1)
+      } else if (sortDirection === 'desc') {
+        setSortDirection(null)
+        setSortColumn(null)
+        setCurrentPage(1)
+      }
+    } else {
+      setSortColumn(columnIndex)
+      setSortDirection('asc')
+      setCurrentPage(1)
+    }
+  }
   return (
     <div className="space-y-4">
       <Table>
         <TableHeader>
           <TableRow>
-            {columns.map((column, index) => (
-              <TableHead
-                key={index}
-                className={
-                  column.align === 'left'
-                    ? 'text-left'
-                    : column.align === 'right'
-                      ? 'text-right'
-                      : 'text-center'
-                }
-              >
-                {column.header}
-              </TableHead>
-            ))}
+            {columns.map((column, index) => {
+              const isSortable = column.sortable ?? false
+              const isSorted = sortColumn === index
+              const isAsc = isSorted && sortDirection === 'asc'
+              const isDesc = isSorted && sortDirection === 'desc'
+
+              return (
+                <TableHead
+                  key={index}
+                  className={
+                    column.align === 'left'
+                      ? 'text-left'
+                      : column.align === 'right'
+                        ? 'text-right'
+                        : 'text-center'
+                  }
+                >
+                  {isSortable ? (
+                    <button
+                      onClick={() => handleSort(index)}
+                      className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer"
+                    >
+                      <span>{column.header}</span>
+                      <span className="text-muted-foreground">
+                        {isAsc ? '↑' : isDesc ? '↓' : '⇅'}
+                      </span>
+                    </button>
+                  ) : (
+                    column.header
+                  )}
+                </TableHead>
+              )
+            })}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -143,7 +222,7 @@ export function SimpleTable<T>({
                           : 'text-center'
                     }
                   >
-                    {column.cell(column.accessor(item))}
+                    {column.cell(column.accessor(item), item)}
                   </TableCell>
                 ))}
               </TableRow>
@@ -152,11 +231,11 @@ export function SimpleTable<T>({
         </TableBody>
       </Table>
 
-      {paginationConfig.enabled && data.length > 0 && (
+      {paginationConfig.enabled && sortedData.length > 0 && (
         <div className="flex items-center justify-between">
           {paginationConfig.showPageInfo && (
             <div className="text-sm text-muted-foreground">
-              Showing {startIndex} - {endIndex} of {data.length} entries
+              Showing {startIndex} - {endIndex} of {sortedData.length} entries
             </div>
           )}
 
@@ -173,7 +252,6 @@ export function SimpleTable<T>({
             <div className="flex items-center space-x-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1)
                 .filter((page) => {
-                  // Show current page ±2 pages, plus first and last page
                   return (
                     page === 1 ||
                     page === totalPages ||
