@@ -7,9 +7,9 @@
   font-display: swap;
   font-weight: 400;
   src:
-    url('../assets/fonts/maple-mono-latin-400-normal.woff2')
+    url('@/assets/fonts/maple-mono-latin-400-normal.woff2')
       format('woff2'),
-    url('../assets/fonts/maple-mono-latin-400-normal.woff')
+    url('@/assets/fonts/maple-mono-latin-400-normal.woff')
       format('woff');
 }
 
@@ -19,7 +19,7 @@
   font-style: normal;
   font-display: auto;
   font-weight: 100 800;
-  src: url('../assets/fonts/jetbrains-mono-latin-wght-normal.woff2')
+  src: url('@/assets/fonts/jetbrains-mono-latin-wght-normal.woff2')
     format('woff2-variations');
   unicode-range:
     U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
