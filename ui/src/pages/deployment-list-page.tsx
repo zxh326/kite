@@ -1,15 +1,85 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Deployment } from 'kubernetes-types/apps/v1'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 
+import { scaleDeployment } from '@/lib/api'
 import { getDeploymentStatus } from '@/lib/k8s'
-import { formatDate } from '@/lib/utils'
+import { formatDate, translateError } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { DeploymentStatusIcon } from '@/components/deployment-status-icon'
 import { DeploymentCreateDialog } from '@/components/editors/deployment-create-dialog'
 import { ResourceTable } from '@/components/resource-table'
+
+function DeploymentScaleCell({ deployment }: { deployment: Deployment }) {
+  const { t } = useTranslation()
+  const [replicas, setReplicas] = useState<number>(
+    deployment.spec?.replicas ?? deployment.status?.replicas ?? 0
+  )
+  const [isScaling, setIsScaling] = useState(false)
+
+  useEffect(() => {
+    setReplicas(deployment.spec?.replicas ?? deployment.status?.replicas ?? 0)
+  }, [deployment.spec?.replicas, deployment.status?.replicas])
+
+  const namespace = deployment.metadata?.namespace
+  const name = deployment.metadata?.name
+  const canScale = Boolean(namespace && name)
+
+  const handleScale = useCallback(
+    async (nextReplicas: number) => {
+      if (!canScale || nextReplicas < 0) return
+      setIsScaling(true)
+      try {
+        await scaleDeployment(namespace!, name!, nextReplicas)
+        setReplicas(nextReplicas)
+        toast.success(
+          t('detail.status.scaledTo', {
+            resource: 'Deployment',
+            replicas: nextReplicas,
+          })
+        )
+      } catch (error) {
+        console.error('Failed to scale deployment:', error)
+        toast.error(translateError(error, t))
+      } finally {
+        setIsScaling(false)
+      }
+    },
+    [canScale, namespace, name, t]
+  )
+
+  if (!canScale) {
+    return <span className="text-muted-foreground text-sm">-</span>
+  }
+
+  return (
+    <div className="flex items-center justify-center gap-1">
+      <Button
+        variant="outline"
+        size="icon"
+        className="h-7 w-7"
+        onClick={() => handleScale(replicas - 1)}
+        disabled={isScaling || replicas <= 0}
+      >
+        -
+      </Button>
+      <span className="min-w-6 text-center text-sm">{replicas}</span>
+      <Button
+        variant="outline"
+        size="icon"
+        className="h-7 w-7"
+        onClick={() => handleScale(replicas + 1)}
+        disabled={isScaling}
+      >
+        +
+      </Button>
+    </div>
+  )
+}
 
 export function DeploymentListPage() {
   const { t } = useTranslation()
@@ -49,6 +119,12 @@ export function DeploymentListPage() {
             </div>
           )
         },
+      }),
+      columnHelper.display({
+        id: 'scale',
+        header: t('detail.buttons.scale'),
+        cell: ({ row }) => <DeploymentScaleCell deployment={row.original} />,
+        enableSorting: false,
       }),
       columnHelper.accessor('status.conditions', {
         header: t('common.status'),
