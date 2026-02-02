@@ -31,7 +31,7 @@ export function StatefulSetListPage() {
           </div>
         ),
       }),
-      columnHelper.accessor((row) => row.status, {
+      columnHelper.accessor((row) => row.status?.readyReplicas ?? 0, {
         id: 'ready',
         header: t('deployments.ready'),
         cell: ({ row }) => {
