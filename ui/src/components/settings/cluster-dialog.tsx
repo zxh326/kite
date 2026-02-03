@@ -48,6 +48,9 @@ export function ClusterDialog({
     enabled: true,
     isDefault: false,
     inCluster: false,
+    secret_name: '',
+    secret_namespace: '',
+    secret_key: '',
   })
 
   useEffect(() => {
@@ -60,6 +63,9 @@ export function ClusterDialog({
         enabled: cluster.enabled,
         isDefault: cluster.isDefault,
         inCluster: cluster.inCluster,
+        secret_name: cluster.secret_name || '',
+        secret_namespace: cluster.secret_namespace || '',
+        secret_key: cluster.secret_key || '',
       })
     }
   }, [cluster, open])
@@ -85,6 +91,9 @@ export function ClusterDialog({
       enabled: true,
       isDefault: false,
       inCluster: false,
+      secret_name: '',
+      secret_namespace: '',
+      secret_key: '',
     })
   }
 
@@ -177,16 +186,103 @@ export function ClusterDialog({
           </div>
 
           {!formData.inCluster && (
+            <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
+              <div className="space-y-2">
+                <Label className="text-base font-medium">
+                  {t('clusterManagement.form.secretRef.title', 'Kubernetes Secret Reference (Optional)')}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {t(
+                    'clusterManagement.form.secretRef.description',
+                    'Read kubeconfig from a Kubernetes secret instead of storing it in the database. Useful for dynamic configurations with GitOps.'
+                  )}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="secret-namespace">
+                    {t('clusterManagement.form.secretNamespace.label', 'Namespace')}
+                  </Label>
+                  <Input
+                    id="secret-namespace"
+                    value={formData.secret_namespace}
+                    onChange={(e) => handleChange('secret_namespace', e.target.value)}
+                    placeholder={t(
+                      'clusterManagement.form.secretNamespace.placeholder',
+                      'e.g., kite-system'
+                    )}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="secret-name">
+                    {t('clusterManagement.form.secretName.label', 'Secret Name')}
+                  </Label>
+                  <Input
+                    id="secret-name"
+                    value={formData.secret_name}
+                    onChange={(e) => handleChange('secret_name', e.target.value)}
+                    placeholder={t(
+                      'clusterManagement.form.secretName.placeholder',
+                      'e.g., kubeconfig-prod'
+                    )}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="secret-key">
+                    {t('clusterManagement.form.secretKey.label', 'Key')}
+                  </Label>
+                  <Input
+                    id="secret-key"
+                    value={formData.secret_key}
+                    onChange={(e) => handleChange('secret_key', e.target.value)}
+                    placeholder={t(
+                      'clusterManagement.form.secretKey.placeholder',
+                      'e.g., config'
+                    )}
+                  />
+                </div>
+              </div>
+
+              {formData.secret_name && formData.secret_namespace && formData.secret_key && (
+                <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    {t(
+                      'clusterManagement.form.secretRef.note',
+                      'Kubeconfig will be read from secret {namespace}/{name} key "{key}". The kubeconfig field below will be ignored.',
+                      {
+                        namespace: formData.secret_namespace,
+                        name: formData.secret_name,
+                        key: formData.secret_key,
+                      }
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!formData.inCluster && (
             <div className="space-y-2">
               <Label htmlFor="cluster-config">
                 {t('clusterManagement.form.config.label', 'Kubeconfig')}
-                {!isEditMode && ' *'}
+                {!isEditMode && !(formData.secret_name && formData.secret_namespace && formData.secret_key) && ' *'}
               </Label>
               {isEditMode && (
                 <p className="text-xs text-muted-foreground">
                   {t(
                     'clusterManagement.form.config.editNote',
                     'Leave empty to keep current configuration'
+                  )}
+                </p>
+              )}
+              {!isEditMode && (formData.secret_name || formData.secret_namespace || formData.secret_key) && (
+                <p className="text-xs text-muted-foreground">
+                  {t(
+                    'clusterManagement.form.config.secretNote',
+                    'Optional when using secret reference above'
                   )}
                 </p>
               )}
@@ -200,7 +296,7 @@ export function ClusterDialog({
                 )}
                 rows={8}
                 className="text-sm"
-                required={!isEditMode && !formData.inCluster}
+                required={!isEditMode && !formData.inCluster && !(formData.secret_name && formData.secret_namespace && formData.secret_key)}
               />
             </div>
           )}
@@ -284,7 +380,8 @@ export function ClusterDialog({
               type="submit"
               disabled={
                 !formData.name ||
-                (!isEditMode && !formData.inCluster && !formData.config)
+                (!isEditMode && !formData.inCluster && !formData.config &&
+                  !(formData.secret_name && formData.secret_namespace && formData.secret_key))
               }
             >
               {isEditMode

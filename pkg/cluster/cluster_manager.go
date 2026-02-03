@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -12,6 +13,8 @@ import (
 	"github.com/zxh326/kite/pkg/model"
 	"github.com/zxh326/kite/pkg/prometheus"
 	"gorm.io/gorm"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -27,6 +30,7 @@ type ClientSet struct {
 	DiscoveredPrometheusURL string
 	config                  string
 	prometheusURL           string
+	secretRef               string // Format: "namespace/name:key" to track secret reference
 }
 
 type ClusterManager struct {
@@ -45,6 +49,10 @@ func createClientSetInCluster(name, prometheusURL string) (*ClientSet, error) {
 }
 
 func createClientSetFromConfig(name, content, prometheusURL string) (*ClientSet, error) {
+	return createClientSetFromConfigWithSecretRef(name, content, prometheusURL, "")
+}
+
+func createClientSetFromConfigWithSecretRef(name, content, prometheusURL, secretRef string) (*ClientSet, error) {
 	restConfig, err := clientcmd.RESTConfigFromKubeConfig([]byte(content))
 	if err != nil {
 		klog.Warningf("Failed to create REST config for cluster %s: %v", name, err)
@@ -55,6 +63,7 @@ func createClientSetFromConfig(name, content, prometheusURL string) (*ClientSet,
 		return nil, err
 	}
 	cs.config = content
+	cs.secretRef = secretRef
 
 	return cs, nil
 }
@@ -142,6 +151,46 @@ func createK8sProxyTransport(k8sConfig *rest.Config, prometheusURL string) (*k8s
 	}
 
 	return transportWrapper, nil
+}
+
+// readKubeconfigFromSecret reads a kubeconfig from a Kubernetes secret.
+// It uses the in-cluster config to access the secret.
+func readKubeconfigFromSecret(secretName, secretNamespace, secretKey string) (string, error) {
+	if secretName == "" || secretNamespace == "" || secretKey == "" {
+		return "", fmt.Errorf("secret name, namespace and key are required")
+	}
+
+	klog.V(4).Infof("Attempting to read secret %s/%s key %s", secretNamespace, secretName, secretKey)
+
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return "", fmt.Errorf("failed to get in-cluster config: %w", err)
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return "", fmt.Errorf("failed to create kubernetes client: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	secret, err := clientset.CoreV1().Secrets(secretNamespace).Get(ctx, secretName, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to get secret %s/%s: %w", secretNamespace, secretName, err)
+	}
+
+	kubeconfigData, ok := secret.Data[secretKey]
+	if !ok {
+		return "", fmt.Errorf("key %s not found in secret %s/%s", secretKey, secretNamespace, secretName)
+	}
+
+	if len(kubeconfigData) == 0 {
+		return "", fmt.Errorf("kubeconfig data is empty in secret %s/%s key %s", secretNamespace, secretName, secretKey)
+	}
+
+	klog.V(4).Infof("Successfully read %d bytes from secret %s/%s key %s", len(kubeconfigData), secretNamespace, secretName, secretKey)
+	return string(kubeconfigData), nil
 }
 
 type k8sProxyTransport struct {
@@ -295,8 +344,29 @@ func shouldUpdateCluster(cs *ClientSet, cluster *model.Cluster) bool {
 		return true
 	}
 
-	// kubeconfig change
-	if cs.config != string(cluster.Config) {
+	// Check if secret reference changed
+	currentSecretRef := ""
+	if cluster.SecretName != "" && cluster.SecretNamespace != "" && cluster.SecretKey != "" {
+		currentSecretRef = fmt.Sprintf("%s/%s:%s", cluster.SecretNamespace, cluster.SecretName, cluster.SecretKey)
+	}
+	if cs.secretRef != currentSecretRef {
+		klog.Infof("Secret reference changed for cluster %s, updating from %s to %s", cluster.Name, cs.secretRef, currentSecretRef)
+		return true
+	}
+
+	// If using secret reference, check if the secret content changed
+	if currentSecretRef != "" {
+		kubeconfigContent, err := readKubeconfigFromSecret(cluster.SecretName, cluster.SecretNamespace, cluster.SecretKey)
+		if err != nil {
+			klog.Warningf("Failed to read kubeconfig from secret for cluster %s: %v", cluster.Name, err)
+		} else if cs.config != kubeconfigContent {
+			klog.Infof("Secret content changed for cluster %s, updating", cluster.Name)
+			return true
+		}
+	}
+
+	// kubeconfig change (for static config)
+	if currentSecretRef == "" && cs.config != string(cluster.Config) {
 		klog.Infof("Kubeconfig changed for cluster %s, updating", cluster.Name)
 		return true
 	}
@@ -325,6 +395,20 @@ func buildClientSet(cluster *model.Cluster) (*ClientSet, error) {
 	if cluster.InCluster {
 		return createClientSetInCluster(cluster.Name, cluster.PrometheusURL)
 	}
+
+	// If SecretRef is configured, read kubeconfig from the secret
+	if cluster.SecretName != "" && cluster.SecretNamespace != "" && cluster.SecretKey != "" {
+		secretRef := fmt.Sprintf("%s/%s:%s", cluster.SecretNamespace, cluster.SecretName, cluster.SecretKey)
+		klog.Infof("Reading kubeconfig for cluster %s from secret %s", cluster.Name, secretRef)
+
+		kubeconfigContent, err := readKubeconfigFromSecret(cluster.SecretName, cluster.SecretNamespace, cluster.SecretKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read kubeconfig from secret: %w", err)
+		}
+
+		return createClientSetFromConfigWithSecretRef(cluster.Name, kubeconfigContent, cluster.PrometheusURL, secretRef)
+	}
+
 	return createClientSetFromConfig(cluster.Name, string(cluster.Config), cluster.PrometheusURL)
 }
 

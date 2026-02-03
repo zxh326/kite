@@ -81,12 +81,15 @@ func (cm *ClusterManager) GetClusterList(c *gin.Context) {
 
 func (cm *ClusterManager) CreateCluster(c *gin.Context) {
 	var req struct {
-		Name          string `json:"name" binding:"required"`
-		Description   string `json:"description"`
-		Config        string `json:"config"`
-		PrometheusURL string `json:"prometheusURL"`
-		InCluster     bool   `json:"inCluster"`
-		IsDefault     bool   `json:"isDefault"`
+		Name            string `json:"name" binding:"required"`
+		Description     string `json:"description"`
+		Config          string `json:"config"`
+		PrometheusURL   string `json:"prometheusURL"`
+		InCluster       bool   `json:"inCluster"`
+		IsDefault       bool   `json:"isDefault"`
+		SecretName      string `json:"secret_name"`
+		SecretNamespace string `json:"secret_namespace"`
+		SecretKey       string `json:"secret_key"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -110,13 +113,16 @@ func (cm *ClusterManager) CreateCluster(c *gin.Context) {
 	}
 
 	cluster := &model.Cluster{
-		Name:          req.Name,
-		Description:   req.Description,
-		Config:        model.SecretString(req.Config),
-		PrometheusURL: req.PrometheusURL,
-		InCluster:     req.InCluster,
-		IsDefault:     req.IsDefault,
-		Enable:        true,
+		Name:            req.Name,
+		Description:     req.Description,
+		Config:          model.SecretString(req.Config),
+		PrometheusURL:   req.PrometheusURL,
+		InCluster:       req.InCluster,
+		IsDefault:       req.IsDefault,
+		Enable:          true,
+		SecretName:      req.SecretName,
+		SecretNamespace: req.SecretNamespace,
+		SecretKey:       req.SecretKey,
 	}
 
 	if err := model.AddCluster(cluster); err != nil {
@@ -141,13 +147,16 @@ func (cm *ClusterManager) UpdateCluster(c *gin.Context) {
 	}
 
 	var req struct {
-		Name          string `json:"name"`
-		Description   string `json:"description"`
-		Config        string `json:"config"`
-		PrometheusURL string `json:"prometheusURL"`
-		InCluster     bool   `json:"inCluster"`
-		IsDefault     bool   `json:"isDefault"`
-		Enabled       bool   `json:"enabled"`
+		Name            string `json:"name"`
+		Description     string `json:"description"`
+		Config          string `json:"config"`
+		PrometheusURL   string `json:"prometheusURL"`
+		InCluster       bool   `json:"inCluster"`
+		IsDefault       bool   `json:"isDefault"`
+		Enabled         bool   `json:"enabled"`
+		SecretName      string `json:"secret_name"`
+		SecretNamespace string `json:"secret_namespace"`
+		SecretKey       string `json:"secret_key"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -173,11 +182,14 @@ func (cm *ClusterManager) UpdateCluster(c *gin.Context) {
 	}
 
 	updates := map[string]interface{}{
-		"description":    req.Description,
-		"prometheus_url": req.PrometheusURL,
-		"in_cluster":     req.InCluster,
-		"is_default":     req.IsDefault,
-		"enable":         req.Enabled,
+		"description":      req.Description,
+		"prometheus_url":   req.PrometheusURL,
+		"in_cluster":       req.InCluster,
+		"is_default":       req.IsDefault,
+		"enable":           req.Enabled,
+		"secret_name":      req.SecretName,
+		"secret_namespace": req.SecretNamespace,
+		"secret_key":       req.SecretKey,
 	}
 
 	if req.Name != "" && req.Name != cluster.Name {

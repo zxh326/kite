@@ -1375,6 +1375,9 @@ export interface ClusterCreateRequest {
   prometheusURL?: string
   inCluster?: boolean
   isDefault?: boolean
+  secret_name?: string
+  secret_namespace?: string
+  secret_key?: string
 }
 
 export interface ClusterUpdateRequest extends ClusterCreateRequest {
