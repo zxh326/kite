@@ -339,6 +339,9 @@ export interface Cluster {
   updatedAt: string
   prometheusURL?: string
   error?: string
+  secret_name?: string
+  secret_namespace?: string
+  secret_key?: string
 }
 
 export interface OAuthProvider {

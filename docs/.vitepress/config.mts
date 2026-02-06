@@ -106,6 +106,7 @@ export default defineConfig({
             { text: "Resource History", link: "/guide/resource-history" },
             { text: "Custom Sidebar", link: "/guide/custom-sidebar" },
             { text: "Kube Proxy", link: "/guide/kube-proxy" },
+            { text: "Kubeconfig from Secret", link: "/guide/kubeconfig-from-secret" },
           ],
         },
         {
