@@ -132,17 +132,34 @@ export function ResourceTable<T>({
   })
   const [refreshInterval, setRefreshInterval] = useState(5000)
 
-  const [selectedNamespace, setSelectedNamespace] = useState<
-    string | undefined
-  >(() => {
-    // Try to get the stored namespace from localStorage
-    const storedNamespace = localStorage.getItem(
+  const [selectedNamespaces, setSelectedNamespaces] = useState<string[]>(() => {
+    const stored = localStorage.getItem(
+      localStorage.getItem('current-cluster') + 'selectedNamespaces'
+    )
+    if (clusterScope) {
+      return []
+    }
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        return Array.isArray(parsed) ? parsed : [parsed]
+      } catch {
+        return [stored]
+      }
+    }
+    const oldNamespace = localStorage.getItem(
       localStorage.getItem('current-cluster') + 'selectedNamespace'
     )
-    return clusterScope
-      ? undefined // No namespace for cluster scope
-      : storedNamespace || 'default' // Default to 'default' if not set
+    return oldNamespace ? [oldNamespace] : ['default']
   })
+
+  const apiNamespace = useMemo(() => {
+    if (selectedNamespaces.length === 0) return undefined
+    if (selectedNamespaces.length === 1 && selectedNamespaces[0] !== '_all') {
+      return selectedNamespaces[0]
+    }
+    return '_all'
+  }, [selectedNamespaces])
   const [useSSE, setUseSSE] = useState(false)
   const {
     isLoading: queryLoading,
@@ -152,7 +169,7 @@ export function ResourceTable<T>({
     refetch: queryRefetch,
   } = useResources(
     resourceType ?? (resourceName.toLowerCase() as ResourceType),
-    selectedNamespace,
+    apiNamespace,
     {
       refreshInterval: useSSE ? 0 : refreshInterval, // disable polling when SSE
       reduce: true, // Fetch reduced data for performance
@@ -171,7 +188,7 @@ export function ResourceTable<T>({
   } = useResourcesWatch(
     (resourceType ??
       (resourceName.toLowerCase() as ResourceType)) as ResourceType,
-    selectedNamespace,
+    apiNamespace,
     { reduce: true, enabled: useSSE }
   )
 
@@ -218,21 +235,19 @@ export function ResourceTable<T>({
     setPagination((prev) => ({ ...prev, pageIndex: 0 }))
   }, [columnFilters, searchQuery])
 
-  // Handle namespace change
   const handleNamespaceChange = useCallback(
-    (value: string) => {
-      if (setSelectedNamespace) {
-        localStorage.setItem(
-          localStorage.getItem('current-cluster') + 'selectedNamespace',
-          value
-        )
-        setSelectedNamespace(value)
-        // Reset pagination and search when changing namespace
-        setPagination({ pageIndex: 0, pageSize: pagination.pageSize })
-        setSearchQuery('')
-      }
+    (namespaces: string[]) => {
+      const currentCluster = localStorage.getItem('current-cluster')
+      localStorage.setItem(
+        currentCluster + 'selectedNamespaces',
+        JSON.stringify(namespaces)
+      )
+      localStorage.removeItem(currentCluster + 'selectedNamespace')
+      setSelectedNamespaces(namespaces)
+      setPagination({ pageIndex: 0, pageSize: pagination.pageSize })
+      setSearchQuery('')
     },
-    [setSelectedNamespace, pagination.pageSize]
+    [pagination.pageSize]
   )
 
   // Add namespace column when showing all namespaces
@@ -262,12 +277,10 @@ export function ResourceTable<T>({
 
     const baseColumns = [selectColumn, ...columns]
 
-    // Only add namespace column if not cluster scope, showing all namespaces,
-    // and there isn't already a namespace column in the provided columns
-    if (!clusterScope && selectedNamespace === '_all') {
-      // Check if namespace column already exists in the provided columns
+    const showMultipleNamespaces = selectedNamespaces.length > 1 || 
+      (selectedNamespaces.length === 1 && selectedNamespaces[0] === '_all')
+    if (!clusterScope && showMultipleNamespaces) {
       const hasNamespaceColumn = columns.some((col) => {
-        // Check if the column accesses namespace data
         if ('accessorKey' in col && col.accessorKey === 'metadata.namespace') {
           return true
         }
@@ -277,13 +290,11 @@ export function ResourceTable<T>({
         return false
       })
 
-      // Only add namespace column if it doesn't already exist
       if (!hasNamespaceColumn) {
         const namespaceColumn = {
           id: 'namespace',
           header: t('resourceTable.namespace'),
           accessorFn: (row: T) => {
-            // Try to get namespace from metadata.namespace
             const metadata = (row as { metadata?: { namespace?: string } })
               ?.metadata
             return metadata?.namespace || '-'
@@ -295,14 +306,13 @@ export function ResourceTable<T>({
           ),
         }
 
-        // Insert namespace column after select and first column (typically name)
         const columnsWithNamespace = [...baseColumns]
         columnsWithNamespace.splice(2, 0, namespaceColumn)
         return columnsWithNamespace
       }
     }
     return baseColumns
-  }, [columns, clusterScope, selectedNamespace, t])
+  }, [columns, clusterScope, selectedNamespaces, t])
 
   const data = useMemo(() => {
     if (useSSE) return watchData
@@ -315,7 +325,24 @@ export function ResourceTable<T>({
     : (queryError as unknown as Error | null)
   const refetch = useSSE ? reconnectSSE : queryRefetch
 
-  const memoizedData = useMemo(() => (data || []) as T[], [data])
+  const filteredData = useMemo(() => {
+    const allData = (data || []) as T[]
+    if (selectedNamespaces.length === 0) return allData
+    if (selectedNamespaces.length === 1 && selectedNamespaces[0] === '_all') {
+      return allData
+    }
+    if (selectedNamespaces.length === 1) {
+      return allData
+    }
+    const selectedSet = new Set(selectedNamespaces)
+    return allData.filter((item) => {
+      const metadata = (item as { metadata?: { namespace?: string } })?.metadata
+      const namespace = metadata?.namespace
+      return namespace && selectedSet.has(namespace)
+    })
+  }, [data, selectedNamespaces])
+
+  const memoizedData = useMemo(() => filteredData, [filteredData])
 
   useEffect(() => {
     if (!useSSE && error) {
@@ -462,8 +489,14 @@ export function ResourceTable<T>({
           </h3>
           <p className="text-muted-foreground">
             Retrieving data
-            {!clusterScope && selectedNamespace
-              ? ` from ${selectedNamespace === '_all' ? 'All Namespaces' : `namespace ${selectedNamespace}`}`
+            {!clusterScope && selectedNamespaces.length > 0
+              ? ` from ${
+                  selectedNamespaces.length === 1 && selectedNamespaces[0] === '_all'
+                    ? 'All Namespaces'
+                    : selectedNamespaces.length === 1
+                      ? `namespace ${selectedNamespaces[0]}`
+                      : `${selectedNamespaces.length} namespaces`
+                }`
               : ''}
           </p>
         </div>
@@ -494,7 +527,9 @@ export function ResourceTable<T>({
               ? `No results match your search query: "${searchQuery}"`
               : clusterScope
                 ? `There are no ${resourceName.toLowerCase()} found`
-                : `There are no ${resourceName.toLowerCase()} in the ${selectedNamespace} namespace`}
+                : selectedNamespaces.length === 1 && selectedNamespaces[0] !== '_all'
+                  ? `There are no ${resourceName.toLowerCase()} in the ${selectedNamespaces[0]} namespace`
+                  : `There are no ${resourceName.toLowerCase()} in the selected namespaces`}
           </p>
           {searchQuery && (
             <Button
@@ -519,14 +554,20 @@ export function ResourceTable<T>({
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold capitalize">{resourceName}</h1>
-          {!clusterScope && selectedNamespace && (
-            <div className="text-muted-foreground flex items-center mt-1">
-              <span>Namespace:</span>
-              <Badge variant="outline" className="ml-2 ">
-                {selectedNamespace === '_all'
-                  ? 'All Namespaces'
-                  : selectedNamespace}
-              </Badge>
+          {!clusterScope && selectedNamespaces.length > 0 && (
+            <div className="text-muted-foreground flex items-center mt-1 gap-2">
+              <span>Namespace{selectedNamespaces.length > 1 ? 's' : ''}:</span>
+              {selectedNamespaces.length === 1 && selectedNamespaces[0] === '_all' ? (
+                <Badge variant="outline">All Namespaces</Badge>
+              ) : (
+                <div className="flex flex-wrap gap-1">
+                  {selectedNamespaces.map((ns) => (
+                    <Badge key={ns} variant="outline">
+                      {ns}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -588,9 +629,10 @@ export function ResourceTable<T>({
             </Select>
             {!clusterScope && (
               <NamespaceSelector
-                selectedNamespace={selectedNamespace}
-                handleNamespaceChange={handleNamespaceChange}
+                selectedNamespaces={selectedNamespaces}
+                handleNamespacesChange={handleNamespaceChange}
                 showAll={true}
+                multiSelect={true}
               />
             )}
             {/* Column Filters */}
