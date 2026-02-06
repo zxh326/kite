@@ -145,14 +145,19 @@ func ListUsers(limit int, offset int, search string, sortBy string, sortOrder st
 	if sortColumn == "users.last_login_at" {
 		orderExpr = fmt.Sprintf("users.last_login_at IS NULL, users.last_login_at %s", sortOrder)
 	}
+	var userIds []uint
 	idsQuery := query.
 		Select("users.id").
 		Distinct("users.id").
 		Order(orderExpr).
 		Limit(limit).
 		Offset(offset)
+	err = idsQuery.Pluck("users.id", &userIds).Error
+	if err != nil {
+		return nil, 0, err
+	}
 	err = DB.
-		Where("id IN (?)", idsQuery).
+		Where("id IN (?)", userIds).
 		Order(orderExpr).
 		Find(&users).Error
 	if err != nil {
