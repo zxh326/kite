@@ -70,6 +70,7 @@
     "jobs": "Jobs",
     "services": "Services",
     "ingresses": "Ingresses",
+    "networkpolicies": "Network Policies",
     "gateways": "Gateways",
     "httproutes": "HTTP Routes",
     "configMaps": "ConfigMaps",

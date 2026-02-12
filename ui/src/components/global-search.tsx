@@ -19,6 +19,7 @@ import {
   IconServer,
   IconServer2,
   IconSettings,
+  IconShield,
   IconStar,
   IconStarFilled,
   IconSun,
@@ -68,6 +69,7 @@ const RESOURCE_CONFIG: Record<
   nodes: { label: 'nav.nodes', icon: IconServer2 },
   jobs: { label: 'nav.jobs', icon: IconPlayerPlay },
   ingresses: { label: 'nav.ingresses', icon: IconRouter },
+  networkpolicies: { label: 'nav.networkpolicies', icon: IconShield },
   gateways: { label: 'nav.gateways', icon: IconLoadBalancer },
   httproutes: { label: 'nav.httproutes', icon: IconRoute },
   daemonsets: {

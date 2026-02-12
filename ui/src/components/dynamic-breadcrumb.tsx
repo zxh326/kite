@@ -35,6 +35,7 @@ export function DynamicBreadcrumb() {
       configmaps: t('nav.configMaps'),
       secrets: t('nav.secrets'),
       ingresses: t('nav.ingresses'),
+      networkpolicies: t('nav.networkpolicies'),
       gateways: t('nav.gateways'),
       httproutes: t('nav.httproutes'),
       jobs: t('nav.jobs'),
