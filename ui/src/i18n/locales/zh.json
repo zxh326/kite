@@ -62,6 +62,7 @@
     "jobs": "任务",
     "services": "服务",
     "ingresses": "入口",
+    "networkpolicies": "网络策略",
     "gateways": "网关",
     "httproutes": "HTTP 路由",
     "configMaps": "配置映射",

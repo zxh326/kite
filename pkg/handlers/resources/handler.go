@@ -70,6 +70,7 @@ func RegisterRoutes(group *gin.RouterGroup) {
 		"jobs":                     NewGenericResourceHandler[*batchv1.Job, *batchv1.JobList]("jobs", false, false),
 		"cronjobs":                 NewGenericResourceHandler[*batchv1.CronJob, *batchv1.CronJobList]("cronjobs", false, false),
 		"ingresses":                NewGenericResourceHandler[*networkingv1.Ingress, *networkingv1.IngressList]("ingresses", false, false),
+		"networkpolicies":          NewGenericResourceHandler[*networkingv1.NetworkPolicy, *networkingv1.NetworkPolicyList]("networkpolicies", false, false),
 		"storageclasses":           NewGenericResourceHandler[*storagev1.StorageClass, *storagev1.StorageClassList]("storageclasses", true, false),
 		"roles":                    NewGenericResourceHandler[*rbacv1.Role, *rbacv1.RoleList]("roles", false, false),
 		"rolebindings":             NewGenericResourceHandler[*rbacv1.RoleBinding, *rbacv1.RoleBindingList]("rolebindings", false, false),

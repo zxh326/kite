@@ -139,6 +139,7 @@ const defaultMenus: DefaultMenus = {
   ],
   'sidebar.groups.traffic': [
     { titleKey: 'nav.ingresses', url: '/ingresses', icon: IconRouter },
+    { titleKey: 'nav.networkpolicies', url: '/networkpolicies', icon: IconShield },
     { titleKey: 'nav.services', url: '/services', icon: IconNetwork },
     { titleKey: 'nav.gateways', url: '/gateways', icon: IconLoadBalancer },
     { titleKey: 'nav.httproutes', url: '/httproutes', icon: IconRoute },

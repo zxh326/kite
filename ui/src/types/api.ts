@@ -39,7 +39,7 @@ import {
   ServiceAccountList,
   ServiceList,
 } from 'kubernetes-types/core/v1'
-import { Ingress, IngressList } from 'kubernetes-types/networking/v1'
+import { Ingress, IngressList, NetworkPolicy, NetworkPolicyList } from 'kubernetes-types/networking/v1'
 import {
   ClusterRole,
   ClusterRoleBinding,
@@ -96,6 +96,7 @@ export type ResourceType =
   | 'configmaps'
   | 'secrets'
   | 'ingresses'
+  | 'networkpolicies'
   | 'namespaces'
   | 'crds'
   | 'crs'
@@ -144,6 +145,7 @@ export interface ResourcesTypeMap {
   secrets: SecretList
   persistentvolumeclaims: PersistentVolumeClaimList
   ingresses: IngressList
+  networkpolicies: NetworkPolicyList
   namespaces: NamespaceList
   crds: CustomResourceDefinitionList
   crs: {
@@ -220,6 +222,7 @@ export interface ResourceTypeMap {
   secrets: Secret
   persistentvolumeclaims: PersistentVolumeClaim
   ingresses: Ingress
+  networkpolicies: NetworkPolicy
   namespaces: Namespace
   crds: CustomResourceDefinition
   crs: CustomResource
